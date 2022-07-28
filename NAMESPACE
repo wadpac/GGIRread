@@ -1,0 +1,4 @@
+export(g.binread, g.cwaread)
+useDynLib(GGIRread, .registration = TRUE)
+importFrom(Rcpp, sourceCpp)
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
