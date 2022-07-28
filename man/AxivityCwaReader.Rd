@@ -1,5 +1,5 @@
-\name{g.cwaread}
-\alias{g.cwaread}
+\name{AxivityCwaReader}
+\alias{AxivityCwaReader}
 \title{
   Function to read .cwa-format files as produced by the accelerometer named 'Axivity'
 }
@@ -7,7 +7,7 @@
   For reading .cwa-format data with the Axivity AX3 and AX6 sensors.
 }
 \usage{
-  g.cwaread(fileName, start = 0, end = 0, progressBar = FALSE, 
+  AxivityCwaReader(fileName, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1)
 }
 \arguments{
@@ -36,8 +36,7 @@
     timezone in which recording took place are different.
   }
   \item{interpolationType}{
-    Integer to indicate type of interpolation to be used when resampling time 
-    series (mainly relevant for Axivity sensors), 1=linear, 2=nearest neighbour.
+    Integer to indicate type of interpolation to be used, 1=linear, 2=nearest neighbour.
   }
 }
 \value{

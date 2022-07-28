@@ -1,5 +1,5 @@
-\name{g.binread}
-\alias{g.binread}
+\name{GeneaBinReader}
+\alias{GeneaBinReader}
 \title{
   Function to read binary files as produced by the accelerometer named 'Genea',
   not to be confused with the 'GENEActiv' (see package GENEAread for this)
@@ -9,7 +9,7 @@
   (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
 }
 \usage{
-  g.binread(binfile, start = 0, end = 0)
+  GeneaBinReader(binfile, start = 0, end = 0)
 }
 \arguments{
   \item{binfile}{
@@ -25,7 +25,7 @@
   }
 }
 \details{
-  If only \code{start} is defined then \code{g.binread} will read all data beyond
+  If only \code{start} is defined then \code{GeneaBinReader} will read all data beyond
   \code{start} until the end of the file is reached
 }
 \value{

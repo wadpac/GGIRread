@@ -1,4 +1,4 @@
-g.binread = function(binfile, start = 0, end = 0) {
+GeneaBinReader = function(binfile, start = 0, end = 0) {
 
   int16 = function(x) {
     x[x < -32768] = -32768

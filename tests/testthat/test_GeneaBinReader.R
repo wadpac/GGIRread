@@ -1,9 +1,9 @@
 library(GGIRread)
-context("g.binread")
-test_that("g.binread reads data in file correctly", {
+context("GeneaBinReader")
+test_that("GeneaBinReader reads data from file correctly", {
   skip_on_cran()
   binfile  = system.file("testfiles/genea_testfile.bin", package = "GGIRread")[1]
-  GENEA = g.binread(binfile = binfile, start = 1, end = 4)
+  GENEA = GeneaBinReader(binfile = binfile, start = 1, end = 4)
   expect_equal(nrow(GENEA$header), 18)
   expect_equal(GENEA$header[16], "Sample_Rate")
   expect_equal(nrow(GENEA$rawxyz), 993)

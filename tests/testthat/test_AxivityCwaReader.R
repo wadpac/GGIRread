@@ -1,9 +1,9 @@
 library(GGIRread)
-context("g.cwaread")
-test_that("g.cwaread reads data in file correctly", {
+context("AxivityCwaReader")
+test_that("AxivityCwaReader reads data from file correctly", {
   skip_on_cran()
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
-  AX3 = g.cwaread(fileName = cwafile,desiredtz = "Europe/Berlin", start = 1, end = 4)
+  AX3 = AxivityCwaReader(fileName = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
   expect_equal(AX3$header$device, "Axivity")
   expect_equal(nrow(AX3$data), 900)
   expect_equal(ncol(AX3$data), 7)
