@@ -14,6 +14,6 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(length(GENEActiv$z), 300)
   expect_equal(length(GENEActiv$T), 300)
   expect_equal(GENEActiv$T[1], 21.5)
-  expect_equal(GENEActiv$z[300], -0.80836403369903564453, tolerance=15)
+  expect_equal(GENEActiv$z[300], -0.80836403369903564453, tolerance = 15)
   expect_equal(GENEActiv$time[1], 1369908774500)
 })

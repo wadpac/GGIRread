@@ -3,10 +3,13 @@
 #include <limits>
 #include <fstream>
 #include <vector>
+#include <chrono>
 #include <iomanip>  // get_time
 
 #include <Rcpp.h>
 
+using namespace Rcpp;
+using namespace std;
 /**
  * Replicates bin file header, also calculates and returns
  * x/y/z gain/offset values along with number of pages of data in file bin
@@ -98,7 +101,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         int mfrOffset[3];
         int numBlocksTotalint = parseBinFileHeader(input_file, fileHeaderSize, linesToAxesCalibration, mfrGain, mfrOffset);
         if (numBlocksTotalint < 0) {
-            fprintf(stderr, "WARNING: numBlocksTotal read in from header is negative, file corrupted?\n");
+          Rcout << "WARNING: numBlocksTotal read in from header is negative, file corrupted?\n";
         }
         numBlocksTotal = numBlocksTotalint;
 
@@ -156,7 +159,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         }
                     } catch (const std::exception &e) {
                         errCounter++;
-                        fprintf(stderr, "header error: %s\n", e.what());
+                        Rcerr << "header error: %s\n" << e.what();
                         continue;
                     }
                 }
@@ -200,7 +203,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         i++;
                     } catch (const std::exception &e) {
                         errCounter++;
-                        fprintf(stderr, "data error at i = %d: %s\n", i, e.what());
+                        Rcerr << "data error at i = %d: %s\n" << i << e.what();
                         break;  // rest of this block could be corrupted
                     }
                 }
@@ -217,14 +220,14 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
 
             if (progress_bar) {
                 if ((blockCount % 10000 == 0) || (blockCount == numBlocksTotal)) {
-                    printf("Reading file... %lu%%\r", (blockCount * 100 / numBlocksTotal));
+                    Rcout << "Reading file... %lu%%\r" << (blockCount * 100 / numBlocksTotal);
                 }
             }
 
         }
         statusOK = 1;
     } catch (const std::exception &e) {
-        fprintf(stderr, "an error occurred while reading!\n%s\n", e.what());
+        Rcerr << "an error occurred while reading!\n%s\n" << e.what();
         statusOK = 0;
     }
 
