@@ -7,12 +7,12 @@
   For reading .cwa-format data with the Axivity AX3 and AX6 sensors.
 }
 \usage{
-  AxivityCwaReader(fileName, start = 0, end = 0, progressBar = FALSE, 
+  AxivityCwaReader(input_file, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1)
 }
 \arguments{
-  \item{fileName}{
-    filename (required)
+  \item{input_file}{
+    input_file (required)
   }
   \item{start}{
     start point for reading data, this can either be a timestamp

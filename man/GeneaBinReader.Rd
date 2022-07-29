@@ -9,10 +9,10 @@
   (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
 }
 \usage{
-  GeneaBinReader(binfile, start = 0, end = 0)
+  GeneaBinReader(input_file, start = 0, end = 0)
 }
 \arguments{
-  \item{binfile}{
+  \item{input_file}{
     filename (required)
   }
   \item{start}{

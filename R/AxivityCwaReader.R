@@ -1,9 +1,9 @@
-AxivityCwaReader = function(fileName, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
+AxivityCwaReader = function(input_file, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
                      configtz = c(), interpolationType=1) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The code in this function was contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
-  # fileName is namer of cwa file to read
+  # input_file is namer of cwa file to read
   # start can be timestamp "year-month-day hr:min:sec" or non-negative integer
   #       which is page number. Page size is 300 of measurements with specified
   #       frequency.
@@ -306,10 +306,10 @@ AxivityCwaReader = function(fileName, start = 0, end = 0, progressBar = FALSE, d
     stop("At least file must be specified")
   }
   # Get file size in data blocks
-  numDBlocks = round(file.info(fileName)$size / 512) - 2
+  numDBlocks = round(file.info(input_file)$size / 512) - 2
   pageLength = 300
   # Open file
-  fid = file(fileName,"rb")
+  fid = file(input_file,"rb")
   on.exit({
     close(fid)
   })
