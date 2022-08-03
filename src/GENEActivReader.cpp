@@ -88,7 +88,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
     int errCounter = 0;
 
     std::vector<long> time_array;
-    std::vector<float> x_array, y_array, z_array, T_array;
+    std::vector<float> x_array, y_array, z_array, T_array, lux_array;
 
     auto max_streamsize = std::numeric_limits<std::streamsize>::max();
 
@@ -138,7 +138,9 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             ss >> milliseconds;
                             auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
                             // Note: the timezone variable may not be portable to all OS'es!
-                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds - timezone * 1000;
+                            // Rcout << "timezone" << timezone;
+                            // 
+                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds; // - timezone * 1000
 
                             // The above could be replaced by the following OS-portable C++20 when
                             // all compilers support it:
@@ -173,6 +175,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                 int xRaw = 0;
                 int yRaw = 0;
                 int zRaw = 0;
+                int lux = 0;
                 double x = 0.0;
                 double y = 0.0;
                 double z = 0.0;
@@ -185,6 +188,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         xRaw = getSignedIntFromHex(data.substr(hexPosition, 3));
                         yRaw = getSignedIntFromHex(data.substr(hexPosition + 3, 3));
                         zRaw = getSignedIntFromHex(data.substr(hexPosition + 6, 3));
+                        lux = getSignedIntFromHex(data.substr(hexPosition + 9, 3));
 
                         // Update values to calibrated measure (taken from GENEActiv manual)
                         x = (xRaw * 100. - mfrOffset[0]) / mfrGain[0];
@@ -198,6 +202,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         y_array.push_back(y);
                         z_array.push_back(z);
                         T_array.push_back(temperature);
+                        lux_array.push_back(lux);
 
                         hexPosition += 12;
                         i++;
@@ -244,6 +249,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         Rcpp::Named("x") = x_array,
         Rcpp::Named("y") = y_array,
         Rcpp::Named("z") = z_array,
-        Rcpp::Named("T") = T_array
+        Rcpp::Named("T") = T_array,
+        Rcpp::Named("lux") = lux_array
     );
 }

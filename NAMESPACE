@@ -1,4 +1,4 @@
-export(GeneaBinReader, AxivityCwaReader, GENEActivReader)
+export(GeneaBinReader, AxivityCwaReader, GENEActivReader, GENEActivBinReader)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
