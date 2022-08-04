@@ -173,13 +173,14 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             ss >> milliseconds;
                             auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
                             
-                            Rcout << " GENEActivReader.cpp tz_correction: " << tzone;
-                            Rcout << " GENEActivReader.cpp timezone: " << timezone;
+                            Rcout << "\n GENEActivReader.cpp tzone: " << tzone;
+                            Rcout << "\n GENEActivReader.cpp timezone: " << timezone;
                             
                             int tz_correction = timezone * 1000; //; timezone + tzone
-                            Rcout << " GENEActivReader.cpp tz_correction: " << tz_correction;
-
-                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds - tz_correction;
+                            Rcout << "\n GENEActivReader.cpp tz_correction: " << tz_correction;
+                            long page_header_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count();
+                            Rcout << "\n GENEActivReader.cpp page_header_timestamp: " << page_header_timestamp;
+                            blockTime = page_header_timestamp + milliseconds - tz_correction;
                             // The above could be replaced by the following OS-portable C++20 when
                             // all compilers support it:
                             // std::chrono::utc_time<std::chrono::seconds> tp;
