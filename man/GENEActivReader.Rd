@@ -8,7 +8,7 @@
   (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
 }
 \usage{
-  GENEActivReader(filename, start = 0L, end = 0L, progress_bar = FALSE, tzone = 0)
+  GENEActivReader(filename, start = 0L, end = 0L, progress_bar = FALSE)
 }
 \arguments{
   \item{filename}{
@@ -22,9 +22,6 @@
   }
   \item{progress_bar}{
     Boolean
-  }
-  \item{tzone}{
-    Numeric, timezone in seconds to interpret the timestamps in. For example, 3600 for GMT+01:00
   }
 }
 \details{
