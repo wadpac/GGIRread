@@ -1,5 +1,5 @@
-\name{AxivityCwaReader}
-\alias{AxivityCwaReader}
+\name{readAxivity}
+\alias{readAxivity}
 \title{
   Function to read .cwa-format files as produced by the accelerometer named 'Axivity'
 }
@@ -7,7 +7,7 @@
   For reading .cwa-format data with the Axivity AX3 and AX6 sensors.
 }
 \usage{
-  AxivityCwaReader(input_file, start = 0, end = 0, progressBar = FALSE, 
+  readAxivity(input_file, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1)
 }
 \arguments{

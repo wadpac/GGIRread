@@ -13,9 +13,8 @@ using namespace std;
 /**
  * Replicates bin file header, also calculates and returns
  * x/y/z gain/offset values along with number of pages of data in file bin
- * format described in GENEActiv manual ("Decoding .bin files", pg.27)
- * http://www.geneactiv.org/wp-content/uploads/2014/03/
- * geneactiv_instruction_manual_v1.2.pdf
+ * format described in GENEActiv Operating Instructions ("Decoding .bin files", pg.15)
+ * https://activinsights.com/support/geneactiv-support/
  */
 int parseBinFileHeader(std::istream& input_file, int fileHeaderSize, int linesToAxesCalibration,
                         double (&gainVals)[3], int (&offsetVals)[3]) {
@@ -61,7 +60,6 @@ int parseBinFileHeader(std::istream& input_file, int fileHeaderSize, int linesTo
     return numBlocksTotal;
 }
 
-
 int getSignedIntFromHex(const std::string &hex) {
     // input hex base is 16
     int rawVal = std::stoll(hex, nullptr, 16);
@@ -74,6 +72,41 @@ int getSignedIntFromHex(const std::string &hex) {
     }
     return rawVal;
 }
+
+string Hex2Bin(const string &s){
+  // FROM: https://stackoverflow.com/questions/18310952/convert-strings-between-hex-format-and-binary-format
+  string out;
+  for(auto i: s){
+    uint8_t n;
+    if(i <= '9' and i >= '0')
+      n = i - '0';
+    else
+      n = 10 + i - 'A';
+    for(int8_t j = 3; j >= 0; --j)
+      out.push_back((n & (1<<j))? '1':'0');
+  }
+  
+  return out;
+}
+
+int Bin2Dec(int n) {
+  // FROM: https://www.geeksforgeeks.org/program-binary-decimal-conversion/
+  int num = n;
+  int dec_value = 0;
+  // Initializing base value to 1, i.e 2^0
+  int base = 1;
+  int temp = num;
+  while (temp) {
+    int last_digit = temp % 10;
+    temp = temp / 10;
+    
+    dec_value += last_digit * base;
+    
+    base = base * 2;
+  }
+  return dec_value;
+}
+
 
 // N.B.: don't use 'read' as the C++ function name, it is already used by
 // some include and will not compile:
@@ -88,7 +121,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
     int errCounter = 0;
 
     std::vector<long> time_array;
-    std::vector<float> x_array, y_array, z_array, T_array;
+    std::vector<float> x_array, y_array, z_array, T_array, lux_array;
 
     auto max_streamsize = std::numeric_limits<std::streamsize>::max();
 
@@ -108,7 +141,9 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         std::size_t blockCount = 0;
         std::string header;
         long blockTime = 0;  // Unix millis
+        long lastvalue = 0;  // Unix millis
         double temperature = 0.0;
+        double volts = 0.0;
         double freq = 0.0;
         std::string data;
         std::string timeFmtStr = "Page Time:%Y-%m-%d %H:%M:%S:";
@@ -133,21 +168,9 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         if (i == 3) {
                             std::tm tm = {};
                             std::stringstream ss(header);
-                            ss >> std::get_time(&tm, timeFmtStr.c_str());
                             int milliseconds;
                             ss >> milliseconds;
-                            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-                            // Note: the timezone variable may not be portable to all OS'es!
-                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds - timezone * 1000;
-
-                            // The above could be replaced by the following OS-portable C++20 when
-                            // all compilers support it:
-                            // std::chrono::utc_time<std::chrono::seconds> tp;
-                            // std::stringstream ss(header);
-                            // ss >> std::chrono::parse(timeFmtStr, tp);
-                            // int milliseconds;
-                            // ss >> milliseconds;
-                            // blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds;
+                            blockTime = lastvalue + milliseconds;
                         } else if (i == 5) {
                             std::stringstream ss(header);
                             ss.ignore(max_streamsize, ':');
@@ -173,6 +196,8 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                 int xRaw = 0;
                 int yRaw = 0;
                 int zRaw = 0;
+                int lux = 0;
+                int last12 = 0;
                 double x = 0.0;
                 double y = 0.0;
                 double z = 0.0;
@@ -185,20 +210,26 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         xRaw = getSignedIntFromHex(data.substr(hexPosition, 3));
                         yRaw = getSignedIntFromHex(data.substr(hexPosition + 3, 3));
                         zRaw = getSignedIntFromHex(data.substr(hexPosition + 6, 3));
-
+                        
+                        // get last 3 heximal plaes, which equals last 12 bits and convert to binary
+                        last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 3)));
+                        // split first 10 bit and convert to decimal
+                        lux = Bin2Dec(last12 >> 2);
+                        
                         // Update values to calibrated measure (taken from GENEActiv manual)
                         x = (xRaw * 100. - mfrOffset[0]) / mfrGain[0];
                         y = (yRaw * 100. - mfrOffset[1]) / mfrGain[1];
                         z = (zRaw * 100. - mfrOffset[2]) / mfrGain[2];
 
                         t = (double)blockTime + (double)i * (1.0 / freq) * 1000;  // Unix millis
+                        lastvalue = t;
 
                         time_array.push_back(t);
                         x_array.push_back(x);
                         y_array.push_back(y);
                         z_array.push_back(z);
                         T_array.push_back(temperature);
-
+                        lux_array.push_back(lux);
                         hexPosition += 12;
                         i++;
                     } catch (const std::exception &e) {
@@ -244,6 +275,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         Rcpp::Named("x") = x_array,
         Rcpp::Named("y") = y_array,
         Rcpp::Named("z") = z_array,
-        Rcpp::Named("T") = T_array
+        Rcpp::Named("T") = T_array,
+        Rcpp::Named("lux") = lux_array
     );
 }
