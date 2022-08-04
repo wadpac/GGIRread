@@ -17,6 +17,7 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(GENEActiv$T[1], 21.5)
   expect_equal(GENEActiv$z[300], -0.80836403369903564453, tolerance = 15)
   expect_equal(GENEActiv$time[1], 1369908774500)
+  cat(paste0("\nUnit test, 2nd timestamp GENEActiv$time: ", GENEActiv$time[1], "\n"))
   
   GBR = readGENEActiv(filename = binfile, start = 1, end = 1)
   expect_equal(GBR$header$ReadOK, 1)
@@ -32,7 +33,7 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(GBR$data$temperature[1], 21.5)
   expect_equal(GBR$data$light[2], 2.666667, tolerance = 4)
   expect_equal(GBR$data$z[300], -0.80836403369903564453, tolerance = 15)
-  cat(paste0("\nUnit test, 2nd timestamp: ", GBR$data$time[2], "\n"))
+  cat(paste0("\nUnit test, 2nd timestamp GBR$data$time: ", GBR$data$time[2], "\n"))
   expect_equal(GBR$data$time[1], 1369908774.500) # output is now expressed in seconds rather than milliseconds
 
 })
