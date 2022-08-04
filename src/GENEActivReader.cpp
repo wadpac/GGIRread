@@ -6,7 +6,6 @@
 #include <chrono>
 #include <iomanip>  // get_time
 
-#include <iostream>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -169,23 +168,9 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         if (i == 3) {
                             std::tm tm = {};
                             std::stringstream ss(header);
-                            ss >> std::get_time(&tm, timeFmtStr.c_str());
                             int milliseconds;
                             ss >> milliseconds;
-                            
                             blockTime = lastvalue + milliseconds;
-                            
-                            // Rcout << "\nblockTime  " << blockTime << " lastvalue " << lastvalue;
-                            
-                            // The above could be replaced by the following OS-portable C++20 when
-                            // all compilers support it:
-                            // std::chrono::utc_time<std::chrono::seconds> tp;
-                            // std::stringstream ss(header);
-                            // ss >> std::chrono::parse(timeFmtStr, tp);
-                            // int milliseconds;
-                            // ss >> milliseconds;
-                            // blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds;
-                            
                         } else if (i == 5) {
                             std::stringstream ss(header);
                             ss.ignore(max_streamsize, ':');
@@ -228,7 +213,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         
                         // get last 3 heximal plaes, which equals last 12 bits and convert to binary
                         last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 3)));
-                        // split first 10 and convert to decimal
+                        // split first 10 bit and convert to decimal
                         lux = Bin2Dec(last12 >> 2);
                         
                         // Update values to calibrated measure (taken from GENEActiv manual)
