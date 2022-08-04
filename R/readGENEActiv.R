@@ -18,7 +18,7 @@ readGENEActiv = function(filename, start = 0, end = 0,
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
   tzone = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600
   
-  cat(paste0("\nreadGENEActiv tz_offsetz: ",tzone))
+  cat(paste0("\nreadGENEActiv tz_offsetz: ",tzone, "\n"))
   
   
   
