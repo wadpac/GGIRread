@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>  // get_time
-
+#include <time.h>
 #include <iostream>
 #include <Rcpp.h>
 
@@ -173,13 +173,17 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             int milliseconds;
                             ss >> milliseconds;
                             auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-                            long tm_gmtoff; // needed to correct for offset of system clock
+                            // long tm_gmtoff; // needed to correct for offset of system clock
                             
-                            int correction = ((tzone - tm_gmtoff) * 1000);
-                            Rcout << " GENEActivReader.cpp tm_gmtoff: " << tm_gmtoff;
+                            time_t t = time(NULL);
+                            struct tm lt = {0};
+                            localtime_r(&t, &lt);
+                            
+                            int correction = ((tzone - lt.tm_gmtoff) * 1000);
+                            Rcout << " GENEActivReader.cpp tm_gmtoff: " << lt.tm_gmtoff;
                             Rcout << " GENEActivReader.cpp tz_correction: " << correction;
 
-                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds + correction;
+                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds - correction;
                             // 182192.924
                             // -182192.924
                             // The above could be replaced by the following OS-portable C++20 when
