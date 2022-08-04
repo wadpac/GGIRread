@@ -67,7 +67,7 @@ int getSignedIntFromHex(const std::string &hex) {
                                 // limit = 4096
     int signedLimit = 2048; // 2^[length*(4-1)] #i.e. 3 hexBytes - 1 bit (11
                             // bits) limit = 2048
-    if (rawVal > signedLimit) {
+    if (rawVal >= signedLimit) {
         rawVal = rawVal - unsignedLimit;
     }
     return rawVal;

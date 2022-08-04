@@ -32,7 +32,9 @@ readGENEActiv = function(filename, start = 0, end = 0,
                       numBlocksTotal = rawdata$info$numBlocksTotal,
                       StarTime = starttime)
   rawdata$time = rawdata$time / 1000
-  starttime_num = as.numeric(as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS")) + tzone + 5
+  starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS")
+  page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
+  starttime_num = as.numeric(starttime_posix) + tzone + 5 + page_offset
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
   return(invisible(list(
     header = header,
