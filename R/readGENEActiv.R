@@ -21,6 +21,8 @@ readGENEActiv = function(filename, start = 0, end = 0,
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
   tz_offset = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600 * 1000
   
+  cat(paste0("\ntz_offsetz: ", tz_offset))
+  
   rawdata$time  = rawdata$time + tz_offset 
   
   header = list(serial_number = SN,
