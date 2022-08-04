@@ -176,10 +176,12 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             long tm_gmtoff; // needed to correct for offset of system clock
                             
                             int correction = ((tzone - tm_gmtoff) * 1000);
+                            Rcout << " GENEActivReader.cpp tm_gmtoff: " << tm_gmtoff;
                             Rcout << " GENEActivReader.cpp tz_correction: " << correction;
 
                             blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds + correction;
-                            
+                            // 182192.924
+                            // -182192.924
                             // The above could be replaced by the following OS-portable C++20 when
                             // all compilers support it:
                             // std::chrono::utc_time<std::chrono::seconds> tp;
