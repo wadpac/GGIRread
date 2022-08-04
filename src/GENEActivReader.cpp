@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>  // get_time
-#include <time.h>
+
 #include <iostream>
 #include <Rcpp.h>
 
@@ -113,7 +113,7 @@ int Bin2Dec(int n) {
 // some include and will not compile:
 // [[Rcpp::export]]
 Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::size_t end = 0,
-                           bool progress_bar = false, int tzone = 0) {
+                           bool progress_bar = false) {
     int fileHeaderSize = 59;
     int linesToAxesCalibration = 47;
     int blockHeaderSize = 9;
@@ -142,6 +142,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         std::size_t blockCount = 0;
         std::string header;
         long blockTime = 0;  // Unix millis
+        long lastvalue = 0;  // Unix millis
         double temperature = 0.0;
         double volts = 0.0;
         double freq = 0.0;
@@ -171,17 +172,11 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             ss >> std::get_time(&tm, timeFmtStr.c_str());
                             int milliseconds;
                             ss >> milliseconds;
-                            auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
                             
-                            Rcout << "\n GENEActivReader.cpp tzone: " << tzone;
-                            Rcout << "\n GENEActivReader.cpp timezone: " << timezone;
+                            blockTime = lastvalue + milliseconds;
                             
-                            int tz_correction = timezone * 1000; //; timezone + tzone
-                            Rcout << "\n GENEActivReader.cpp tz_correction: " << tz_correction;
-
-                            long page_header_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count();
-                            Rcout << "\n GENEActivReader.cpp page_header_timestamp: " << page_header_timestamp;
-                            blockTime = page_header_timestamp + milliseconds - tz_correction;
+                            // Rcout << "\nblockTime  " << blockTime << " lastvalue " << lastvalue;
+                            
                             // The above could be replaced by the following OS-portable C++20 when
                             // all compilers support it:
                             // std::chrono::utc_time<std::chrono::seconds> tp;
@@ -242,6 +237,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         z = (zRaw * 100. - mfrOffset[2]) / mfrGain[2];
 
                         t = (double)blockTime + (double)i * (1.0 / freq) * 1000;  // Unix millis
+                        lastvalue = t;
 
                         time_array.push_back(t);
                         x_array.push_back(x);
