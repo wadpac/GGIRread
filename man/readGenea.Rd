@@ -1,31 +1,31 @@
-\name{GENEActivBinReader}
-\alias{GENEActivBinReader}
+\name{readGenea}
+\alias{readGenea}
 \title{
-  Function to read binary files as produced by the GENEActiv accelerometer
+  Function to read binary files as produced by the accelerometer named 'Genea',
+  not to be confused with the 'GENEActiv' (see package GENEAread for this)
 }
 \description{
   For reading the binary data as collected with a Genea accelerometer 
   (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
 }
 \usage{
-  GENEActivBinReader(filename, start = 0L, end = 0L, progress_bar = FALSE)
+  readGenea(input_file, start = 0, end = 0)
 }
 \arguments{
-  \item{filename}{
+  \item{input_file}{
     filename (required)
   }
   \item{start}{
-     start point for reading data
+     start point for reading data, this can either be a timestamp
+     "year-month-day hr:min:sec" or a page number (optional)
   }
   \item{end}{
-    end point for reading data
-  }
-  \item{progress_bar}{
-    Boolean
+    end point for reading data, this can either be a timestamp 
+    "year-month-day hr:min:sec" or a page number (optional)
   }
 }
 \details{
-  If only \code{start} is defined then \code{GeneaBinReader} will read all data beyond
+  If only \code{start} is defined then \code{readGenea} will read all data beyond
   \code{start} until the end of the file is reached
 }
 \value{

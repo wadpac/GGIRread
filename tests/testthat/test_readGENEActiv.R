@@ -18,7 +18,7 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(GENEActiv$z[300], -0.80836403369903564453, tolerance = 15)
   # expect_equal(GENEActiv$time[1], 1369908774500) # commented out because: timezone is no longer accounted for in GENEActivReader, we now deal with this in GENEActivBinRead
   
-  GBR = GENEActivBinReader(filename = binfile, start = 1, end = 1)
+  GBR = readGENEActiv(filename = binfile, start = 1, end = 1)
   expect_equal(GBR$header$ReadOK, 1)
   expect_equal(GBR$header$ReadErrors, 0)
   expect_equal(GBR$header$SampleRate, 85.7)

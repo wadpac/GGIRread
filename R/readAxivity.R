@@ -1,4 +1,4 @@
-AxivityCwaReader = function(input_file, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
+readAxivity = function(input_file, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
                      configtz = c(), interpolationType=1) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The code in this function was contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -253,7 +253,7 @@ AxivityCwaReader = function(input_file, start = 0, end = 0, progressBar = FALSE,
           # Read 4 byte for three measurements
           packedData = readBin(fid, integer(), size = 4, n = blockLength)
           # Unpack data
-          data = numUnpack(packedData)
+          data = AxivityNumUnpack(packedData)
           # data2 = numUnpack2(packedData)
           # Calculate number of bytes to skip
           temp = 482 -  4 *(Naxes/3)* blockLength

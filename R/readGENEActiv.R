@@ -1,4 +1,4 @@
-GENEActivBinReader = function(filename, start = 0, end = 0,
+readGENEActiv = function(filename, start = 0, end = 0,
                               progress_bar = FALSE) {
   
   rawdata = GENEActivReader(filename = filename,

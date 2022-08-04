@@ -10,6 +10,17 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// AxivityNumUnpack
+IntegerMatrix AxivityNumUnpack(IntegerVector pack);
+RcppExport SEXP _GGIRread_AxivityNumUnpack(SEXP packSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type pack(packSEXP);
+    rcpp_result_gen = Rcpp::wrap(AxivityNumUnpack(pack));
+    return rcpp_result_gen;
+END_RCPP
+}
 // GENEActivReader
 Rcpp::List GENEActivReader(std::string filename, std::size_t start, std::size_t end, bool progress_bar);
 RcppExport SEXP _GGIRread_GENEActivReader(SEXP filenameSEXP, SEXP startSEXP, SEXP endSEXP, SEXP progress_barSEXP) {
@@ -21,17 +32,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::size_t >::type end(endSEXP);
     Rcpp::traits::input_parameter< bool >::type progress_bar(progress_barSEXP);
     rcpp_result_gen = Rcpp::wrap(GENEActivReader(filename, start, end, progress_bar));
-    return rcpp_result_gen;
-END_RCPP
-}
-// numUnpack
-IntegerMatrix numUnpack(IntegerVector pack);
-RcppExport SEXP _GGIRread_numUnpack(SEXP packSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< IntegerVector >::type pack(packSEXP);
-    rcpp_result_gen = Rcpp::wrap(numUnpack(pack));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -52,8 +52,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_GGIRread_AxivityNumUnpack", (DL_FUNC) &_GGIRread_AxivityNumUnpack, 1},
     {"_GGIRread_GENEActivReader", (DL_FUNC) &_GGIRread_GENEActivReader, 4},
-    {"_GGIRread_numUnpack", (DL_FUNC) &_GGIRread_numUnpack, 1},
     {"_GGIRread_resample", (DL_FUNC) &_GGIRread_resample, 5},
     {NULL, NULL, 0}
 };

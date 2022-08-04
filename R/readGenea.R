@@ -1,4 +1,4 @@
-GeneaBinReader = function(input_file, start = 0, end = 0) {
+readGenea = function(input_file, start = 0, end = 0) {
 
   int16 = function(x) {
     x[x < -32768] = -32768
