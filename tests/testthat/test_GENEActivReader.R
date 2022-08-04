@@ -28,8 +28,11 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(length(GBR$data$y), 300)
   expect_equal(length(GBR$data$z), 300)
   expect_equal(length(GBR$data$temperature), 300)
+  expect_equal(length(GBR$data$light), 300)
   expect_equal(GBR$data$temperature[1], 21.5)
+  expect_equal(GBR$data$light[2], 2.666667, tolerance = 4)
   expect_equal(GBR$data$z[300], -0.80836403369903564453, tolerance = 15)
-  expect_equal(GBR$data$time[1], 1369908774500)
+  expect_equal(GBR$data$time[1], 1369908774.500) # output is now expressed in seconds rather than milliseconds
   
 })
+
