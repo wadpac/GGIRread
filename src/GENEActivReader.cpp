@@ -61,7 +61,6 @@ int parseBinFileHeader(std::istream& input_file, int fileHeaderSize, int linesTo
     return numBlocksTotal;
 }
 
-
 int getSignedIntFromHex(const std::string &hex) {
     // input hex base is 16
     int rawVal = std::stoll(hex, nullptr, 16);
@@ -75,21 +74,8 @@ int getSignedIntFromHex(const std::string &hex) {
     return rawVal;
 }
 
-// const unsigned g_unMaxBits = 32;
-// string Hex2Bin(const string& s) {
-//   stringstream ss;
-//   ss << hex << s;
-//   unsigned n;
-//   ss >> n;
-//   std::bitset<g_unMaxBits> b(n);
-//   
-//   unsigned x = 0;
-//   if (boost::starts_with(s, "0x") || boost::starts_with(s, "0X")) x = 2;
-//   return b.to_string().substr(32 - 4*(s.length()-x));
-// }
-
-// https://stackoverflow.com/questions/18310952/convert-strings-between-hex-format-and-binary-format
 string Hex2Bin(const string &s){
+  // FROM: https://stackoverflow.com/questions/18310952/convert-strings-between-hex-format-and-binary-format
   string out;
   for(auto i: s){
     uint8_t n;
@@ -104,9 +90,8 @@ string Hex2Bin(const string &s){
   return out;
 }
 
-
-// https://www.geeksforgeeks.org/program-binary-decimal-conversion/
 int Bin2Dec(int n) {
+  // FROM: https://www.geeksforgeeks.org/program-binary-decimal-conversion/
   int num = n;
   int dec_value = 0;
   // Initializing base value to 1, i.e 2^0
@@ -136,7 +121,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
     double sampleRate = -1;
     int errCounter = 0;
 
-    
     std::vector<long> time_array;
     std::vector<float> x_array, y_array, z_array, T_array, lux_array;
 
@@ -188,28 +172,11 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             int milliseconds;
                             ss >> milliseconds;
                             auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-                            // Note: the timezone variable may not be portable to all OS'es!
-                            // Rcout << "timezone" << timezone;
-                            // 
                             blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds; // - timezone * 1000
-
-                            // The above could be replaced by the following OS-portable C++20 when
-                            // all compilers support it:
-                            // std::chrono::utc_time<std::chrono::seconds> tp;
-                            // std::stringstream ss(header);
-                            // ss >> std::chrono::parse(timeFmtStr, tp);
-                            // int milliseconds;
-                            // ss >> milliseconds;
-                            // blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds;
                         } else if (i == 5) {
                             std::stringstream ss(header);
                             ss.ignore(max_streamsize, ':');
                             ss >> temperature;
-                        // } else if (i == 6) {
-                        //   std::stringstream ss(header);
-                        //   ss.ignore(max_streamsize, ':');
-                        //   ss >> volts;
-                        //   // Rcout << " volts " << volts;
                         } else if (i == 8) {
                             std::stringstream ss(header);
                             ss.ignore(max_streamsize, ':');
@@ -232,7 +199,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                 int yRaw = 0;
                 int zRaw = 0;
                 int lux = 0;
-                // int button = 0;
                 int last12 = 0;
                 double x = 0.0;
                 double y = 0.0;
@@ -251,9 +217,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 3)));
                         // split first 10 and convert to decimal
                         lux = Bin2Dec(last12 >> 2);
-                        // split 11th bit and convert to decimal
-                        // button = Bin2Dec((last12 << 10) >> 1);
-                        
                         
                         // Update values to calibrated measure (taken from GENEActiv manual)
                         x = (xRaw * 100. - mfrOffset[0]) / mfrGain[0];
@@ -268,8 +231,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         z_array.push_back(z);
                         T_array.push_back(temperature);
                         lux_array.push_back(lux);
-                        // button_array.push_back(button);
-
                         hexPosition += 12;
                         i++;
                     } catch (const std::exception &e) {
@@ -317,6 +278,5 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         Rcpp::Named("z") = z_array,
         Rcpp::Named("T") = T_array,
         Rcpp::Named("lux") = lux_array
-        // Rcpp::Named("button") = button_array
     );
 }
