@@ -38,7 +38,7 @@ readGENEActiv = function(filename, start = 0, end = 0,
 
   return(invisible(list(
     header = header,
-    data = data.frame(time = rawdata$time, 
+    data = data.frame(time = rawdata$time / 1000, 
                       x = rawdata$x, y = rawdata$y, z = rawdata$z,
                       light = rawdata$lux * (Lux/Volts) / 9, # divide by 9 to match GENEAread output values
                       temperature = rawdata$T,
