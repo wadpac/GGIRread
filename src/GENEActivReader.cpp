@@ -176,7 +176,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             Rcout << " GENEActivReader.cpp tz_correction: " << tzone;
                             Rcout << " GENEActivReader.cpp timezone: " << timezone;
                             
-                            int tz_correction = ( tzone) * 1000; //; timezone +
+                            int tz_correction = (-timezone) * 1000; //; timezone + tzone
                             Rcout << " GENEActivReader.cpp tz_correction: " << tz_correction;
 
                             blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds + tz_correction;
