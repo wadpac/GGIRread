@@ -3,7 +3,7 @@ context("GENEActivReader")
 test_that("GENEActivReader reads data from file correctly", {
   skip_on_cran()
   binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
-  GENEActiv = GENEActivReader(filename = binfile, start = 1, end = 1)
+  GENEActiv = GENEActivReader(filename = binfile, start = 1, end = 1, tzone = 3600)
   
   expect_equal(GENEActiv$info$ReadOK, 1)
   expect_equal(GENEActiv$info$ReadErrors, 0)
@@ -32,7 +32,7 @@ test_that("GENEActivReader reads data from file correctly", {
   expect_equal(GBR$data$temperature[1], 21.5)
   expect_equal(GBR$data$light[2], 2.666667, tolerance = 4)
   expect_equal(GBR$data$z[300], -0.80836403369903564453, tolerance = 15)
-  cat(paste0("\ntimestamp 1 ", GBR$data$time[1]))
+  cat(paste0("\nUnit test, first timestamp: ", GBR$data$time[1]))
   expect_equal(GBR$data$time[1], 1369908774.500) # output is now expressed in seconds rather than milliseconds
   
 })

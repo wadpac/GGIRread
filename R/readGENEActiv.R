@@ -1,11 +1,8 @@
 readGENEActiv = function(filename, start = 0, end = 0,
                               progress_bar = FALSE) {
   
-  rawdata = GENEActivReader(filename = filename,
-                            start = start, end = end, 
-                            progress_bar = progress_bar)
-  
-  # Extract additional information from the fileheader
+ 
+  # Extract information from the fileheader
   suppressWarnings({fh = readLines(filename, 69)})
   
   SN = gsub(pattern = "Device Unique Serial Code:", replacement = "",
@@ -19,11 +16,17 @@ readGENEActiv = function(filename, start = 0, end = 0,
   
   tzone = gsub(pattern = "Time Zone:", replacement = "",
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
-  tz_offset = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600 * 1000
+  tzone = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600
   
-  cat(paste0("\ntz_offsetz: ", tz_offset))
+  cat(paste0("\nreadGENEActiv tz_offsetz: ",tzone))
   
-  rawdata$time  = rawdata$time + tz_offset 
+  
+  
+  rawdata = GENEActivReader(filename = filename,
+                            start = start, end = end, 
+                            progress_bar = progress_bar, tzone = tzone)
+  
+  # rawdata$time  = rawdata$time + tz_offset * 1000 # no needed anymore to correct data
   
   header = list(serial_number = SN,
                       firmware = firmware,

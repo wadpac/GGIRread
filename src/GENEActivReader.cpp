@@ -113,7 +113,7 @@ int Bin2Dec(int n) {
 // some include and will not compile:
 // [[Rcpp::export]]
 Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::size_t end = 0,
-                           bool progress_bar = false) {
+                           bool progress_bar = false, int tzone = 0) {
     int fileHeaderSize = 59;
     int linesToAxesCalibration = 47;
     int blockHeaderSize = 9;
@@ -172,7 +172,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                             int milliseconds;
                             ss >> milliseconds;
                             auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds; // - timezone * 1000
+                            blockTime = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() + milliseconds + tzone * 1000;
                         } else if (i == 5) {
                             std::stringstream ss(header);
                             ss.ignore(max_streamsize, ':');

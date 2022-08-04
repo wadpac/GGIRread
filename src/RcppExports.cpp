@@ -22,8 +22,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // GENEActivReader
-Rcpp::List GENEActivReader(std::string filename, std::size_t start, std::size_t end, bool progress_bar);
-RcppExport SEXP _GGIRread_GENEActivReader(SEXP filenameSEXP, SEXP startSEXP, SEXP endSEXP, SEXP progress_barSEXP) {
+Rcpp::List GENEActivReader(std::string filename, std::size_t start, std::size_t end, bool progress_bar, int tzone);
+RcppExport SEXP _GGIRread_GENEActivReader(SEXP filenameSEXP, SEXP startSEXP, SEXP endSEXP, SEXP progress_barSEXP, SEXP tzoneSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,7 +31,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::size_t >::type start(startSEXP);
     Rcpp::traits::input_parameter< std::size_t >::type end(endSEXP);
     Rcpp::traits::input_parameter< bool >::type progress_bar(progress_barSEXP);
-    rcpp_result_gen = Rcpp::wrap(GENEActivReader(filename, start, end, progress_bar));
+    Rcpp::traits::input_parameter< int >::type tzone(tzoneSEXP);
+    rcpp_result_gen = Rcpp::wrap(GENEActivReader(filename, start, end, progress_bar, tzone));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -53,7 +54,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_GGIRread_AxivityNumUnpack", (DL_FUNC) &_GGIRread_AxivityNumUnpack, 1},
-    {"_GGIRread_GENEActivReader", (DL_FUNC) &_GGIRread_GENEActivReader, 4},
+    {"_GGIRread_GENEActivReader", (DL_FUNC) &_GGIRread_GENEActivReader, 5},
     {"_GGIRread_resample", (DL_FUNC) &_GGIRread_resample, 5},
     {NULL, NULL, 0}
 };
