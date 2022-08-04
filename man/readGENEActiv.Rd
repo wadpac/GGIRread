@@ -8,7 +8,7 @@
   (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
 }
 \usage{
-  readGENEActiv(filename, start = 0L, end = 0L, progress_bar = FALSE)
+  readGENEActiv(filename, start = 0L, end = 0L, progress_bar = FALSE, desiredtz = "")
 }
 \arguments{
   \item{filename}{
@@ -22,6 +22,9 @@
   }
   \item{progress_bar}{
     Boolean
+  }
+  \item{desiredtz}{
+    Character, timezone database name.
   }
 }
 \details{
