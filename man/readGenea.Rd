@@ -16,11 +16,11 @@
     filename (required)
   }
   \item{start}{
-     start point for reading data, this can either be a timestamp
+     start point for reading data, this can either be a timestamp in POSIXct format
      "year-month-day hr:min:sec" or a page number (optional)
   }
   \item{end}{
-    end point for reading data, this can either be a timestamp 
+    end point for reading data, this can either be a timestamp in POSIXct format
     "year-month-day hr:min:sec" or a page number (optional)
   }
 }
