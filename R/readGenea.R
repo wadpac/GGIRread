@@ -1,4 +1,4 @@
-readGenea = function(input_file, start = 0, end = 0) {
+readGenea = function(filename, start = 0, end = 0) {
 
   int16 = function(x) {
     x[x < -32768] = -32768
@@ -308,7 +308,7 @@ readGenea = function(input_file, start = 0, end = 0) {
   timerstart = as.numeric(Sys.time())
   nargin = length(as.list(match.call())) - 1
   if (nargin < 1) {
-    input_file = "out.bin"
+    filename = "out.bin"
   }
   ## Start from start of file
   if (nargin < 2) {
@@ -329,11 +329,11 @@ readGenea = function(input_file, start = 0, end = 0) {
   pagesize = 2048
   #G = 1
   hnames = hvalues = vector()
-  fid = file(input_file, "rb")
+  fid = file(filename, "rb")
   on.exit({
     close(fid)
   })
-  filelen = file.info(input_file)$size
+  filelen = file.info(filename)$size
   ## Get time arguments into a standard form
   t_start = as.numeric(as.POSIXct(start, origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
   t_end = as.numeric(as.POSIXct(end,origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"

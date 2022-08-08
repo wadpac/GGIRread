@@ -1,9 +1,9 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.0-1 (release date:28-07-2022)}{
+\section{Changes in version 0.0-1 (release date:10-08-2022)}{
     \itemize{
-      \item First release with copies of the functions resample, g.cwaread and g.binread from the GGIR package
+      \item First release with functionality for reading Axivity .cwa, GENEActiv .bin, and Genea, .bin data.
     }
 }
 

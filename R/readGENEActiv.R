@@ -1,5 +1,5 @@
-readGENEActiv = function(filename, start = 0, end = 0,
-                              progress_bar = FALSE, desiredtz = "") {
+readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE, 
+                         desiredtz = "", configtz = NULL) {
   
   # Extract information from the fileheader
   suppressWarnings({fh = readLines(filename, 69)})
@@ -19,10 +19,14 @@ readGENEActiv = function(filename, start = 0, end = 0,
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
   tzone = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600
   
+  # Read acceleration, lux and temperature data
   rawdata = GENEActivReader(filename = filename,
                             start = start, end = end, 
                             progress_bar = progress_bar)
   
+  rawdata$time = rawdata$time / 1000
+  
+  # Construct header object
   header = list(serial_number = SN,
                       firmware = firmware,
                       tzone = tzone,
@@ -31,17 +35,26 @@ readGENEActiv = function(filename, start = 0, end = 0,
                       ReadErrors = rawdata$info$ReadErrors,
                       numBlocksTotal = rawdata$info$numBlocksTotal,
                       StarTime = starttime)
-  rawdata$time = rawdata$time / 1000
-  starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS")
+  
+  # Establish starttime in the correct timezone
+  if (is.null(configtz)) {
+    starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
+  } else {
+    starttime_posix = as.POSIXct(x = starttime, tz = configtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
+    starttime_posix = as.POSIXlt(format(starttime_posix, tz = desiredtz, usetz = TRUE),tz = desiredtz)
+  }
+  
+  # Correct timestamps
   page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
   starttime_num = as.numeric(starttime_posix) + tzone + 5 + page_offset
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
+  
   return(invisible(list(
     header = header,
-    data = data.frame(time = rawdata$time, 
+    data.out = data.frame(time = rawdata$time, 
                       x = rawdata$x, y = rawdata$y, z = rawdata$z,
                       light = rawdata$lux * (Lux/Volts) / 9, # divide by 9 to match GENEAread output values
-                      temperature = rawdata$T,
+                      temperature = rawdata$temperature,
                       stringsAsFactors = TRUE)
   )))
 }

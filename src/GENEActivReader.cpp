@@ -121,7 +121,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
     int errCounter = 0;
 
     std::vector<long> time_array;
-    std::vector<float> x_array, y_array, z_array, T_array, lux_array;
+    std::vector<float> x_array, y_array, z_array, temperature_array, lux_array;
 
     auto max_streamsize = std::numeric_limits<std::streamsize>::max();
 
@@ -228,7 +228,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         x_array.push_back(x);
                         y_array.push_back(y);
                         z_array.push_back(z);
-                        T_array.push_back(temperature);
+                        temperature_array.push_back(temperature);
                         lux_array.push_back(lux);
                         hexPosition += 12;
                         i++;
@@ -275,7 +275,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         Rcpp::Named("x") = x_array,
         Rcpp::Named("y") = y_array,
         Rcpp::Named("z") = z_array,
-        Rcpp::Named("T") = T_array,
+        Rcpp::Named("temperature") = temperature_array,
         Rcpp::Named("lux") = lux_array
     );
 }

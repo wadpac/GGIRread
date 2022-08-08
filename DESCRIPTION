@@ -2,7 +2,7 @@ Package: GGIRread
 Type: Package
 Title: Read Raw Accelerometer Data Files
 Version: 0.0-1
-Date: 2022-07-29
+Date: 2022-08-10
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
              person(given = "Patrick",family = "Bos",
@@ -20,10 +20,9 @@ Description: Functions to read accelerometer data collected with wearable raw ac
 URL: https://github.com/wadpac/GGIRread/
 BugReports: https://github.com/wadpac/GGIRread/issues
 License: LGPL (>= 2.0, < 3) | file LICENSE
-Suggests: testthat, knitr
+Suggests: testthat
 Imports: matlab, bitops, Rcpp (>= 0.12.10)
 Depends: stats, utils, R (>= 3.5.0)
 NeedsCompilation: yes
 LinkingTo: Rcpp
-VignetteBuilder: knitr
 ByteCompile: yes

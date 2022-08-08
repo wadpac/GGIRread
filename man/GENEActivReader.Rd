@@ -1,41 +1,43 @@
 \name{GENEActivReader}
 \alias{GENEActivReader}
 \title{
-  Function to read binary files as produced by the GENEActiv accelerometer
+  Function (C++) to read binary files as produced by the GENEActiv accelerometer
 }
 \description{
-  For reading the binary data as collected with a Genea accelerometer 
-  (Unilever Discover, UK). For reading GENEActive binary data, see package GENEAread.
+  Function to read binary files as produced by the GENEActiv accelerometer by
+  ActivInsights Ltd https://activinsights.com/
 }
 \usage{
   GENEActivReader(filename, start = 0L, end = 0L, progress_bar = FALSE)
 }
 \arguments{
-  \item{filename}{
+   \item{filename}{
     filename (required)
   }
   \item{start}{
-     start point for reading data
+    start page for reading data
   }
   \item{end}{
-    end point for reading data
+    end page for reading data
   }
   \item{progress_bar}{
     Boolean
   }
 }
 \details{
-  If only \code{start} is defined then \code{GeneaBinReader} will read all data beyond
+  If only \code{start} page is defined then all data is read beyond
   \code{start} until the end of the file is reached
 }
 \value{
- \item{\code{rawxyz}}{matrix with raw x, y, and, z acceleration values}
-  \item{\code{header}}{file header}
-  \item{\code{timestamps1}}{timestamps for \code{rawxyz} in seconds since 1970-01-01 00:00}
-  \item{\code{timestamps2}}{timestamps for \code{rawxyz} in day time format }
-  \item{\code{batt.voltage}}{matrix with battery voltage and corresponding timestamps}
+  \item{info}{List with ReadOK (good=0 or error=1), ReadErrors (Count of pages with read errors), SampleRate (Hertz), numBlocksTotal}
+  \item{time}{Numeric vector with time in miliseconds since start page}
+  \item{x}{Numeric vector with x-axis acceleration in gravitational units}
+  \item{y}{Numeric vector with y-axis acceleration in gravitational units}
+  \item{z}{Numeric vector with z-axis acceleration in gravitational units}
+  \item{temperature}{matrix with battery voltage and corresponding timestamps}
+  \item{lux}{Numeric vector with lux values in Volts}
 }
 \author{
+  Patrick Bos <egpbos@gmail.com>
   Vincent T van Hees <v.vanhees@accelting.com>
-  Jing Hua Zhao <jinghua.zhao@mrc-epid.cam.ac.uk>
 }
