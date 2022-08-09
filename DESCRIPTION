@@ -2,7 +2,7 @@ Package: GGIRread
 Type: Package
 Title: Read Raw Accelerometer Data Files
 Version: 0.0-1
-Date: 2022-08-10
+Date: 2022-08-09
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
              person(given = "Patrick",family = "Bos",

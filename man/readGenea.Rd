@@ -35,6 +35,12 @@
   \item{\code{timestamps2}}{timestamps for \code{rawxyz} in day time format }
   \item{\code{batt.voltage}}{matrix with battery voltage and corresponding timestamps}
 }
+\examples{
+  \dontrun{
+    geneafile  = system.file("testfiles/genea_testfile.bin", package = "GGIRread")[1]
+    GENEA = readGenea(filename = geneafile, start = 0, end = 2)
+  }
+}
 \author{
   Vincent T van Hees <v.vanhees@accelting.com>
   Jing Hua Zhao <jinghua.zhao@mrc-epid.cam.ac.uk>

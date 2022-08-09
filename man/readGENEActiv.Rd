@@ -59,6 +59,13 @@
   \item{light}{Ligth values express in lux units}
   \item{temperature}{Temperature in Celsius}
 }
+\examples{
+  \dontrun{
+    binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
+    rdata = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = "Europe/London")
+  }
+}
+
 \author{
   Patrick Bos <egpbos@gmail.com>
   Vincent T van Hees <v.vanhees@accelting.com>

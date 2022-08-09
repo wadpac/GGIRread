@@ -28,7 +28,9 @@
   }
 }
 \examples{
-  \dontrun{
-    resample()
-  }
+  raw = cbind(1:10, 1:10, 1:10)
+  rawTime = seq(0.1, 1, by = 0.1)
+  time = seq(0.15001, 1.05001, by = 0.1)
+  stop = 10
+  dat_lin = resample(raw, rawTime, time, stop, type = 1)
 }
