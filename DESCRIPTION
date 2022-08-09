@@ -1,7 +1,7 @@
 Package: GGIRread
 Type: Package
 Title: Read Raw Accelerometer Data Files
-Version: 0.0-1
+Version: 0.1.0
 Date: 2022-08-09
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
@@ -11,7 +11,6 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   comment = c(ORCID = "0000-0002-6033-960X")),
              person("Jing Hua","Zhao",role="ctb"),
              person("Evgeny","Mirkes",role="ctb"),
-             person("Joan","Capdevila Pujol",role="ctb"),
              person("Dan","Jackson",role="ctb"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
