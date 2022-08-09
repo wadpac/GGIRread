@@ -5,7 +5,7 @@
 
 Functions for reading accelerometer data from the following file formats:
 
-Brand | Device name | file extension | GGIRread function
+Brand | Device name | File extension | GGIRread function
 ------ | ------- | ------- | ----------------
 Axivity Ltd https://axivity.com/ | AX3 and AX6 | .cwa | readAxivity
 ActivInsights Ltd https://activinsights.com/ | GENEActiv Original and Sleep | .bin | readGENEActiv
