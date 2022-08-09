@@ -1,4 +1,4 @@
-export(readGenea, readAxivity, readGENEActiv, GENEActivReader)
+export(readGenea, readAxivity, readGENEActiv, GENEActivReader, resample)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
