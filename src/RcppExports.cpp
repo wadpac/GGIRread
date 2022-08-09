@@ -50,15 +50,3 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-
-static const R_CallMethodDef CallEntries[] = {
-    {"_GGIRread_AxivityNumUnpack", (DL_FUNC) &_GGIRread_AxivityNumUnpack, 1},
-    {"_GGIRread_GENEActivReader", (DL_FUNC) &_GGIRread_GENEActivReader, 4},
-    {"_GGIRread_resample", (DL_FUNC) &_GGIRread_resample, 5},
-    {NULL, NULL, 0}
-};
-
-RcppExport void R_init_GGIRread(DllInfo *dll) {
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-    R_useDynamicSymbols(dll, FALSE);
-}
