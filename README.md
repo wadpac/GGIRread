@@ -2,4 +2,12 @@
 [![codecov](https://codecov.io/gh/wadpac/GGIRread/branch/main/graph/badge.svg?token=SNII9OKA4J)](https://codecov.io/gh/wadpac/GGIRread)
 
 # GGIRread
-Functions for reading accelerometer data files
+
+Functions for reading accelerometer data from the following file formats:
+
+Brand | Device name | file extension | GGIRread function
+------ | ------- | ------- | ----------------
+Axivity Ltd https://axivity.com/ | AX3 and AX6 | .cwa | readAxivity
+ActivInsights Ltd https://activinsights.com/ | GENEActiv Original and Sleep | .bin | readGENEActiv
+Unilever Discover (no longer manufacturer) | Genea | .bin | readGenea
+
