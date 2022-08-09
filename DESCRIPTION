@@ -15,7 +15,7 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
 Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
-Description: Functions to read accelerometer data collected with wearable raw acceleration sensors. The package has been developed and tested for binary data from 'GENEActiv' <https://www.activinsights.com/> and GENEA devices (not for sale), and .cwa-format data from 'Axivity' <https://axivity.com>. These devices are currently widely used in research on human daily physical activity.
+Description: Functions to read accelerometer data collected with wearable raw acceleration sensors. The package has been developed and tested for binary data from 'GENEActiv' <https://activinsights.com/> and GENEA devices (not for sale), and .cwa-format data from 'Axivity' <https://axivity.com>. These devices are currently widely used in research on human daily physical activity.
 URL: https://github.com/wadpac/GGIRread/
 BugReports: https://github.com/wadpac/GGIRread/issues
 License: LGPL (>= 2.0, < 3) | file LICENSE
