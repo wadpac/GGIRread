@@ -21,6 +21,7 @@ test_that("GENEActivReader reads data from file correctly", {
 
 test_that("readGENEActiv reads data from file correctly", {
   skip_on_cran()
+  options(digits.secs = 3)
   binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
   rdata = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = "Europe/London")
   
@@ -37,6 +38,25 @@ test_that("readGENEActiv reads data from file correctly", {
   expect_equal(rdata$data$temperature[1], 21.5)
   expect_equal(rdata$data$light[2], 2.666667, tolerance = 4)
   expect_equal(rdata$data$z[300], -0.80836403369903564453, tolerance = 15)
-  expect_equal(rdata$data$time[1], 1369908774.500) # output is now expressed in seconds rather than milliseconds
+  expect_equal(rdata$data$time[1], 1369905174.500) # output is now expressed in seconds rather than milliseconds
+  
+  
+  tzAms = "Europe/Amsterdam"
+  tzLon = "Europe/London"
+  
+  # desiredtz == configtz
+  rdata2 = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = tzLon, configtz = tzLon)
+  expect_equal(rdata2$data.out$time[1], 1369905174.500)
+  expect_equal(as.character(as.POSIXlt(rdata2$data.out$time[1], tz = tzLon, origin = "1970-01-01")), "2013-05-30 10:12:54.5")
+  
+  # desiredtz < configtz
+  rdata3 = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = tzLon, configtz = tzAms)
+  expect_equal(rdata3$data.out$time[1], 1369901574.500)
+  expect_equal(as.character(as.POSIXlt(rdata3$data.out$time[1], tz = tzLon, origin = "1970-01-01")), "2013-05-30 09:12:54.5")
+  
+  # desiredtz > configtz
+  rdata4 = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = tzAms, configtz = tzLon)  
+  expect_equal(rdata4$data.out$time[1], 1369905174.500)
+  expect_equal(as.character(as.POSIXlt(rdata4$data.out$time[1], tz = tzAms, origin = "1970-01-01")), "2013-05-30 11:12:54.5")
   
 })

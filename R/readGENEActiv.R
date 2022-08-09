@@ -36,17 +36,22 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
                       numBlocksTotal = rawdata$info$numBlocksTotal,
                       StarTime = starttime)
   
+  s0 = unlist(strsplit(starttime, ":"))
+  if (length(s0) == 4) {
+    starttime = paste0(s0[1], ":", s0[2], ":", s0[3], ".", s0[4])
+  }
+  
   # Establish starttime in the correct timezone
   if (is.null(configtz)) {
     starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
   } else {
-    starttime_posix = as.POSIXct(x = starttime, tz = configtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
-    starttime_posix = as.POSIXlt(format(starttime_posix, tz = desiredtz, usetz = TRUE),tz = desiredtz)
+    starttime_posix = as.POSIXlt(starttime, tz = configtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
+    starttime_posix = as.POSIXlt(as.numeric(starttime_posix), tz = desiredtz, origin = "1970-01-01")
   }
   
   # Correct timestamps
   page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
-  starttime_num = as.numeric(starttime_posix) + tzone + 5 + page_offset
+  starttime_num = as.numeric(starttime_posix) + 5 + page_offset #tzone +
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
   
   return(invisible(list(
