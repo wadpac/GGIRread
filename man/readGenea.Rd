@@ -36,10 +36,8 @@
   \item{\code{batt.voltage}}{matrix with battery voltage and corresponding timestamps}
 }
 \examples{
-  \dontrun{
-    geneafile  = system.file("testfiles/genea_testfile.bin", package = "GGIRread")[1]
-    GENEA = readGenea(filename = geneafile, start = 0, end = 2)
-  }
+  geneafile  = system.file("testfiles/genea_testfile.bin", package = "GGIRread")[1]
+  GENEA = readGenea(filename = geneafile, start = 0, end = 2)
 }
 \author{
   Vincent T van Hees <v.vanhees@accelting.com>

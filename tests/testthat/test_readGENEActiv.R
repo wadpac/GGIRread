@@ -21,7 +21,7 @@ test_that("GENEActivReader reads data from file correctly", {
 
 test_that("readGENEActiv reads data from file correctly", {
   skip_on_cran()
-  options(digits.secs = 3)
+  old <- options(digits.secs = 3)
   binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
   rdata = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = "Europe/London")
   
@@ -58,5 +58,5 @@ test_that("readGENEActiv reads data from file correctly", {
   rdata4 = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = tzAms, configtz = tzLon)  
   expect_equal(rdata4$data.out$time[1], 1369905174.500)
   expect_equal(as.character(as.POSIXlt(rdata4$data.out$time[1], tz = tzAms, origin = "1970-01-01")), "2013-05-30 11:12:54.5")
-  
+  options(old)
 })

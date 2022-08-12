@@ -7,14 +7,15 @@
 \description{
   This package offers a collection of functions to read data files from
   wearable accelerometers. Some functions were migrated from R package GGIR
-  to make GGIR more modular, while other functions are newly written.
+  to make GGIR more modular and to reduce it's complexity, while other functions
+  such as readGENEActiv (R) and GENEActivReader (C++) are newly written.
 }
 \details{
   \tabular{ll}{
   Package: \tab GGIRread\cr
   Type: \tab Package\cr
-  Version: \tab 0.1.0\cr
-  Date: \tab 2022-08-10\cr
+  Version: \tab 0.2.0\cr
+  Date: \tab 2022-08-12\cr
   License: \tab LGPL (>= 2.0, < 3)\cr
   }
 }
