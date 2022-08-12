@@ -45,7 +45,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #############################################################################
 
   # Internal functions
-  timestampDecoder = function(coded, fraction, shift) {
+  timestampDecoder = function(coded, fraction, shift, struc) {
     year = struc[[1]]
     if (year == 0) {
       # Extract parts of date
@@ -58,18 +58,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Form string representation of date and convert it to number
       year = as.numeric(as.POSIXct(
         paste0(year, "-", month, "-", day, " ", hours, ":", mins, ":", secs),
-        tz=configtz))
-    }
-    else{
+        tz = configtz))
+    } else {
       secs = bitwAnd(coded, 0x3fL)
       oldSecs = struc[[2]]
       if (secs < oldSecs)
         oldSecs = oldSecs - 60
       year = year + (secs - oldSecs)
     }
-    struc <<- list(year,secs)
+    struc <- list(year,secs)
     # Add fractional part and shift
-    return(year + fraction / 65536 + shift)
+    start = year + fraction / 65536 + shift
+    
+    invisible(list(start = start, struc = struc))
   }
 
   readHeader = function(fid, numDBlocks) {
@@ -92,10 +93,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Start from the file origin
     seek(fid,0)
     # Read block header and check correctness of name
-    idstr = suppressWarnings(readChar(fid,2,useBytes = TRUE)) #offset 0 1
+    idstr = suppressWarnings(readChar(fid, 2, useBytes = TRUE)) #offset 0 1
     if (idstr == "MD") {
       # It is correct header block read information from it
-      readChar(fid,2,useBytes = TRUE) #offset 2 3
+      readChar(fid, 2, useBytes = TRUE) #offset 2 3
       # hardware type: AX6 or AX3
       hwType = readBin(fid, raw(), size = 1) #offset 4
       if (hwType == "64") {
@@ -248,18 +249,18 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         frequency_data = temp
       }
       # Read data if necessary
-      if (complete){
-        if (packed){ #32 bit
+      if (complete) {
+        if (packed) { #32 bit
           # Read 4 byte for three measurements
           packedData = readBin(fid, integer(), size = 4, n = blockLength)
           # Unpack data
           data = AxivityNumUnpack(packedData)
           # data2 = numUnpack2(packedData)
           # Calculate number of bytes to skip
-          temp = 482 -  4 *(Naxes/3)* blockLength
+          temp = 482 -  4 * (Naxes/3) * blockLength
         } else {
           # Read unpacked data
-          xyz = readBin(fid, integer(), size = 2, n = blockLength*Naxes) #*3
+          xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes) #*3
           data = matrix(xyz,ncol=Naxes,byrow=T) #3
           # Calculate number of bytes to skip
           temp = 482 - (2 * Naxes * blockLength)
@@ -275,25 +276,29 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
           data[,c("x","y","z")] = data[,c("x","y","z")] * accelScale  #/ 256
 
         } else {
-          colnames(data)=c("gx","gy","gz", "x","y","z")
-          data[,c("gx","gy","gz")] = (data[,c("gx","gy","gz")] / 2^15)* gyroRange
+          colnames(data) = c("gx","gy","gz", "x","y","z")
+          data[,c("gx","gy","gz")] = (data[,c("gx","gy","gz")] / 2^15) * gyroRange
           data[,c("x","y","z")] = data[,c("x","y","z")] * accelScale
         }
       } else {
         suppressWarnings(readChar(fid, 482, useBytes = TRUE))
       }
-      l = list(
+      
+      tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc)
+      start = tsDeco$start
+      struc = tsDeco$struc
+      rawdata_list = list(
         frequency = frequency_data,
-        start = timestampDecoder(timeStamp, fractional,-shift / frequency_data),
+        start = start,
         temperature = temperature,
         battery = battery,
         light = light,
         length = blockLength
       )
-      if (complete){
-        l$data = data
+      if (complete) {
+        rawdata_list$data = data
       }
-      return(invisible(l))
+      return(invisible(rawdata_list))
     }
   }
 
@@ -360,7 +365,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   # Create progress bar if it is necessary
   if (progressBar)
-    pb = txtProgressBar(1, nr, style=3)
+    pb = txtProgressBar(1, nr, style = 3)
   pos = 1 # position of the first element to complete in data
   prevRaw = readDataBlock(fid) # Read the first block
   if (is.null(prevRaw)){
@@ -403,9 +408,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
     ###########################################################################
     # resampling of measurements
-    last = pos+200;
-    if (pos+200>nr) last = nr
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type=interpolationType)
+    last = pos + 200;
+    if (pos + 200 > nr) last = nr
+    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     # put result to specified position
     last = nrow(tmp) + pos - 1
     if (last>=pos) {
@@ -456,9 +461,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
     ###########################################################################
     # resampling of measurements
-    last = pos+200;
-    if (pos+200>nr) last = nr
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type=interpolationType)
+    last = pos + 200;
+    if (pos + 200 > nr) last = nr
+    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     # put result to specified position
     last = nrow(tmp) + pos - 1
     if (last>=pos){

@@ -1,8 +1,8 @@
 Package: GGIRread
 Type: Package
-Title: Read Raw Accelerometer Data Files
-Version: 0.1.0
-Date: 2022-08-09
+Title: Read Wearable Accelerometer Data Files
+Version: 0.2.0
+Date: 2022-08-12
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
              person(given = "Patrick",family = "Bos",
@@ -15,10 +15,10 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
 Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
-Description: Functions to read accelerometer data collected with wearable raw acceleration sensors. The package has been developed and tested for binary data from 'GENEActiv' <https://activinsights.com/> and GENEA devices (not for sale), and .cwa-format data from 'Axivity' <https://axivity.com>. These devices are currently widely used in research on human daily physical activity.
+Description: Reads wearable acceleratometer data from some of the sensor brands as used in sleep and physical activity research. Currently supported file types are: binary data from 'GENEActiv' <https://activinsights.com/>, binary data from GENEA devices (not for sale), and .cwa-format data from 'Axivity' <https://axivity.com>.
 URL: https://github.com/wadpac/GGIRread/
 BugReports: https://github.com/wadpac/GGIRread/issues
-License: LGPL (>= 2.0, < 3) | file LICENSE
+License: LGPL (>= 2.0, < 3)
 Suggests: testthat
 Imports: matlab, bitops, Rcpp (>= 0.12.10)
 Depends: stats, utils, R (>= 3.5.0)

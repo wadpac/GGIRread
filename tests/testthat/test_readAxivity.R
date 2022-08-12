@@ -25,7 +25,7 @@ test_that("readAxivity reads data from file correctly", {
 test_that("readAxivity reads timezones correctly", {
   skip_on_cran()
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
-  options(digits.secs = 3)
+  old <- options(digits.secs = 3)
   tzAms = "Europe/Amsterdam"
   tzLon = "Europe/London"
   # desiredtz == configtz
@@ -42,5 +42,5 @@ test_that("readAxivity reads timezones correctly", {
   tzeast = readAxivity(filename = cwafile, desiredtz = tzAms, configtz = tzLon, start = 1, end = 4)
   expect_equal(tzeast$data$time[1], 1551178509)
   expect_equal(as.character(as.POSIXlt(tzeast$data$time[1], tz = tzAms, origin = "1970-01-01")), "2019-02-26 11:55:09.000")
-  
+  options(old)
 })

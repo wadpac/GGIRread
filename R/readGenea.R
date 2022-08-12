@@ -216,13 +216,13 @@ readGenea = function(filename, start = 0, end = 0) {
         vprogress = (round(progress * 100))/100
         if (vprogress < 99 | ignore == 1) {
           if (minp < 10 && secp < 10)	{
-            cat(paste("0", minp, ":0", secp, "   ", vprogress, "%", sep = ""), "\n")
+            message(paste("0", minp, ":0", secp, "   ", vprogress, "%", sep = ""), "\n")
           } else if (minp < 10 && secp >= 10) {
-            cat(paste("0", minp, ":", secp, "   ", vprogress, "%", sep = ""), "\n")
+            message(paste("0", minp, ":", secp, "   ", vprogress, "%", sep = ""), "\n")
           } else if (minp >= 10 && secp < 10) {
-            cat(paste(minp, ":0", secp, "   ", vprogress, "%", sep = ""), "\n")
+            message(paste(minp, ":0", secp, "   ", vprogress, "%", sep = ""), "\n")
           } else {
-            cat(paste(minp, ":", secp, "   ", vprogress, "%", sep = ""), "\n")
+            message(paste(minp, ":", secp, "   ", vprogress, "%", sep = ""), "\n")
           }
           ignore = 1
         }

@@ -2,7 +2,7 @@ library(GGIRread)
 context("resample time series")
 test_that("resample produces correct interpolations according to interpolation technique", {
   skip_on_cran()
-  options(digits = 10)
+  old <- options(digits = 10)
   raw = cbind(1:10, 1:10, 1:10)
   rawTime = seq(0.1, 1, by = 0.1)
   time = seq(0.15001, 1.05001, by = 0.1)
@@ -21,5 +21,5 @@ test_that("resample produces correct interpolations according to interpolation t
   expect_equal(ncol(dat_nn), 3)
   expect_equal(dat_nn[,1], 2:10)
   expect_equal(dat_nn[,1], dat_nn[,2])
-  
+  options(old)
 })
