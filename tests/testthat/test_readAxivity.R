@@ -10,6 +10,8 @@ test_that("readAxivity reads data from file correctly", {
   expect_equal(AX3$data$time[5], 1551174909)
   expect_equal(AX3$data$temp[3], 18.65)
   expect_equal(floor(sum(abs(AX3$data[,2:4]))), 1407)
+  expect_equal(AX3$data[1,2], 0.8845225, tolerance = 3)
+  expect_equal(AX3$data[4,3], -0.34375, tolerance = 3)
  
   # ask for more data then there is in the file
   AX3b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 1000)
