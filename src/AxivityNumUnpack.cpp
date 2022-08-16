@@ -31,10 +31,10 @@ IntegerMatrix AxivityNumUnpack(IntegerVector pack) {
       z = z - 0x400;
   
     shift = (value >> 30) & 0x03;
-    x = x << shift;
-    y = y << shift;
-    z = z << shift;
-  
+    x = (x & 0xffffffff) << shift;
+    y = (y & 0xffffffff) << shift;
+    z = (z & 0xffffffff) << shift;
+    
     out(i, 0) = x;
     out(i, 1) = y;
     out(i, 2) = z;
