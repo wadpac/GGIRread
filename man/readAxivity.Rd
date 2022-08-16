@@ -45,8 +45,10 @@
   \item{\code{header}}{file header}
 }
 \examples{
-  cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
-  AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 2)
+  \donttest{
+    cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
+    AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 2)
+  }
 }
 \author{
   Evgeny Mirkes <em322@leicester.ac.uk>
