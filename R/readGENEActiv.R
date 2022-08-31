@@ -19,6 +19,18 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
   tzone = as.numeric(unlist(strsplit(tzone, "[:]| "))[2]) * 3600
   
+  Handedness = gsub(pattern = "Handedness Code:", replacement = "",
+            x = fh[grep(pattern = "Handedness Code", x = fh)[1]])
+  ID = gsub(pattern = "Subject Code:", replacement = "",
+            x = fh[grep(pattern = "Subject Code", x = fh)[1]])
+  
+  DeviceLocation = gsub(pattern = "Device Location Code:", replacement = "",
+            x = fh[grep(pattern = "Device Location Code", x = fh)[1]])
+  
+  DeviceModel = gsub(pattern = " ", replacement = "", x = gsub(pattern = "Device Model:", replacement = "",
+                        x = fh[grep(pattern = "Device Model", x = fh)[1]]))
+  
+  
   # Read acceleration, lux and temperature data
   rawdata = GENEActivReader(filename = filename,
                             start = start, end = end, 
@@ -28,13 +40,17 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   # Construct header object
   header = list(serial_number = SN,
-                      firmware = firmware,
-                      tzone = tzone,
-                      ReadOK = rawdata$info$ReadOK,
-                      SampleRate = rawdata$info$SampleRate,
-                      ReadErrors = rawdata$info$ReadErrors,
-                      numBlocksTotal = rawdata$info$numBlocksTotal,
-                      StarTime = starttime)
+                firmware = firmware,
+                tzone = tzone,
+                ReadOK = rawdata$info$ReadOK,
+                SampleRate = rawdata$info$SampleRate,
+                ReadErrors = rawdata$info$ReadErrors,
+                numBlocksTotal = rawdata$info$numBlocksTotal,
+                StarTime = starttime,
+                Handedness = Handedness,
+                RecordingID = ID,
+                DeviceLocation = DeviceLocation,
+                DeviceModel = DeviceModel)
   
   s0 = unlist(strsplit(starttime, ":"))
   if (length(s0) == 4) {
