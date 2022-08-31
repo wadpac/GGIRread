@@ -2,10 +2,10 @@
 \alias{resample}
 \docType{package}
 \title{
-  Simple function using Rcpp
+  Resample timeseries
 }
 \description{
-  Simple function using Rcpp
+  Resample single- or multi-variate time series using linear or nearest neighbour interpolation
 }
 \usage{
   resample(raw, rawTime, time, stop, type=1)	
