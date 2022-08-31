@@ -82,10 +82,10 @@ string Hex2Bin(const string &s){
       n = i - '0';
     else
       n = 10 + i - 'A';
-    for(int8_t j = 3; j >= 0; --j)
+    for(int8_t j = 3; j >= 0; --j) {
       out.push_back((n & (1<<j))? '1':'0');
+    }
   }
-  
   return out;
 }
 
@@ -210,12 +210,10 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         xRaw = getSignedIntFromHex(data.substr(hexPosition, 3));
                         yRaw = getSignedIntFromHex(data.substr(hexPosition + 3, 3));
                         zRaw = getSignedIntFromHex(data.substr(hexPosition + 6, 3));
-                        
-                        // get last 3 heximal plaes, which equals last 12 bits and convert to binary
-                        last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 3)));
+                        // get last 10th and 11th heximal places, and convert to binary
+                        last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 2)));
                         // split first 10 bit and convert to decimal
                         lux = Bin2Dec(last12 >> 2);
-                        
                         // Update values to calibrated measure (taken from GENEActiv manual)
                         x = (xRaw * 100. - mfrOffset[0]) / mfrGain[0];
                         y = (yRaw * 100. - mfrOffset[1]) / mfrGain[1];
@@ -223,7 +221,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
 
                         t = (double)blockTime + (double)i * (1.0 / freq) * 1000;  // Unix millis
                         lastvalue = t;
-
                         time_array.push_back(t);
                         x_array.push_back(x);
                         y_array.push_back(y);
@@ -232,9 +229,9 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         lux_array.push_back(lux);
                         hexPosition += 12;
                         i++;
-                    } catch (const std::exception &e) {
+                    } catch (const std::exception& ex) {
                         errCounter++;
-                        Rcerr << "data error at i = %d: %s\n" << i << e.what();
+                        Rcerr << "data error at i = %d: %s i: " << i << " " << ex.what() << "\n";
                         break;  // rest of this block could be corrupted
                     }
                 }
