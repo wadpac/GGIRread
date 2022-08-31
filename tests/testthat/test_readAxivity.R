@@ -1,7 +1,6 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
 test_that("readAxivity reads data from file correctly", {
-  skip_on_cran()
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
   expect_equal(AX3$header$device, "Axivity")
@@ -25,7 +24,6 @@ test_that("readAxivity reads data from file correctly", {
 })
 
 test_that("readAxivity reads timezones correctly", {
-  skip_on_cran()
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   old <- options(digits.secs = 3)
   tzAms = "Europe/Amsterdam"

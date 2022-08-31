@@ -1,7 +1,6 @@
 library(GGIRread)
 context("reading GENEActiv binary data")
 test_that("GENEActivReader reads data from file correctly", {
-  skip_on_cran()
   binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
   cppdata = GENEActivReader(filename = binfile, start = 1, end = 1, progress_bar = TRUE)
   
@@ -20,7 +19,6 @@ test_that("GENEActivReader reads data from file correctly", {
 })
 
 test_that("readGENEActiv reads data from file correctly", {
-  skip_on_cran()
   old <- options(digits.secs = 3)
   binfile  = system.file("testfiles/GENEActiv_testfile.bin", package = "GGIRread")[1]
   rdata = readGENEActiv(filename = binfile, start = 1, end = 1, desiredtz = "Europe/London")

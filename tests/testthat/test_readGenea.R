@@ -1,7 +1,6 @@
 library(GGIRread)
 context("reading Genea binary data")
 test_that("readGenea reads data from file correctly", {
-  skip_on_cran()
   geneafile  = system.file("testfiles/genea_testfile.bin", package = "GGIRread")[1]
   GENEA = readGenea(filename = geneafile, start = 0, end = 4)
   expect_equal(nrow(GENEA$header), 18)
