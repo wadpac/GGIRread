@@ -1,7 +1,12 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-
+\section{Changes in version 0.2.3 (release date:29-09-2022)}{
+    \itemize{
+      \item Changed POSIXlt to character conversion to be compatible with R-devel update svn revision r82904 (2022-09-24 19:32:52)
+      \item Tidying up namespace references
+    }
+}
 \section{Changes in version 0.2.2 (release date:31-08-2022)}{
     \itemize{
       \item Now also extracting GENEActiv RecordingID, Handedness, DeviceLocation and DeviceModel from header
