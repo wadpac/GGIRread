@@ -8,8 +8,6 @@
 
 #include <Rcpp.h>
 
-using namespace Rcpp;
-using namespace std;
 /**
  * Replicates bin file header, also calculates and returns
  * x/y/z gain/offset values along with number of pages of data in file bin
@@ -73,9 +71,9 @@ int getSignedIntFromHex(const std::string &hex) {
     return rawVal;
 }
 
-string Hex2Bin(const string &s){
+std::string Hex2Bin(const std::string &s){
   // FROM: https://stackoverflow.com/questions/18310952/convert-strings-between-hex-format-and-binary-format
-  string out;
+  std::string out;
   for(auto i: s){
     uint8_t n;
     if(i <= '9' and i >= '0')
@@ -134,7 +132,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         int mfrOffset[3];
         int numBlocksTotalint = parseBinFileHeader(input_file, fileHeaderSize, linesToAxesCalibration, mfrGain, mfrOffset);
         if (numBlocksTotalint < 0) {
-          Rcout << "WARNING: numBlocksTotal read in from header is negative, file corrupted?\n";
+          Rcpp::Rcout << "WARNING: numBlocksTotal read in from header is negative, file corrupted?\n";
         }
         numBlocksTotal = numBlocksTotalint;
 
@@ -182,7 +180,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         }
                     } catch (const std::exception &e) {
                         errCounter++;
-                        Rcerr << "header error: %s\n" << e.what();
+                        Rcpp::Rcerr << "header error: %s\n" << e.what();
                         continue;
                     }
                 }
@@ -231,7 +229,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         i++;
                     } catch (const std::exception& ex) {
                         errCounter++;
-                        Rcerr << "data error at i = %d: %s i: " << i << " " << ex.what() << "\n";
+                        Rcpp::Rcerr << "data error at i = %d: %s i: " << i << " " << ex.what() << "\n";
                         break;  // rest of this block could be corrupted
                     }
                 }
@@ -248,14 +246,14 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
 
             if (progress_bar) {
                 if ((blockCount % 10000 == 0) || (blockCount == numBlocksTotal)) {
-                    Rcout << "Reading file... %lu%%\r" << (blockCount * 100 / numBlocksTotal);
+                    Rcpp::Rcout << "Reading file... %lu%%\r" << (blockCount * 100 / numBlocksTotal);
                 }
             }
 
         }
         statusOK = 1;
     } catch (const std::exception &e) {
-        Rcerr << "an error occurred while reading!\n%s\n" << e.what();
+        Rcpp::Rcerr << "an error occurred while reading!\n%s\n" << e.what();
         statusOK = 0;
     }
 
