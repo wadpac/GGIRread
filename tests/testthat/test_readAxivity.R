@@ -31,16 +31,19 @@ test_that("readAxivity reads timezones correctly", {
   # desiredtz == configtz
   tzequal = readAxivity(filename = cwafile, desiredtz = tzLon, configtz = tzLon, start = 1, end = 4)
   expect_equal(tzequal$data$time[1], 1551178509)
-  expect_equal(as.character(as.POSIXlt(tzequal$data$time[1], tz = tzLon, origin = "1970-01-01")), "2019-02-26 10:55:09.000")
+  expect_equal(format(as.POSIXlt(tzequal$data$time[1], tz = tzLon,
+                                       origin = "1970-01-01")), "2019-02-26 10:55:09.000")
   
   # desiredtz < configtz
   tzwest = readAxivity(filename = cwafile, desiredtz = tzLon, configtz = tzAms, start = 1, end = 4)
   expect_equal(tzwest$data$time[1], 1551174909)
-  expect_equal(as.character(as.POSIXlt(tzwest$data$time[1], tz = tzLon, origin = "1970-01-01")), "2019-02-26 09:55:09.000")
+  expect_equal(format(as.POSIXlt(tzwest$data$time[1], tz = tzLon, 
+                                       origin = "1970-01-01")), "2019-02-26 09:55:09.000")
   
   # desiredtz > configtz
   tzeast = readAxivity(filename = cwafile, desiredtz = tzAms, configtz = tzLon, start = 1, end = 4)
   expect_equal(tzeast$data$time[1], 1551178509)
-  expect_equal(as.character(as.POSIXlt(tzeast$data$time[1], tz = tzAms, origin = "1970-01-01")), "2019-02-26 11:55:09.000")
+  expect_equal(format(as.POSIXlt(tzeast$data$time[1], tz = tzAms, 
+                                       origin = "1970-01-01")), "2019-02-26 11:55:09.000")
   options(old)
 })
