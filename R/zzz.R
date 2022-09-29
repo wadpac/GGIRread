@@ -1,6 +1,6 @@
 .onAttach <- function(...) {
   if (!interactive()) return()
-  pkgs <- available.packages()
+  pkgs <- utils::available.packages()
   cran_version <- package_version(pkgs[which(pkgs[,1] == "GGIRread"),"Version"])
   local_version <- utils::packageVersion("GGIRread")
   behind_cran <- cran_version > local_version
