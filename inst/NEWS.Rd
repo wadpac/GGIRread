@@ -5,6 +5,7 @@
     \itemize{
       \item Changed POSIXlt to character conversion to be compatible with R-devel update svn revision r82904 (2022-09-24 19:32:52)
       \item Tidying up namespace references
+      \item Added zzz function to auto-check onattach package version relative to CRAN
     }
 }
 \section{Changes in version 0.2.2 (release date:31-08-2022)}{
