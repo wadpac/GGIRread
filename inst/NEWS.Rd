@@ -1,9 +1,16 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.2.4 (release date:07-10-2022)}{
+    \itemize{
+      \item Adding readWav function to read data stored with the OMGUI software by
+      Axivity Ltd
+    }
+}
 \section{Changes in version 0.2.3 (release date:29-09-2022)}{
     \itemize{
-      \item Changed POSIXlt to character conversion to be compatible with R-devel update svn revision r82904 (2022-09-24 19:32:52)
+      \item Changed POSIXlt to character conversion to be compatible with R-devel
+      update svn revision r82904 (2022-09-24 19:32:52)
       \item Tidying up namespace references
       \item Added zzz function to auto-check onattach package version relative to CRAN
     }
