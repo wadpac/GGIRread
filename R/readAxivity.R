@@ -56,7 +56,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       mins = bitwAnd(bitwShiftR(coded, 6), 0x3fL)
       secs = bitwAnd(coded, 0x3fL)
       # Form string representation of date and convert it to number
-      year = as.numeric(fasttime::fastPOSIXct(
+      year = as.numeric(lubridate::ymd_hms(
         paste0(year, "-", month, "-", day, " ", hours, ":", mins, ":", secs),
         tz = configtz))
     } else {
