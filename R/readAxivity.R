@@ -73,80 +73,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     invisible(list(start = start, struc = struc))
   }
 
-  readHeader = function(fid, numDBlocks) {
-    # fid is file identifier
-    # numDBlocks is number of data blocks
-    #
-    # Read file header and return it as a list with following elements
-    #   uniqueSerialCode is unque serial code of used device
-    #   frequency is measurement frequency. All data will be resampled
-    #       for this frequency.
-    #   start is timestamp in numeric form. To get text representation
-    #       it is enough to use
-    #           as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
-    #   device is "Axivity"
-    #   firmwareVersion is version of firmware
-    #   blocks is number of datablocks with 80 or 120 observations in each
-    #       Unfortunately frequency of measurement is varied in this device.
-    #
-
-    # Start from the file origin
-    seek(fid,0)
-    # Read block header and check correctness of name
-    idstr = readChar(fid, 2, useBytes = TRUE) #offset 0 1
-    if (idstr == "MD") {
-      # It is correct header block read information from it
-      readChar(fid, 2, useBytes = TRUE) #offset 2 3
-      # hardware type: AX6 or AX3
-      hwType = readBin(fid, raw(), size = 1) #offset 4
-      if (hwType == "64") {
-        hardwareType = "AX6"
-      } else {
-        hardwareType = "AX3"
-      }
-      # session id and device id
-      lowerDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 5 6
-      sessionID = readBin(fid, integer(), size = 4) #offset 7 8 9 10
-      upperDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 11 12
-      if (upperDeviceId >= 65535) upperDeviceId = 0
-      uniqueSerialCode = upperDeviceId * 65536 + lowerDeviceId
-      # suppressWarnings(readChar(fid, 23, useBytes = TRUE)) #offset 13..35
-      seek(fid, 23, origin = 'current')
-      # sample rate and dynamic range accelerometer
-      samplerate_dynrange = readBin(fid, integer(), size = 1) #offset 36
-      frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-      if (samplerate_dynrange < 0) samplerate_dynrange = samplerate_dynrange + 256
-      accrange = bitwShiftR(16, (bitwShiftR(abs(samplerate_dynrange), 6)))
-      # suppressWarnings(readChar(fid, 4, useBytes = TRUE)) #offset 37..40
-      seek(fid, 4, origin = 'current')
-      version = readBin(fid, integer(), size = 1) #offset 41
-      # Skip 982 bytes and go to the first data block
-      # suppressWarnings(readChar(fid, 982, useBytes = TRUE)) #offset 42..1024
-      seek(fid, 982, origin = 'current')
-      # Read the first data block without data
-      datas = readDataBlock(fid, complete = FALSE)
-      if (is.null(datas)){
-        stop("Error in the first data block reading")
-      }
-      if (frequency_header != datas$frequency){
-        warning("Inconsistent value of measurement frequency: there is ",
-                frequency_header, " in header and ", datas$frequency, " in the first data block ")
-      }
-    } else {
-      return(invisible(NULL))
-    }
-    start = as.POSIXct(datas$start, origin = "1970-01-01", tz=desiredtz)
-
-    returnobject = list(
-      uniqueSerialCode = uniqueSerialCode, frequency = frequency_header,
-      start = start,
-      device = "Axivity", firmwareVersion = version, blocks = numDBlocks,
-      accrange = accrange, hardwareType = hardwareType
-    )
-    return(invisible(
-      returnobject
-    ))
-  }
+ 
 
   unsigned8 = function(x) {
     # Auxiliary function for normalisation of unsigned integers
@@ -164,11 +91,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
 
 
-  readDataBlock = function(fid, complete = TRUE){
+  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), header_accrange = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
-    #   start is start time in nummeric form. To create string representation
-    #       it is necesarry to use
+    #   start is start time in numeric form. To create string representation
+    #       it is necessary to use
     #           as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
     #   temperature is temperature for the block
     #   battery is battery charge for the block
@@ -179,21 +106,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #
 
     # Check the block header
-    idstr = readChar(fid,2,useBytes = TRUE) #suppressWarnings(
-    # idstr = "AX"
-    # seek(fid, 2, origin = 'current')
-    if (length(idstr) == 0 || idstr != "AX"){
-      print("SKIPPING BLOCK")
+    idstr = readChar(fid,2,useBytes = TRUE)
+    if (length(idstr) == 0 || idstr != "AX") {
       return(invisible(NULL))
     } else {
       # Read the data block. Extract several data fields
       # offset 4 contains u16 with timestamp offset
-      # suppressWarnings(readChar(fid, 2, useBytes = TRUE)) # skip packetlength
-      seek(fid, 2, origin = 'current')
+      seek(fid, 2, origin = 'current') # skip packetlength
       tsOffset = readBin(fid, integer(), size = 2)
       # read data for timestamp u32 in offset 14
-      # suppressWarnings(readChar(fid, 8, useBytes = TRUE)) # skip sessionId and sequenceID
-      seek(fid, 8, origin = 'current')
+      seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
       timeStamp = readBin(fid, integer(), size = 4)
       # Get light u16 in offset 18
       offset18 = unsigned16(readBin(fid, integer(), size = 2))
@@ -201,7 +123,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # light = 2 ^ (3.0 * (offset18 / 512.0 + 1.0)) # used for AX3, but this seems to have been incorrect
       light = bitwAnd(offset18, 0x03ffL) # this seems to match better what is shown in OMGUI
       accelScaleCode = bitwShiftR(offset18, 13)
-      accelScale = 1 / (2^(8+accelScaleCode)) # abs removed
+      accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
       gyroRangeCode = floor(offset18 / 1024) %% 8
       gyroRange = 8000 / (2^gyroRangeCode)
 
@@ -209,8 +131,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Read and recalculate temperature u16 in offset 20
       temperature = (150.0 * readBin(fid, integer(), size = 2) - 20500.0) / 1000.0;
       # Read and recalculate battery charge u8 in offset 23
-      # suppressWarnings(readChar(fid, 1, useBytes = TRUE)) # skip events
-      seek(fid, 1, origin = 'current')
+      seek(fid, 1, origin = 'current') # skip events
       battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
       # sampling rate in one of file format U8 in offset 24
       samplerate_dynrange = readBin(fid, integer(), size = 1)
@@ -270,29 +191,27 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         } else {
           # Read unpacked data
           xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes) #*3
-          data = matrix(xyz,ncol=Naxes,byrow=T) #3
+          data = matrix(xyz, ncol = Naxes,byrow = T) #3
           # Calculate number of bytes to skip
           temp = 482 - (2 * Naxes * blockLength)
         }
         # Skip the rest of block
-        # suppressWarnings(readChar(fid, temp, useBytes = TRUE))
         seek(fid, temp, origin = 'current')
         
         # Set names and Normalize accelerations
-        if (is.na(header$accrange == TRUE)) {
-          header$accrange = 8
+        if (is.na(header_accrange == TRUE)) {
+          header_accrange = 8
         }
         if (Naxes == 3) {
-          colnames(data)=c("x","y","z")
-          data[,c("x","y","z")] = data[,c("x","y","z")] * accelScale  #/ 256
+          colnames(data) = c("x", "y", "z")
+          data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale  #/ 256
 
         } else {
-          colnames(data) = c("gx","gy","gz", "x","y","z")
-          data[,c("gx","gy","gz")] = (data[,c("gx","gy","gz")] / 2^15) * gyroRange
-          data[,c("x","y","z")] = data[,c("x","y","z")] * accelScale
+          colnames(data) = c("gx", "gy", "gz", "x", "y", "z")
+          data[,c("gx", "gy", "gz")] = (data[,c("gx", "gy", "gz")] / 2^15) * gyroRange
+          data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale
         }
       } else {
-        # suppressWarnings(readChar(fid, 482, useBytes = TRUE))
         seek(fid, 482, origin = 'current')
       }
       
@@ -313,7 +232,77 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       return(invisible(rawdata_list))
     }
   }
-
+  readHeader = function(fid, numDBlocks) {
+    # fid is file identifier
+    # numDBlocks is number of data blocks
+    #
+    # Read file header and return it as a list with following elements
+    #   uniqueSerialCode is unque serial code of used device
+    #   frequency is measurement frequency. All data will be resampled
+    #       for this frequency.
+    #   start is timestamp in numeric form. To get text representation
+    #       it is enough to use
+    #           as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
+    #   device is "Axivity"
+    #   firmwareVersion is version of firmware
+    #   blocks is number of datablocks with 80 or 120 observations in each
+    #       Unfortunately frequency of measurement is varied in this device.
+    #
+    
+    # Start from the file origin
+    seek(fid,0)
+    # Read block header and check correctness of name
+    idstr = readChar(fid, 2, useBytes = TRUE) #offset 0 1
+    if (idstr == "MD") {
+      # It is correct header block read information from it
+      readChar(fid, 2, useBytes = TRUE) #offset 2 3
+      # hardware type: AX6 or AX3
+      hwType = readBin(fid, raw(), size = 1) #offset 4
+      if (hwType == "64") {
+        hardwareType = "AX6"
+      } else {
+        hardwareType = "AX3"
+      }
+      # session id and device id
+      lowerDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 5 6
+      sessionID = readBin(fid, integer(), size = 4) #offset 7 8 9 10
+      upperDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 11 12
+      if (upperDeviceId >= 65535) upperDeviceId = 0
+      uniqueSerialCode = upperDeviceId * 65536 + lowerDeviceId
+      seek(fid, 23, origin = 'current') #offset 13..35
+      # sample rate and dynamic range accelerometer
+      samplerate_dynrange = readBin(fid, integer(), size = 1) #offset 36
+      frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+      if (samplerate_dynrange < 0) samplerate_dynrange = samplerate_dynrange + 256
+      accrange = bitwShiftR(16, (bitwShiftR(abs(samplerate_dynrange), 6)))
+      seek(fid, 4, origin = 'current') #offset 37..40
+      version = readBin(fid, integer(), size = 1) #offset 41
+      # Skip 982 bytes and go to the first data block
+      seek(fid, 982, origin = 'current') #offset 42..1024
+      # Read the first data block without data
+      datas = readDataBlock(fid, complete = FALSE)
+      if (is.null(datas)) {
+        stop("Error in the first data block reading")
+      }
+      if (frequency_header != datas$frequency) {
+        warning("Inconsistent value of measurement frequency: there is ",
+                frequency_header, " in header and ", datas$frequency, " in the first data block ")
+      }
+    } else {
+      return(invisible(NULL))
+    }
+    start = as.POSIXct(datas$start, origin = "1970-01-01", tz = desiredtz)
+    
+    returnobject = list(
+      uniqueSerialCode = uniqueSerialCode, frequency = frequency_header,
+      start = start,
+      device = "Axivity", firmwareVersion = version, blocks = numDBlocks,
+      accrange = accrange, hardwareType = hardwareType
+    )
+    return(invisible(
+      returnobject
+    ))
+  }
   ################################################################################################
   # Main function
 
@@ -338,7 +327,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   origin = as.numeric(header$start)
   step = 1/header$frequency
   if (is.numeric(start)) {
-    if (start<0)
+    if (start < 0)
       start = 0
     start = origin + start * pageLength * step
   }
@@ -357,7 +346,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # reinitiate file and start reading of data and sesrch the beginning of required
   seek(fid,0)
   # skip header
-  # suppressWarnings(readChar(fid,1024,useBytes = TRUE))
   seek(fid, 1024, origin = 'current')
   # Create data for results
   timeRes = seq(start, end, step)
@@ -379,8 +367,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   if (progressBar)
     pb = txtProgressBar(1, nr, style = 3)
   pos = 1 # position of the first element to complete in data
-  prevRaw = readDataBlock(fid) # Read the first block
-  if (is.null(prevRaw)){
+  prevRaw = readDataBlock(fid, struc = struc, header_accrange = header$accrange) # Read the first block
+  if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL))) # <= list() inserted by VvH 23/4/2017
   }
   rawTime = vector(mode = "numeric", 300)
@@ -391,7 +379,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   for (i in 2:numDBlocks) {
-    raw = readDataBlock(fid)
+    raw = readDataBlock(fid, header_accrange = header$accrange)
     if (is.null(raw)) {
       break
     }
@@ -399,7 +387,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevStart = prevRaw$start
     prevLength = prevRaw$length
     # Check are previous data block necessary
-    if (raw$start<start){
+    if (raw$start < start){
       prevRaw = raw
       next
     }
@@ -425,7 +413,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     # put result to specified position
     last = nrow(tmp) + pos - 1
-    if (last>=pos) {
+    if (last >= pos) {
       accelRes[pos:last,] = tmp
     }
 
@@ -434,7 +422,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawAccel[1,] = rawAccel[rawLast,]
     rawPos = 2
     # Fill light, temp and battery
-    if (last>=pos) {
+    if (last >= pos) {
       light[pos:last] = prevRaw$light
       temp[pos:last] = prevRaw$temperature
       battery[pos:last] = prevRaw$battery
@@ -478,7 +466,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     # put result to specified position
     last = nrow(tmp) + pos - 1
-    if (last>=pos){
+    if (last >= pos) {
       accelRes[pos:last,] = tmp
       # Fill light, temp and battery
       light[pos:last] = prevRaw$light
