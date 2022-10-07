@@ -56,7 +56,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       mins = bitwAnd(bitwShiftR(coded, 6), 0x3fL)
       secs = bitwAnd(coded, 0x3fL)
       # Form string representation of date and convert it to number
-      year = as.numeric(as.POSIXct(
+      year = as.numeric(fasttime::fastPOSIXct(
         paste0(year, "-", month, "-", day, " ", hours, ":", mins, ":", secs),
         tz = configtz))
     } else {
@@ -93,7 +93,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Start from the file origin
     seek(fid,0)
     # Read block header and check correctness of name
-    idstr = suppressWarnings(readChar(fid, 2, useBytes = TRUE)) #offset 0 1
+    idstr = readChar(fid, 2, useBytes = TRUE) #offset 0 1
     if (idstr == "MD") {
       # It is correct header block read information from it
       readChar(fid, 2, useBytes = TRUE) #offset 2 3
@@ -110,16 +110,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       upperDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 11 12
       if (upperDeviceId >= 65535) upperDeviceId = 0
       uniqueSerialCode = upperDeviceId * 65536 + lowerDeviceId
-      suppressWarnings(readChar(fid, 23, useBytes = TRUE)) #offset 13..35
+      # suppressWarnings(readChar(fid, 23, useBytes = TRUE)) #offset 13..35
+      seek(fid, 23, origin = 'current')
       # sample rate and dynamic range accelerometer
       samplerate_dynrange = readBin(fid, integer(), size = 1) #offset 36
       frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
       if (samplerate_dynrange < 0) samplerate_dynrange = samplerate_dynrange + 256
       accrange = bitwShiftR(16, (bitwShiftR(abs(samplerate_dynrange), 6)))
-      suppressWarnings(readChar(fid, 4, useBytes = TRUE)) #offset 37..40
+      # suppressWarnings(readChar(fid, 4, useBytes = TRUE)) #offset 37..40
+      seek(fid, 4, origin = 'current')
       version = readBin(fid, integer(), size = 1) #offset 41
       # Skip 982 bytes and go to the first data block
-      suppressWarnings(readChar(fid, 982, useBytes = TRUE)) #offset 42..1024
+      # suppressWarnings(readChar(fid, 982, useBytes = TRUE)) #offset 42..1024
+      seek(fid, 982, origin = 'current')
       # Read the first data block without data
       datas = readDataBlock(fid, complete = FALSE)
       if (is.null(datas)){
@@ -176,16 +179,21 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #
 
     # Check the block header
-    idstr = suppressWarnings(readChar(fid,2,useBytes = TRUE))
+    idstr = readChar(fid,2,useBytes = TRUE) #suppressWarnings(
+    # idstr = "AX"
+    # seek(fid, 2, origin = 'current')
     if (length(idstr) == 0 || idstr != "AX"){
+      print("SKIPPING BLOCK")
       return(invisible(NULL))
     } else {
       # Read the data block. Extract several data fields
       # offset 4 contains u16 with timestamp offset
-      suppressWarnings(readChar(fid, 2, useBytes = TRUE)) # skip packetlength
+      # suppressWarnings(readChar(fid, 2, useBytes = TRUE)) # skip packetlength
+      seek(fid, 2, origin = 'current')
       tsOffset = readBin(fid, integer(), size = 2)
       # read data for timestamp u32 in offset 14
-      suppressWarnings(readChar(fid, 8, useBytes = TRUE)) # skip sessionId and sequenceID
+      # suppressWarnings(readChar(fid, 8, useBytes = TRUE)) # skip sessionId and sequenceID
+      seek(fid, 8, origin = 'current')
       timeStamp = readBin(fid, integer(), size = 4)
       # Get light u16 in offset 18
       offset18 = unsigned16(readBin(fid, integer(), size = 2))
@@ -201,7 +209,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Read and recalculate temperature u16 in offset 20
       temperature = (150.0 * readBin(fid, integer(), size = 2) - 20500.0) / 1000.0;
       # Read and recalculate battery charge u8 in offset 23
-      suppressWarnings(readChar(fid, 1, useBytes = TRUE)) # skip events
+      # suppressWarnings(readChar(fid, 1, useBytes = TRUE)) # skip events
+      seek(fid, 1, origin = 'current')
       battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
       # sampling rate in one of file format U8 in offset 24
       samplerate_dynrange = readBin(fid, integer(), size = 1)
@@ -266,7 +275,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
           temp = 482 - (2 * Naxes * blockLength)
         }
         # Skip the rest of block
-        suppressWarnings(readChar(fid, temp, useBytes = TRUE))
+        # suppressWarnings(readChar(fid, temp, useBytes = TRUE))
+        seek(fid, temp, origin = 'current')
+        
         # Set names and Normalize accelerations
         if (is.na(header$accrange == TRUE)) {
           header$accrange = 8
@@ -281,7 +292,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
           data[,c("x","y","z")] = data[,c("x","y","z")] * accelScale
         }
       } else {
-        suppressWarnings(readChar(fid, 482, useBytes = TRUE))
+        # suppressWarnings(readChar(fid, 482, useBytes = TRUE))
+        seek(fid, 482, origin = 'current')
       }
       
       tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc)
@@ -345,8 +357,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # reinitiate file and start reading of data and sesrch the beginning of required
   seek(fid,0)
   # skip header
-  suppressWarnings(readChar(fid,1024,useBytes = TRUE))
-
+  # suppressWarnings(readChar(fid,1024,useBytes = TRUE))
+  seek(fid, 1024, origin = 'current')
   # Create data for results
   timeRes = seq(start, end, step)
   nr = length(timeRes) - 1
