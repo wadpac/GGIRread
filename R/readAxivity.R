@@ -1,7 +1,8 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
                      configtz = c(), interpolationType=1) {
   if (length(configtz) == 0) configtz = desiredtz
-  # Credits: The code in this function was contributed by Dr. Evgeny Mirkes (Leicester University, UK)
+  # Credits: The original version of the code in this function was 
+  # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
   # filename is namer of cwa file to read
   # start can be timestamp "year-month-day hr:min:sec" or non-negative integer
@@ -62,8 +63,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     } else {
       secs = bitwAnd(coded, 0x3fL)
       oldSecs = struc[[2]]
-      if (secs < oldSecs)
-        oldSecs = oldSecs - 60
+      if (secs < oldSecs) oldSecs = oldSecs - 60
       year = year + (secs - oldSecs)
     }
     struc <- list(year,secs)
@@ -73,8 +73,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     invisible(list(start = start, struc = struc))
   }
 
- 
-
   unsigned8 = function(x) {
     # Auxiliary function for normalisation of unsigned integers
     if (x < 0)
@@ -82,6 +80,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     else
       return(x)
   }
+  
   unsigned16 = function(x) {
     # Auxiliary function for normalisation of unsigned integers
     if (x < 0)
@@ -89,7 +88,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     else
       return(x)
   }
-
 
   readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), header_accrange = NULL){
     # Read one block of data and return list with following elements
@@ -364,12 +362,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Reading of data
 
   # Create progress bar if it is necessary
-  if (progressBar)
+  if (progressBar) {
     pb = txtProgressBar(1, nr, style = 3)
+  }
   pos = 1 # position of the first element to complete in data
   prevRaw = readDataBlock(fid, struc = struc, header_accrange = header$accrange) # Read the first block
   if (is.null(prevRaw)) {
-    return(invisible(list(header = header, data = NULL))) # <= list() inserted by VvH 23/4/2017
+    return(invisible(list(header = header, data = NULL)))
   }
   rawTime = vector(mode = "numeric", 300)
   if (header$hardwareType == "AX3") {
@@ -387,7 +386,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevStart = prevRaw$start
     prevLength = prevRaw$length
     # Check are previous data block necessary
-    if (raw$start < start){
+    if (raw$start < start) {
       prevRaw = raw
       next
     }
@@ -431,15 +430,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevRaw = raw
     pos = last + 1
     # Refresh progress bar if it is necessary
-    if (progressBar)
+    if (progressBar) {
       setTxtProgressBar(pb, pos)
+    }
     # Check do we need read any more data
-    if (pos > nr)
+    if (pos > nr) {
       break
+    }
   }
   #############################################################################
   # Process the last block of data if necessary
-  if (pos <= nr) { # & ignorelastblock == FALSE){ #ignorelastblock == FALSE added by VvH on 22-4-2017
+  if (pos <= nr) { # & ignorelastblock == FALSE) {
     # print("last block of data")
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
@@ -475,7 +476,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
   }
   #===============================================================================
-  # Added by VvH on 22-4-2017
   # Do not export sections of the data with zeros in all channels, because they were not actual recordings
   # zeros are introduced when the user asks for more data than then length of the recording
   emptydata = which(rowSums(accelRes) == 0 & temp == 0 & battery == 0 & light == 0)
