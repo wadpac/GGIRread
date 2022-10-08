@@ -1,5 +1,5 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
-                     configtz = c(), interpolationType=1) {
+                     configtz = c(), interpolationType=1, loadbattery = FALSE) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The original version of the code in this function was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -117,20 +117,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       timeStamp = readBin(fid, integer(), size = 4)
       # Get light u16 in offset 18
       offset18 = unsigned16(readBin(fid, integer(), size = 2))
-
       # light = 2 ^ (3.0 * (offset18 / 512.0 + 1.0)) # used for AX3, but this seems to have been incorrect
       light = bitwAnd(offset18, 0x03ffL) # this seems to match better what is shown in OMGUI
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
-      gyroRangeCode = floor(offset18 / 1024) %% 8
-      gyroRange = 8000 / (2^gyroRangeCode)
-
-
       # Read and recalculate temperature u16 in offset 20
       temperature = (150.0 * readBin(fid, integer(), size = 2) - 20500.0) / 1000.0;
-      # Read and recalculate battery charge u8 in offset 23
-      seek(fid, 1, origin = 'current') # skip events
-      battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
+      if (loadbattery == TRUE) {
+        # Read and recalculate battery charge u8 in offset 23
+        seek(fid, 1, origin = 'current') # skip events
+        battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
+      } else {
+        seek(fid, 2, origin = 'current') # skip events
+        battery = 0
+      }
       # sampling rate in one of file format U8 in offset 24
       samplerate_dynrange = readBin(fid, integer(), size = 1)
       # format of data in block u8  in offset 25
@@ -203,8 +203,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         if (Naxes == 3) {
           colnames(data) = c("x", "y", "z")
           data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale  #/ 256
-
         } else {
+          gyroRangeCode = floor(offset18 / 1024) %% 8
+          gyroRange = 8000 / (2^gyroRangeCode)
           colnames(data) = c("gx", "gy", "gz", "x", "y", "z")
           data[,c("gx", "gy", "gz")] = (data[,c("gx", "gy", "gz")] / 2^15) * gyroRange
           data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale
