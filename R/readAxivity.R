@@ -104,13 +104,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #
 
     # Check the block header
-    idstr = readChar(fid,2,useBytes = TRUE)
+    # idstr = readChar(fid,2,useBytes = TRUE)
+    # seek(fid, 2, origin = 'current') # idstr and assume it is AX
+    idstr = "AX"
     if (length(idstr) == 0 || idstr != "AX") {
       return(invisible(NULL))
     } else {
       # Read the data block. Extract several data fields
       # offset 4 contains u16 with timestamp offset
-      seek(fid, 2, origin = 'current') # skip packetlength
+      seek(fid, 4, origin = 'current') # skip packetlength
       tsOffset = readBin(fid, integer(), size = 2)
       # read data for timestamp u32 in offset 14
       seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
