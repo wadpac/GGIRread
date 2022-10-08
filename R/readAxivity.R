@@ -182,7 +182,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
           # Read 4 byte for three measurements
           packedData = readBin(fid, integer(), size = 4, n = blockLength)
           # Unpack data
-          data = AxivityNumUnpack(packedData)
+          data = AxivityNumUnpack(packedData) #GGIRread:::
           # data2 = numUnpack2(packedData)
           # Calculate number of bytes to skip
           temp = 482 -  4 * (Naxes/3) * blockLength
@@ -222,7 +222,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         temperature = temperature,
         battery = battery,
         light = light,
-        length = blockLength
+        length = blockLength,
+        struc = struc
       )
       if (complete) {
         rawdata_list$data = data
@@ -378,7 +379,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   for (i in 2:numDBlocks) {
-    raw = readDataBlock(fid, header_accrange = header$accrange)
+    raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc)
     if (is.null(raw)) {
       break
     }
@@ -390,6 +391,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       prevRaw = raw
       next
     }
+    struc = raw$struc
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
 
@@ -409,7 +411,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # resampling of measurements
     last = pos + 200;
     if (pos + 200 > nr) last = nr
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
+    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
     # put result to specified position
     last = nrow(tmp) + pos - 1
     if (last >= pos) {
