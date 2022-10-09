@@ -335,8 +335,14 @@ readGenea = function(filename, start = 0, end = 0) {
   })
   filelen = file.info(filename)$size
   ## Get time arguments into a standard form
-  t_start = as.numeric(as.POSIXct(start, origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
-  t_end = as.numeric(as.POSIXct(end,origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
+  if (is.character(start) == TRUE) {
+    t_start = as.numeric(as.POSIXct(start, tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
+    t_end = as.numeric(as.POSIXct(end, tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
+  } else {
+    # if time is numeric
+    t_start = as.numeric(as.POSIXct(start, origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
+    t_end = as.numeric(as.POSIXct(end, origin = "1970-01-01", tz = "Europe/London")) # should be in format "year-month-day hr:min:sec"
+  }
   ## read header
   out = getheader(fid)
   hvalues = out$hvalues
