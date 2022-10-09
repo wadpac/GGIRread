@@ -10,4 +10,4 @@ Brand | Device name | File extension | GGIRread function
 Axivity Ltd https://axivity.com/ | AX3 and AX6 | .cwa | readAxivity
 ActivInsights Ltd https://activinsights.com/ | GENEActiv Original and Sleep | .bin | readGENEActiv
 Unilever Discover Ltd | Genea (no longer manufactured) | .bin | readGenea
-
+Axivity Ltd https://axivity.com/ | AX3 | .wav | readWav

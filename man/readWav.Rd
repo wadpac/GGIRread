@@ -5,7 +5,7 @@
 }
 \description{
   Reads the wav accelerometer data format as stored with the OMGUI software
-  by Axivity Ltd
+  by Axivity Ltd and documented \href{https://github.com/digitalinteraction/openmovement/wiki/AX3-GUI#export-re-sampled-wav}{here}.
 }
 \usage{
   readWav(filename, start = 1, end = 100,units="minutes")
