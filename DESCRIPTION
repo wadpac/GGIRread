@@ -15,12 +15,12 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
 Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
-Description: Reads data collected from wearable acceleratometers as used in sleep and physical activity research. Currently supports file formats: binary data from 'GENEActiv' <https://activinsights.com/>, binary data from GENEA devices (not for sale), and .cwa-format data from 'Axivity' <https://axivity.com>. Primarily designed to complement R package GGIR <https://CRAN.R-project.org/package=GGIR>.
+Description: Reads data collected from wearable acceleratometers as used in sleep and physical activity research. Currently supports file formats: binary data from 'GENEActiv' <https://activinsights.com/>, binary data from GENEA devices (not for sale), and .cwa-format and .wav-format data from 'Axivity' <https://axivity.com>. Primarily designed to complement R package GGIR <https://CRAN.R-project.org/package=GGIR>.
 URL: https://github.com/wadpac/GGIRread/
 BugReports: https://github.com/wadpac/GGIRread/issues
 License: LGPL (>= 2.0, < 3)
 Suggests: testthat
-Imports: matlab, bitops, lubridate, fasttime, Rcpp (>= 0.12.10)
+Imports: matlab, bitops, lubridate, fasttime, Rcpp (>= 0.12.10), tuneR
 Depends: stats, utils, R (>= 3.5.0)
 NeedsCompilation: yes
 LinkingTo: Rcpp

@@ -1,15 +1,19 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.2.4 (release date:07-10-2022)}{
+\section{Changes in version 0.2.4 (release date:09-10-2022)}{
     \itemize{
-      \item Addressing POSIX errors in R-devel
-      \item Speeding up readAxivity by 40 percent
+      \item Addressing POSIX errors in R-devel.
+      \item Speeding up readAxivity function by approximately 40 percent.
+      \item Adding readWav function for reading accelerometer data stored in 
+      wav(Audio) format. This function was formerly known as g.wavread in the 
+      GGIR package but has been migrated here to make the GGIR package lighter.
     }
 }
 \section{Changes in version 0.2.3 (release date:29-09-2022)}{
     \itemize{
-      \item Changed POSIXlt to character conversion to be compatible with R-devel update svn revision r82904 (2022-09-24 19:32:52)
+      \item Changed POSIXlt to character conversion to be compatible with R-devel
+      update svn revision r82904 (2022-09-24 19:32:52)
       \item Tidying up namespace references
       \item Added zzz function to auto-check onattach package version relative to CRAN
     }
