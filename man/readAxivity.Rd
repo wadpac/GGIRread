@@ -8,7 +8,7 @@
 }
 \usage{
   readAxivity(filename, start = 0, end = 0, progressBar = FALSE, 
-    desiredtz = "", configtz = c(), interpolationType=1)
+    desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE)
 }
 \arguments{
   \item{filename}{
@@ -37,6 +37,9 @@
   }
   \item{interpolationType}{
     Integer to indicate type of interpolation to be used, 1=linear, 2=nearest neighbour.
+  }
+  \item{loadbattery}{
+    Boolean to indicate whether battery voltage should be loaded
   }
 }
 \value{

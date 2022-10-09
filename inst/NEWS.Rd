@@ -4,6 +4,7 @@
 \section{Changes in version 0.2.4 (release date:07-10-2022)}{
     \itemize{
       \item Addressing POSIX errors in R-devel
+      \item Speeding up readAxivity by 40 percent
     }
 }
 \section{Changes in version 0.2.3 (release date:29-09-2022)}{
@@ -31,4 +32,3 @@
       \item First release with functionality for reading Axivity .cwa, GENEActiv .bin, and Genea, .bin data.
     }
 }
-
