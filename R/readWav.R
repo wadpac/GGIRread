@@ -25,7 +25,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
       header = rownames(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "latin1"))
     }
     Nlines = Nlines - 1
-    if (Nlines == 10) print("Error: wav file header not recognized in function g.wavread")
+    if (Nlines == 10) print("Error: wav file header not recognized in function readWav from the GGIRread package")
   }
   scale3position = grep("Scale-3", header)
   header = header[1:scale3position]
