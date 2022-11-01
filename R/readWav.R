@@ -16,7 +16,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
          length(grep("Scale-2",header)) == 0 |
          length(grep("Scale-1",header)) == 0) { # as we do not know what header size is, search for it (needed in R version =< 3.1)
     
-    try(expr = {header = rownames(read.csv(filename, nrow = Nlines, header = TRUE))}, silent = TRUE)
+    try(expr = {header = read.csv(filename, nrow = Nlines, header = TRUE)}, silent = TRUE)
     if (length(header) == 0) {
       header = read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "WINDOWS-1252")
     }
@@ -28,7 +28,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
     }
     if (length(header) > 0) {
       header_rownames = rownames(header)
-      if (all.equal(as.character(1:Nlines), header_rownames)) {
+      if (isTRUE(all.equal(as.character(1:Nlines), header_rownames))) {
         header = as.character(header[,1])
       } else {
         header = header_rownames
