@@ -50,6 +50,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   options(warn = 0)
   P = as.data.frame(t(P), stringsAsFactors = TRUE)
   names(P) = c("hnames","hvalues")
+  row.names(P) = 1:nrow(P)
   H = tuneR::readWave(filename, from = 1, to = 3600,units = c("seconds"), header = TRUE) #get wav file header
   #-----------------------------------------------
   # scale acceleration
