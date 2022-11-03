@@ -10,21 +10,20 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   # extract info from header: fileEncoding does not seem to be consistent, so try variants
   header = header_rownames = c()
   Nlines = 18
-  options(warn = -1)
   while (length(header) == 0 | 
          length(grep("Scale-3",header)) == 0 |
          length(grep("Scale-2",header)) == 0 |
          length(grep("Scale-1",header)) == 0) { # as we do not know what header size is, search for it (needed in R version =< 3.1)
     
-    try(expr = {header = read.csv(filename, nrow = Nlines, header = TRUE)}, silent = TRUE)
+    try(expr = {header = suppressWarnings(read.csv(filename, nrow = Nlines, header = TRUE))}, silent = TRUE)
     if (length(header) == 0) {
-      header = read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "WINDOWS-1252")
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "WINDOWS-1252"))
     }
     if (length(header) == 0) {
-      header = read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "UTF-8")
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "UTF-8"))
     }
     if (length(header) == 0) {
-      header = read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "latin1")
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "latin1"))
     }
     if (length(header) > 0) {
       header_rownames = rownames(header)
@@ -37,7 +36,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
     Nlines = Nlines - 1
     if (Nlines == 10) print("Error: wav file header not recognized in function readWav from the GGIRread package")
   }
-  if (length(grep("Scale-3",header)) > 0) scale3position = grep("Scale-3", header)
+  scale3position = grep("Scale-3", header)
   header = header[1:scale3position]
   P = sapply(as.character(header),function(x) {
     tmp = unlist(strsplit(x,": "))
@@ -47,7 +46,6 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
       tmp = c(tmp[1],tmp[length(tmp)])
     }
   })
-  options(warn = 0)
   P = as.data.frame(t(P), stringsAsFactors = TRUE)
   names(P) = c("hnames","hvalues")
   row.names(P) = 1:nrow(P)
@@ -64,9 +62,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   rawxyz = cbind(x,y,z)
   #---------------------------------------------
   # get time (we only need first timestamp) --> from header
-  options(warn = -1)
-  A = scan(filename, what = "character", nlines = 12, quiet = TRUE, skipNul = TRUE) #skipNul avoids undesired warning
-  options(warn = 0)
+  A = suppressWarnings(scan(filename, what = "character", nlines = 12, quiet = TRUE, skipNul = TRUE)) #skipNul avoids undesired warning
   timestamp = paste0(A[grep("ICMTz", A) + 1:2], collapse = " ")
   if (length(timestamp) == 0 | timestamp == "") { #if not possible use other time in fileheader
     timestamp = as.character(P$hvalues[which(P$hnames == "Start")])
