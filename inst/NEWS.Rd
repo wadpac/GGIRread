@@ -1,6 +1,11 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.2.5 (release date:?-?-2022)}{
+    \itemize{
+      \item readWav now correctly identifies the header and first timestamp
+    }
+}
 \section{Changes in version 0.2.4 (release date:09-10-2022)}{
     \itemize{
       \item Addressing POSIX errors in R-devel.
