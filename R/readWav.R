@@ -15,15 +15,22 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
          length(grep("Scale-2",header)) == 0 |
          length(grep("Scale-1",header)) == 0) { # as we do not know what header size is, search for it (needed in R version =< 3.1)
     
-    try(expr = {header = suppressWarnings(read.csv(filename, nrow = Nlines, header = TRUE))}, silent = TRUE)
+    try(expr = {header = suppressWarnings(read.csv(filename,
+                                                   nrow = Nlines, header = TRUE))}, silent = TRUE)
     if (length(header) == 0) {
-      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "WINDOWS-1252"))
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE,
+                                         nrow = Nlines, header = TRUE,
+                                         fileEncoding = "WINDOWS-1252"))
     }
     if (length(header) == 0) {
-      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "UTF-8"))
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE,
+                                         nrow = Nlines, header = TRUE,
+                                         fileEncoding = "UTF-8"))
     }
     if (length(header) == 0) {
-      header = suppressWarnings(read.csv(filename, skipNul = TRUE, nrow = Nlines, header = TRUE, fileEncoding = "latin1"))
+      header = suppressWarnings(read.csv(filename, skipNul = TRUE,
+                                         nrow = Nlines, header = TRUE,
+                                         fileEncoding = "latin1"))
     }
     if (length(header) > 0) {
       header_rownames = rownames(header)
@@ -62,7 +69,8 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   rawxyz = cbind(x,y,z)
   #---------------------------------------------
   # get time (we only need first timestamp) --> from header
-  A = suppressWarnings(scan(filename, what = "character", nlines = 12, quiet = TRUE, skipNul = TRUE)) #skipNul avoids undesired warning
+  A = suppressWarnings(scan(filename, what = "character", nlines = 12,
+                            quiet = TRUE, skipNul = TRUE)) #skipNul avoids undesired warning
   timestamp = paste0(A[grep("ICMTz", A) + 1:2], collapse = " ")
   if (length(timestamp) == 0 | timestamp == "") { #if not possible use other time in fileheader
     timestamp = as.character(P$hvalues[which(P$hnames == "Start")])

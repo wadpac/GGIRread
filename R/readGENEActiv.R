@@ -27,7 +27,8 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   DeviceLocation = gsub(pattern = "Device Location Code:", replacement = "",
             x = fh[grep(pattern = "Device Location Code", x = fh)[1]])
   
-  DeviceModel = gsub(pattern = " ", replacement = "", x = gsub(pattern = "Device Model:", replacement = "",
+  DeviceModel = gsub(pattern = " ", replacement = "",
+                     x = gsub(pattern = "Device Model:", replacement = "",
                         x = fh[grep(pattern = "Device Model", x = fh)[1]]))
   
   
@@ -59,10 +60,13 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   # Establish starttime in the correct timezone
   if (is.null(configtz)) {
-    starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
+    starttime_posix = as.POSIXlt(x = starttime, tz = desiredtz,
+                                 format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
   } else {
-    starttime_posix = as.POSIXlt(starttime, tz = configtz, format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
-    starttime_posix = as.POSIXlt(as.numeric(starttime_posix), tz = desiredtz, origin = "1970-01-01")
+    starttime_posix = as.POSIXlt(starttime, tz = configtz,
+                                 format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
+    starttime_posix = as.POSIXlt(as.numeric(starttime_posix),
+                                 tz = desiredtz, origin = "1970-01-01")
   }
   
   # Correct timestamps

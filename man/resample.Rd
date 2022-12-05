@@ -8,7 +8,7 @@
   Resample single- or multi-variate time series using linear or nearest neighbour interpolation
 }
 \usage{
-  resample(raw, rawTime, time, stop, type=1)	
+  resample(raw, rawTime, time, stop, type = 1)	
 }
 \arguments{
   \item{raw}{
