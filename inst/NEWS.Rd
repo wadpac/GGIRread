@@ -1,6 +1,11 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.2.6 (release date:05-12-2022)}{
+    \itemize{
+      \item New CRAN release, only minor improvements to syntax
+    }
+}
 \section{Changes in version 0.2.5 (GitHub-only-release date:09-11-2022)}{
     \itemize{
       \item readWav now correctly identifies the header and first timestamp

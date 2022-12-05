@@ -1,5 +1,5 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
-                       configtz = c(), interpolationType=1, loadbattery = FALSE) {
+                       configtz = c(), interpolationType = 1, loadbattery = FALSE) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The original version of the code in this function was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -58,7 +58,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       secs = bitwAnd(coded, 0x3fL)
       # Form string representation of date and convert it to number
       year_raw = as.POSIXct(paste0(year, "-", month, "-", day, " ",
-                                              hours, ":", mins, ":", secs), tz = configtz)
+                                              hours, ":", mins, ":", secs),
+                            tz = configtz)
       year = as.numeric(year_raw)
     } else {
       secs = bitwAnd(coded, 0x3fL)
@@ -408,7 +409,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   for (i in 2:numDBlocks) {
-    raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc, parameters = prevRaw$parameters)
+    raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
+                        parameters = prevRaw$parameters)
     if (is.null(raw)) {
       break
     }
