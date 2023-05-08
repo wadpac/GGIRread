@@ -46,7 +46,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   #############################################################################
   
   # Internal functions
-  timestampDecoder = function(coded, fraction, shift, struc) {
+  timestampDecoder = function(coded, fraction, shift, struc, configtz) {
     year = struc[[1]]
     if (year == 0) {
       # Extract parts of date
@@ -70,7 +70,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     struc <- list(year,secs)
     # Add fractional part and shift
     start = year + fraction / 65536 + shift
-    
     invisible(list(start = start, struc = struc))
   }
   
@@ -102,7 +101,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #   data is matrix with three columns "x", "y", and "z"
     #   matrix data is presented if complete == TRUE only.
     #
-    
     if (!is.null(parameters)) {
       accelScaleCode = parameters$accelScaleCode
       accelScale = parameters$accelScale
@@ -241,8 +239,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                         frequency_data = frequency_data,
                         format = format)
     }
-    
-    tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc)
+    tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc, configtz)
     start = tsDeco$start
     struc = tsDeco$struc
     rawdata_list = list(
@@ -408,9 +405,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawAccel = matrix(0, nrow = 300 * Npages, ncol = 6)
   }
   rawPos = 1
+  deltaStartLast = 0
   for (i in 2:numDBlocks) {
+    struc_before = struc
+    if (deltaStartLast < -5) {
+      complete = FALSE # Do not attempt to read data if gap relative to last timestamp is still more than 5 seconds
+    } else {
+      complete = TRUE
+    }
     raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
-                        parameters = prevRaw$parameters)
+                        parameters = prevRaw$parameters, complete = TRUE)
     if (is.null(raw)) {
       break
     }
@@ -418,6 +422,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevStart = prevRaw$start
     prevLength = prevRaw$length
     # Check are previous data block necessary
+    deltaStartLast = raw$start - start
     if (raw$start < start) {
       prevRaw = raw
       next
