@@ -404,14 +404,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   
-  # Pseudo code for possible revision:
-  # - Extract sector/block size in bytes => see c-link https://github.com/digitalinteraction/openmovement/blob/d8678127c8331196072215a2f1a3dfe7fa595915/Software/AX3/cwa-convert/c/main.c#L278
-  # - Op basis van block_start do seek() to skip
-  # - Run code as shown below
   for (i in 2:numDBlocks) {
     timeSkip = start - prevRaw$start
     blockDur = prevRaw$length / prevRaw$frequency
     blockSkip = floor(timeSkip/blockDur) - 1
+    
     if (i >= blockSkip) { # start of recording
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
@@ -481,8 +478,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   #############################################################################
   # Process the last block of data if necessary
-  if (pos <= nr) { # & ignorelastblock == FALSE) {
-    # print("last block of data")
+  if (pos <= nr & exists("prevStart") & exists("prevLength")) {
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
     prevLength = prevRaw$length
