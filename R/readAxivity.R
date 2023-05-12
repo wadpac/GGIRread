@@ -405,17 +405,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   rawPos = 1
   i = 2
   while (i <= numDBlocks) {
-    timeSkip = start - prevRaw$start
+    time2Skip = start - prevRaw$start
     blockDur = prevRaw$length / prevRaw$frequency
-    blockSkip = floor(timeSkip/blockDur) - 1
+    Nblocks2Skip = floor(time2Skip/blockDur) - 1
     
-    if (i >= blockSkip) { # start of recording
+    if (i >= Nblocks2Skip) { # start of recording
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
     } else {
       # skip blocks
-      seek(fid, 512 * blockSkip, origin = 'current')
-      i = i + blockSkip
+      seek(fid, 512 * Nblocks2Skip, origin = 'current')
+      i = i + Nblocks2Skip
       next
     }
     if (is.null(raw)) {
