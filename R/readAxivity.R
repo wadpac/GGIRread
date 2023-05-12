@@ -412,12 +412,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Save start and length of the previous block
     prevStart = prevRaw$start
     prevLength = prevRaw$length
+    struc = raw$struc
     # Check are previous data block necessary
     if (raw$start < start) {
       prevRaw = raw
       next
     }
-    struc = raw$struc
+    
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
     
