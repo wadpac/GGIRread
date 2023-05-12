@@ -3,7 +3,7 @@
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 \section{Changes in version 0.2.7 (release date:12-05-2022)}{
     \itemize{
-      \item Speeding up readAxivity function by approximately 65 percent.
+      \item Speeding up readAxivity function by approximately 75 percent.
     }
 }
 \section{Changes in version 0.2.6 (release date:05-12-2022)}{
