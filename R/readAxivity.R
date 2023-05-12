@@ -203,8 +203,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         temp = 482 -  4 * (Naxes/3) * blockLength
       } else {
         # Read unpacked data
-        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes) #*3
-        data = matrix(xyz, ncol = Naxes, byrow = T, dimnames = FALSE) #3
+        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes)
+        data = matrix(xyz, ncol = Naxes, byrow = T)
         # Calculate number of bytes to skip
         temp = 482 - (2 * Naxes * blockLength)
       }
