@@ -403,8 +403,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawAccel = matrix(0, nrow = 300 * Npages, ncol = 6)
   }
   rawPos = 1
-  
-  for (i in 2:numDBlocks) {
+  i = 2
+  while (i <= numDBlocks) {
     timeSkip = start - prevRaw$start
     blockDur = prevRaw$length / prevRaw$frequency
     blockSkip = floor(timeSkip/blockDur) - 1
@@ -412,8 +412,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (i >= blockSkip) { # start of recording
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
+      i = i + 1
     } else {
-      seek(fid, 512, origin = 'current') # skip block
+      # skip blocks
+      seek(fid, 512 * blockSkip, origin = 'current')
+      i = i + blockSkip
       next
     }
     if (is.null(raw)) {
@@ -426,6 +429,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Check are previous data block necessary
     if (raw$start < start) {
       prevRaw = raw
+      i = i + 1
       next
     }
     # Create array of times
