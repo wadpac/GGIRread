@@ -1,11 +1,6 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.2.7 (release date:12-05-2023)}{
-    \itemize{
-      \item Speeding up readAxivity function by approximately 65 percent.
-    }
-}
 \section{Changes in version 0.2.6 (release date:05-12-2022)}{
     \itemize{
       \item New CRAN release, only minor improvements to syntax
