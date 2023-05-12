@@ -412,7 +412,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (i >= blockSkip) { # start of recording
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
-      i = i + 1
     } else {
       # skip blocks
       seek(fid, 512 * blockSkip, origin = 'current')
@@ -479,6 +478,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (pos > nr) {
       break
     }
+    i = i + 1
   }
   #############################################################################
   # Process the last block of data if necessary
