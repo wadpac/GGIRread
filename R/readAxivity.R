@@ -46,7 +46,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   #############################################################################
   
   # Internal functions
-  timestampDecoder = function(coded, fraction, shift, struc) {
+  timestampDecoder = function(coded, fraction, shift, struc, configtz) {
     year = struc[[1]]
     if (year == 0) {
       # Extract parts of date
@@ -70,7 +70,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     struc <- list(year,secs)
     # Add fractional part and shift
     start = year + fraction / 65536 + shift
-    
     invisible(list(start = start, struc = struc))
   }
   
@@ -102,7 +101,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #   data is matrix with three columns "x", "y", and "z"
     #   matrix data is presented if complete == TRUE only.
     #
-    
     if (!is.null(parameters)) {
       accelScaleCode = parameters$accelScaleCode
       accelScale = parameters$accelScale
@@ -114,7 +112,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Check the block header
     # idstr = readChar(fid,2,useBytes = TRUE)
     # seek(fid, 2, origin = 'current') # idstr and assume it is AX
-
     # Read the data block. Extract several data fields
     # offset 4 contains u16 with timestamp offset
     seek(fid, 4, origin = 'current') # skip packetlength
@@ -124,8 +121,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     timeStamp = readBin(fid, integer(), size = 4)
     # Get light u16 in offset 18
     offset18 = unsigned16(readBin(fid, integer(), size = 2))
-    # light = 2 ^ (3.0 * (offset18 / 512.0 + 1.0)) # used for AX3, but this seems to have been incorrect
-    light = bitwAnd(offset18, 0x03ffL) # this seems to match better what is shown in OMGUI
+    light = bitwAnd(offset18, 0x03ffL)
     # Read and recalculate temperature u16 in offset 20
     temperature = (150.0 * readBin(fid, integer(), size = 2) - 20500.0) / 1000.0;
     if (loadbattery == TRUE) {
@@ -167,13 +163,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       if (is.null(parameters)) {
         if (bitwAnd(tsOffset, 0x8000L) != 0) {
           format = 1
-        } else if (bitwAnd(tsOffset, 0x8000L) == 0) { # & class(frequency_data) ==  "function") {
+          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+          accrange = bitwShiftR(16,(bitwShiftR(abs(samplerate_dynrange),6)))
+        } else { # & class(frequency_data) ==  "function") {
           format = 2
+          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
         }
       }
       if (format == 1) {
-        frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-        accrange = bitwShiftR(16,(bitwShiftR(abs(samplerate_dynrange),6)))
         # Need to undo backwards-compatible shim:
         # Take into account how many whole samples the fractional part
         # of timestamp accounts for:
@@ -185,12 +182,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         #    [0][1][2][3][4][5][6][7][8][9]
         # use 15-bits as 16-bit fractional time
         fractional = bitwShiftL(bitwAnd(tsOffset, 0x7fffL), 1);
+        
         # frequency is truncated to int in firmware
         shift = shift + bitwShiftR((fractional * frequency_data), 16);
-      } else if (format == 2) { # & class(frequency_data) ==  "function") {
-        if (is.null(parameters)) {
-          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-        }
       }
     } else {
       #Very old format, where offset 26 contains frequency
@@ -198,6 +192,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     # Read data if necessary
     if (complete) {
+      
       if (packed) { #32 bit
         # Read 4 byte for three measurements
         packedData = readBin(fid, integer(), size = 4, n = blockLength)
@@ -208,8 +203,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         temp = 482 -  4 * (Naxes/3) * blockLength
       } else {
         # Read unpacked data
-        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes) #*3
-        data = matrix(xyz, ncol = Naxes,byrow = T) #3
+        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes)
+        data = matrix(xyz, ncol = Naxes, byrow = T)
         # Calculate number of bytes to skip
         temp = 482 - (2 * Naxes * blockLength)
       }
@@ -241,8 +236,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                         frequency_data = frequency_data,
                         format = format)
     }
-    
-    tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc)
+    tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc, configtz)
     start = tsDeco$start
     struc = tsDeco$struc
     rawdata_list = list(
@@ -258,6 +252,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (complete) {
       rawdata_list$data = data
     }
+  
     return(invisible(rawdata_list))
   }
   readHeader = function(fid, numDBlocks) {
@@ -371,7 +366,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     return(invisible(list(header = header, data = NULL)))
   }
   #############################################################################
-  # reinitiate file and start reading of data and sesrch the beginning of required
+  # reinitiate file and start reading of data and search the beginning of required
   seek(fid,0)
   # skip header
   seek(fid, 1024, origin = 'current')
@@ -408,21 +403,34 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawAccel = matrix(0, nrow = 300 * Npages, ncol = 6)
   }
   rawPos = 1
-  for (i in 2:numDBlocks) {
-    raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
-                        parameters = prevRaw$parameters)
+  i = 2
+  while (i <= numDBlocks) {
+    time2Skip = start - prevRaw$start
+    blockDur = prevRaw$length / prevRaw$frequency
+    Nblocks2Skip = floor(time2Skip/blockDur) - 1
+    
+    if (i >= Nblocks2Skip) { # start of recording
+      raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
+                          parameters = prevRaw$parameters)
+    } else {
+      # skip blocks
+      seek(fid, 512 * Nblocks2Skip, origin = 'current')
+      i = i + Nblocks2Skip
+      next
+    }
     if (is.null(raw)) {
       break
     }
     # Save start and length of the previous block
     prevStart = prevRaw$start
     prevLength = prevRaw$length
+    struc = raw$struc
     # Check are previous data block necessary
     if (raw$start < start) {
       prevRaw = raw
+      i = i + 1
       next
     }
-    struc = raw$struc
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
     
@@ -470,12 +478,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (pos > nr) {
       break
     }
+    i = i + 1
   }
-  
   #############################################################################
   # Process the last block of data if necessary
-  if (pos <= nr) { # & ignorelastblock == FALSE) {
-    # print("last block of data")
+  if (pos <= nr & exists("prevStart") & exists("prevLength")) {
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
     prevLength = prevRaw$length
