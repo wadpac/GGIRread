@@ -4,8 +4,9 @@
 \section{Changes in version 0.2.7 (release date:20-05-2022)}{
     \itemize{
       \item Fixes bug in LUX extraction for GENEActiv .bin data (#27)
-      \item Expanded Axivity .wav file header extraction with alternative method 
+      \item Expanded Axivity .wav file header extraction with alternative method
       for sampling rate extraction (#26)
+      \item Speeding up readAxivity function by approximately 75 percent.
     }
 }
 \section{Changes in version 0.2.6 (release date:05-12-2022)}{
@@ -22,8 +23,8 @@
     \itemize{
       \item Addressing POSIX errors in R-devel.
       \item Speeding up readAxivity function by approximately 40 percent.
-      \item Adding readWav function for reading accelerometer data stored in 
-      wav(Audio) format. This function was formerly known as g.wavread in the 
+      \item Adding readWav function for reading accelerometer data stored in
+      wav(Audio) format. This function was formerly known as g.wavread in the
       GGIR package but has been migrated here to make the GGIR package lighter.
     }
 }
