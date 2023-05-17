@@ -73,12 +73,11 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
   starttime_num = as.numeric(starttime_posix) + 5 + page_offset #tzone +
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
-  
   return(invisible(list(
     header = header,
     data.out = data.frame(time = rawdata$time, 
                       x = rawdata$x, y = rawdata$y, z = rawdata$z,
-                      light = rawdata$lux * (Lux/Volts) / 9, # divide by 9 to match GENEAread output values
+                      light = rawdata$lux * (Lux/Volts),
                       temperature = rawdata$temperature,
                       stringsAsFactors = TRUE)
   )))

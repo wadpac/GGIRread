@@ -71,22 +71,6 @@ int getSignedIntFromHex(const std::string &hex) {
     return rawVal;
 }
 
-std::string Hex2Bin(const std::string &s){
-  // FROM: https://stackoverflow.com/questions/18310952/convert-strings-between-hex-format-and-binary-format
-  std::string out;
-  for(auto i: s){
-    uint8_t n;
-    if(i <= '9' and i >= '0')
-      n = i - '0';
-    else
-      n = 10 + i - 'A';
-    for(int8_t j = 3; j >= 0; --j) {
-      out.push_back((n & (1<<j))? '1':'0');
-    }
-  }
-  return out;
-}
-
 int Bin2Dec(int n) {
   // FROM: https://www.geeksforgeeks.org/program-binary-decimal-conversion/
   int num = n;
@@ -105,6 +89,13 @@ int Bin2Dec(int n) {
   return dec_value;
 }
 
+int getLight(const std::string &hex) {
+  // input hex base is 16
+  int rawVal = std::stoll(hex, nullptr, 16);
+  int lux;
+  lux = Bin2Dec(rawVal >> 2);
+  return rawVal;
+}
 
 // N.B.: don't use 'read' as the C++ function name, it is already used by
 // some include and will not compile:
@@ -209,9 +200,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         yRaw = getSignedIntFromHex(data.substr(hexPosition + 3, 3));
                         zRaw = getSignedIntFromHex(data.substr(hexPosition + 6, 3));
                         // get last 10th and 11th heximal places, and convert to binary
-                        last12 = std::stoi(Hex2Bin(data.substr(hexPosition + 9, 2)));
-                        // split first 10 bit and convert to decimal
-                        lux = Bin2Dec(last12 >> 2);
+                        lux = getLight(data.substr(hexPosition + 9, 3)) / 4;
                         // Update values to calibrated measure (taken from GENEActiv manual)
                         x = (xRaw * 100. - mfrOffset[0]) / mfrGain[0];
                         y = (yRaw * 100. - mfrOffset[1]) / mfrGain[1];
