@@ -4,6 +4,8 @@
 \section{Changes in version 0.2.7 (release date:20-05-2022)}{
     \itemize{
       \item Fixes bug in LUX extraction for GENEActiv .bin data (#27)
+      \item Expanded Axivity .wav file header extraction with alternative method 
+      for sampling rate extraction (#26)
     }
 }
 \section{Changes in version 0.2.6 (release date:05-12-2022)}{
