@@ -144,6 +144,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
       blockLength = readBin(fid, integer(), size = 2) # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
+      print(blockLength)
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
       Naxes = as.integer(substr(temp_raw,1,1))
@@ -407,14 +408,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   while (i <= numDBlocks) {
     time2Skip = start - prevRaw$start
     blockDur = prevRaw$length / prevRaw$frequency
-    Nblocks2Skip = floor(time2Skip/blockDur) - 1
-    
+    # 0.97 below means that we assume that sampling rate has a long term
+    # downward drift no larger than 3%
+    Nblocks2Skip = floor((time2Skip/blockDur) * 0.97) 
     if (i >= Nblocks2Skip) { # start of recording
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
     } else {
       # skip blocks
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
+      prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
       i = i + Nblocks2Skip
       next
     }
@@ -445,7 +448,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
     lastTime = time[prevLength]
-    
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -500,7 +502,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
     lastTime = time[prevLength]
-    
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
