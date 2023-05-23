@@ -1,6 +1,11 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.2.8 (release date:24-05-2023)}{
+    \itemize{
+      \item Major bug fix introduced in 0.2.7 release affecting readAxivity
+    }
+}
 \section{Changes in version 0.2.7 (release date:17-05-2023)}{
     \itemize{
       \item Fixes bug in LUX extraction for GENEActiv .bin data (#27)
