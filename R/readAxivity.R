@@ -200,7 +200,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         # Read 4 byte for three measurements
         packedData = readBin(fid, integer(), size = 4, n = blockLength)
         # Unpack data
-        data = GGIRread:::AxivityNumUnpack(packedData) #GGIRread:::
+        data = AxivityNumUnpack(packedData) #GGIRread:::
         # data2 = numUnpack2(packedData)
         # Calculate number of bytes to skip
         temp = 482 -  4 * (Naxes/3) * blockLength
