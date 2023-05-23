@@ -143,8 +143,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     temp = readBin(fid, integer(), size = 2) # timestampOffset
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
-      blockLength = readBin(fid, integer(), size = 2) # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
-      print(blockLength)
+      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
+      # Note that of AX6 is configured to only collect accelerometer data
+      # this will look as if it is a AX3
+      blockLength = readBin(fid, integer(), size = 2) 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
       Naxes = as.integer(substr(temp_raw,1,1))
@@ -198,7 +200,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         # Read 4 byte for three measurements
         packedData = readBin(fid, integer(), size = 4, n = blockLength)
         # Unpack data
-        data = AxivityNumUnpack(packedData) #GGIRread:::
+        data = GGIRread:::AxivityNumUnpack(packedData) #GGIRread:::
         # data2 = numUnpack2(packedData)
         # Calculate number of bytes to skip
         temp = 482 -  4 * (Naxes/3) * blockLength
