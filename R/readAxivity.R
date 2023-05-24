@@ -418,6 +418,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     blockDur = prevRaw$length / prevRaw$frequency
 
     Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
+    
     if (Nblocks2Skip <= 0 | skippedLast == TRUE) { # start of recording
       skippedLast = FALSE
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
@@ -453,17 +454,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       struc = struc_backup
       prevRaw = prevRaw_backup
       if (samplingFrac == 1) {
-        samplingFrac = 0.2
+        samplingFrac = 0.5
       } else {
         stop(paste0("GGIRread is having difficulty to read .cwa file.",
-                    " Please report to GGIRread package maintainers."))
+                    " It is seeing less than 50% of the expacted data points.",
+                    " Please report to GGIRread package maintainers."), call. = FALSE)
       }
       next
     }
     segmentFound = TRUE
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
-    
     # fill vector rawTime and matrix rawAccel for resampling
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
