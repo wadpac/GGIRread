@@ -449,7 +449,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Go back to beginning of file and use lower samplingFrac
       i = 2
       seek(fid,0)
-      seek(fid, (512 * i) + 1024, origin = 'start')
+      seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
       struc = struc_backup
       prevRaw = prevRaw_backup
       if (samplingFrac == 1) {
