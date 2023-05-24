@@ -409,7 +409,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   i = 2
   segmentFound = FALSE
   skippedLast = FALSE
-  samplingFrac = 1     # if less than 1 we assume that sampling rate has a long term
+  samplingFrac = 0.95     # if less than 1 we assume that sampling rate has a long term
   # downward drift no larger than fraction 1 - samplingFrac
   prevRaw_backup = prevRaw
   struc_backup = struc
@@ -453,12 +453,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
       struc = struc_backup
       prevRaw = prevRaw_backup
-      if (samplingFrac == 1) {
+      if (samplingFrac == 0.95) {
         samplingFrac = 0.5
       } else {
         stop(paste0("GGIRread is having difficulty to read .cwa file.",
                     " It is seeing less than 50% of the expacted data points.",
-                    " Please report to GGIRread package maintainers."), call. = FALSE)
+                    " Please report to GGIRread package maintainers and Axivity Ltd."), call. = FALSE)
       }
       next
     }
