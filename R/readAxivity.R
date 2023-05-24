@@ -407,19 +407,26 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   i = 2
+  segmentFound = FALSE
+  skippedLast = FALSE
+  samplingFrac = 1     # if less than 1 we assume that sampling rate has a long term
+  # downward drift no larger than fraction 1 - samplingFrac
+  prevRaw_backup = prevRaw
+  struc_backup = struc
   while (i <= numDBlocks) {
-    time2Skip = start - prevRaw$start
+    time2Skip = start - prevRaw$start # once this gets negative we are passed the point
     blockDur = prevRaw$length / prevRaw$frequency
-    # 0.97 below means that we assume that sampling rate has a long term
-    # downward drift no larger than 3%
-    Nblocks2Skip = floor((time2Skip/blockDur) * 0.97) 
-    if (i >= Nblocks2Skip) { # start of recording
+
+    Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
+    if (Nblocks2Skip <= 0 | skippedLast == TRUE) { # start of recording
+      skippedLast = FALSE
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
     } else {
       # skip blocks
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
       prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
+      skippedLast = TRUE
       i = i + Nblocks2Skip
       next
     }
@@ -436,6 +443,24 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       i = i + 1
       next
     }
+    if (segmentFound == FALSE &
+        time2Skip < 0) {
+      # Oops start was missed, because sampling rate was lower than expected
+      # Go back to beginning of file and use lower samplingFrac
+      i = 2
+      seek(fid,0)
+      seek(fid, (512 * i) + 1024, origin = 'start')
+      struc = struc_backup
+      prevRaw = prevRaw_backup
+      if (samplingFrac == 1) {
+        samplingFrac = 0.2
+      } else {
+        stop(paste0("GGIRread is having difficulty to read .cwa file.",
+                    " Please report to GGIRread package maintainers."))
+      }
+      next
+    }
+    segmentFound = TRUE
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
     
@@ -508,7 +533,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # resampling of measurements
     last = pos + 200;
     if (pos + 200 > nr) last = nr
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
+    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
     # put result to specified position
     last = nrow(tmp) + pos - 1
     if (last >= pos) {
