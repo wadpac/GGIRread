@@ -409,8 +409,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   i = 2
   segmentFound = FALSE
   skippedLast = FALSE
-  samplingFrac = 0.95     # if less than 1 we assume that sampling rate has a long term
-  # downward drift no larger than fraction 1 - samplingFrac
+  samplingFrac = 1 # first assume that sampling rate is 95% of expected value or higher
   prevRaw_backup = prevRaw
   struc_backup = struc
   while (i <= numDBlocks) {
@@ -418,7 +417,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     blockDur = prevRaw$length / prevRaw$frequency
 
     Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
-    
     if (Nblocks2Skip <= 0 | skippedLast == TRUE) { # start of recording
       skippedLast = FALSE
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
@@ -449,14 +447,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Oops start was missed, because sampling rate was lower than expected
       # Go back to beginning of file and use lower samplingFrac
       i = 2
-      seek(fid,0)
+      seek(fid, 0)
       seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
       struc = struc_backup
       prevRaw = prevRaw_backup
-      if (samplingFrac == 0.95) {
+      if (samplingFrac == 1) {
         samplingFrac = 0.5
       } else {
-        stop(paste0("GGIRread is having difficulty to read .cwa file.",
+        stop(paste0("GGIRread is having difficulty to read this .cwa file.",
                     " It is seeing less than 50% of the expacted data points.",
                     " Please report to GGIRread package maintainers and Axivity Ltd."), call. = FALSE)
       }
