@@ -407,25 +407,30 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   i = 2
-  segmentFound = FALSE
-  skippedLast = FALSE
-  samplingFrac = 1 # first assume that sampling rate is 95% of expected value or higher
+  samplingFrac = 0.97 # first assume that sampling rate is 97% of expected value or higher
   prevRaw_backup = prevRaw
   struc_backup = struc
+  block1AfterSkip = FALSE
+  skippedLast = FALSE
   while (i <= numDBlocks) {
     time2Skip = start - prevRaw$start # once this gets negative we are passed the point
     blockDur = prevRaw$length / prevRaw$frequency
-
-    Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
-    if (Nblocks2Skip <= 0 | skippedLast == TRUE) { # start of recording
-      skippedLast = FALSE
+    if (skippedLast == FALSE) {
+      Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
+    } else {
+      Nblocks2Skip = 0
+    }
+    if (Nblocks2Skip <= 0) {
+      # read block
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
+      
     } else {
-      # skip blocks
+      # skip series of blocks, but only do this once
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
       prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
       skippedLast = TRUE
+      block1AfterSkip = TRUE
       i = i + Nblocks2Skip
       next
     }
@@ -437,13 +442,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevLength = prevRaw$length
     struc = raw$struc
     # Check are previous data block necessary
+    
     if (raw$start < start) {
+      # Ignore this block and go to the next
       prevRaw = raw
       i = i + 1
+      block1AfterSkip = FALSE
       next
     }
-    if (segmentFound == FALSE &
-        time2Skip < 0) {
+    if (block1AfterSkip == TRUE) {
       # Oops start was missed, because sampling rate was lower than expected
       # Go back to beginning of file and use lower samplingFrac
       i = 2
@@ -451,16 +458,21 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
       struc = struc_backup
       prevRaw = prevRaw_backup
-      if (samplingFrac == 1) {
-        samplingFrac = 0.5
-      } else {
-        stop(paste0("GGIRread is having difficulty to read this .cwa file.",
-                    " It is seeing less than 50% of the expacted data points.",
-                    " Please report to GGIRread package maintainers and Axivity Ltd."), call. = FALSE)
+      skippedLast = FALSE
+      block1AfterSkip = FALSE
+      samplingFrac = samplingFrac - 0.1
+      if (samplingFrac < 0.2) {
+        skippedLast = TRUE #read file in old way block by block
+        warning(paste0("GGIRread is having difficulty to read this .cwa file.",
+                       " This could be an issue with the .cwa files. Please report",
+                       " this issue to the GGIRread maintainers",
+                       " via https://github.com/wadpac/GGIRread/issues and to ",
+                       " Axivity Ltd."), call. = FALSE)
       }
       next
     }
-    segmentFound = TRUE
+    block1AfterSkip = FALSE
+
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
     # fill vector rawTime and matrix rawAccel for resampling
