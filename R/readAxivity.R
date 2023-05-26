@@ -143,7 +143,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     temp = readBin(fid, integer(), size = 2) # timestampOffset
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
-      blockLength = readBin(fid, integer(), size = 2) # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
+      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
+      # Note that of AX6 is configured to only collect accelerometer data
+      # this will look as if it is a AX3
+      blockLength = readBin(fid, integer(), size = 2) 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
       Naxes = as.integer(substr(temp_raw,1,1))
@@ -404,17 +407,30 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   rawPos = 1
   i = 2
+  samplingFrac = 0.97 # first assume that sampling rate is 97% of expected value or higher
+  prevRaw_backup = prevRaw
+  struc_backup = struc
+  block1AfterSkip = FALSE
+  skippedLast = FALSE
   while (i <= numDBlocks) {
-    time2Skip = start - prevRaw$start
+    time2Skip = start - prevRaw$start # once this gets negative we are passed the point
     blockDur = prevRaw$length / prevRaw$frequency
-    Nblocks2Skip = floor(time2Skip/blockDur) - 1
-    
-    if (i >= Nblocks2Skip) { # start of recording
+    if (skippedLast == FALSE) {
+      Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
+    } else {
+      Nblocks2Skip = 0
+    }
+    if (Nblocks2Skip <= 0) {
+      # read block
       raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
                           parameters = prevRaw$parameters)
+      
     } else {
-      # skip blocks
+      # skip series of blocks, but only do this once
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
+      prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
+      skippedLast = TRUE
+      block1AfterSkip = TRUE
       i = i + Nblocks2Skip
       next
     }
@@ -426,14 +442,39 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevLength = prevRaw$length
     struc = raw$struc
     # Check are previous data block necessary
+    
     if (raw$start < start) {
+      # Ignore this block and go to the next
       prevRaw = raw
       i = i + 1
+      block1AfterSkip = FALSE
       next
     }
+    if (block1AfterSkip == TRUE) {
+      # Oops start was missed, because sampling rate was lower than expected
+      # Go back to beginning of file and use lower samplingFrac
+      i = 2
+      seek(fid, 0)
+      seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
+      struc = struc_backup
+      prevRaw = prevRaw_backup
+      skippedLast = FALSE
+      block1AfterSkip = FALSE
+      samplingFrac = samplingFrac - 0.1
+      if (samplingFrac < 0.2) {
+        skippedLast = TRUE #read file in old way block by block
+        warning(paste0("GGIRread is having difficulty to read this .cwa file.",
+                       " This could be an issue with the .cwa files. Please report",
+                       " this issue to the GGIRread maintainers",
+                       " via https://github.com/wadpac/GGIRread/issues and to ",
+                       " Axivity Ltd."), call. = FALSE)
+      }
+      next
+    }
+    block1AfterSkip = FALSE
+
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
-    
     # fill vector rawTime and matrix rawAccel for resampling
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
@@ -444,8 +485,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawLast = prevLength + rawPos - 1
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    lastTime = time[prevLength]
-    
+    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -499,13 +539,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawLast = prevLength + rawPos - 1
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    lastTime = time[prevLength]
-    
+    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
     if (pos + 200 > nr) last = nr
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
+    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
     # put result to specified position
     last = nrow(tmp) + pos - 1
     if (last >= pos) {
