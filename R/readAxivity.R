@@ -485,7 +485,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawLast = prevLength + rawPos - 1
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    lastTime = time[prevLength]
+    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -539,7 +539,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawLast = prevLength + rawPos - 1
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    lastTime = time[prevLength]
+    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
