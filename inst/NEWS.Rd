@@ -5,7 +5,7 @@
     \itemize{
       \item Major bug fix introduced in 0.2.7 release affecting readAxivity #29
       \item resample function now able to handle timestamps outside block as
-      a result of huge time gaps in the data #32
+      a result of large time gaps in cwa files #32
     }
 }
 \section{Changes in version 0.2.7 (release date:17-05-2023)}{
