@@ -485,11 +485,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawLast = prevLength + rawPos - 1
     rawTime[rawPos:rawLast] = time[1:prevLength]
     rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    # lastTime = time[prevLength]
+    
+    deltaTime = diff(rawTime[rawPos:rawLast])
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
     if (pos + 200 > nr) last = nr
+    if (rawTime[rawLast] >= timeRes[last]) {
+      # there has been a time jump
+      # so, time jump needs to be adjusted for in last index
+      timejump = rawTime[rawLast] - timeRes[last]
+      positions2add = floor(timejump * prevRaw$frequency)
+      last = last + positions2add
+      if (last > nr) last = nr
+    }
     tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
     # put result to specified position
     last = nrow(tmp) + pos - 1
@@ -520,6 +529,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     i = i + 1
   }
+  
+  
   #############################################################################
   # Process the last block of data if necessary
   if (pos <= nr & exists("prevStart") & exists("prevLength")) {
