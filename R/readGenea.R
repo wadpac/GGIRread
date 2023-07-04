@@ -20,7 +20,6 @@ readGenea = function(filename, start = 0, end = 0) {
     seek(fid, 0, origin = "start")
     idstr = readChar(fid, 5, useBytes = TRUE)
     if (all(idstr == "GENEA")) {
-      verstr = readLines(fid, n = 1)
       ## TODO: check file format version
       header_items_raw = readBin(fid, "raw", n = 10 * onebyte)
       ## Find field ends (search for newline chars
