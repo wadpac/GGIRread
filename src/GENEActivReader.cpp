@@ -92,8 +92,6 @@ int Bin2Dec(int n) {
 int getLight(const std::string &hex) {
   // input hex base is 16
   int rawVal = std::stoll(hex, nullptr, 16);
-  int lux;
-  lux = Bin2Dec(rawVal >> 2);
   return rawVal;
 }
 
@@ -132,7 +130,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
         long blockTime = 0;  // Unix millis
         long lastvalue = 0;  // Unix millis
         double temperature = 0.0;
-        double volts = 0.0;
         double freq = 0.0;
         std::string data;
         std::string timeFmtStr = "Page Time:%Y-%m-%d %H:%M:%S:";
@@ -155,7 +152,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                     try {
                         std::getline(input_file, header);
                         if (i == 3) {
-                            std::tm tm = {};
                             std::stringstream ss(header);
                             int milliseconds;
                             ss >> milliseconds;
@@ -186,7 +182,6 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                 int yRaw = 0;
                 int zRaw = 0;
                 int lux = 0;
-                int last12 = 0;
                 double x = 0.0;
                 double y = 0.0;
                 double z = 0.0;
