@@ -1,10 +1,11 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.2.9 (release date:05-07-2023)}{
+\section{Changes in version 0.2.9 (GitHub-only-release date:20-07-2023)}{
     \itemize{
-      \item Revert bug fix to resample function in 0.2.8 and instead fixed the 
+      \item Replace bug fix to resample function in 0.2.8 and instead fix the 
       issue inside readAxivity #33
+      \item Improvements to syntax for readGENEActiv and readGenea following R updates
     }
 }
 \section{Changes in version 0.2.8 (release date:26-05-2023)}{
