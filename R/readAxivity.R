@@ -122,8 +122,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Get light u16 in offset 18
     offset18 = unsigned16(readBin(fid, integer(), size = 2, endian="little"))
     light = bitwAnd(offset18, 0x03ffL)
-    # Read and recalculate temperature u16 in offset 20
-    temperature = (150.0 * readBin(fid, integer(), size = 2, endian="little") - 20500.0) / 1000.0;
+    # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
+    # Formula for the temperature is specified at 
+    # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
+    # Also see the following discussion:
+    # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
+    temperature = bitwAnd(readBin(fid, integer(), size = 2, endian="little"), 0x03ffL) * 75.0 / 256 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
       seek(fid, 1, origin = 'current') # skip events
