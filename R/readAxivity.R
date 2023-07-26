@@ -131,9 +131,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
       seek(fid, 1, origin = 'current') # skip events
-      battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
+
+      # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
+      # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
+      # So to restore the ADC value, double the packed value and add 512.
+      # Then voltage = ADC_value) * 6 /1024 
+      battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 256.0 + 1.0);
     } else {
-      seek(fid, 2, origin = 'current') # skip events
+      seek(fid, 2, origin = 'current') # skip events and battery
       battery = 0
     }
     # sampling rate in one of file format U8 in offset 24
