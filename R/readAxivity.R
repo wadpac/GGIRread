@@ -127,7 +127,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
     # format of data in block u8  in offset 25
     # tmp = readBin(fid, integer(), size = 1)
-    offset25_raw = readBin(fid, raw(), size = 1)
+    offset25_raw = readBin(fid, raw())
     offset25 = as.integer(offset25_raw)
     packed = bitwAnd(offset25,15) == 0
 
@@ -281,7 +281,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     readChar(fid, 2, useBytes = TRUE) #offset 2 3
 
     # hardware type: AX6 or AX3
-    hwType = readBin(fid, raw(), size = 1) #offset 4
+    hwType = readBin(fid, raw()) #offset 4
     if (hwType == "64") {
       hardwareType = "AX6"
     } else {
