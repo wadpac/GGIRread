@@ -73,7 +73,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     invisible(list(start = start, struc = struc))
   }
   
-  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), header_accrange = NULL, parameters = NULL){
+  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), parameters = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
     #   start is start time in numeric form. To create string representation
@@ -111,7 +111,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
     # Also see the following discussion:
     # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
-    temperature = bitwAnd(readBin(fid, integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256 - 50;
+    temperature = bitwAnd(readBin(fid, integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256.0 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
       seek(fid, 1, origin = 'current') # skip events
@@ -131,7 +131,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
     # bottom nibble: packing format" (2 means unpacked, 0 packed).
     offset25 = readBin(fid, integer(), size = 1, signed = FALSE)
-    packed = bitwAnd(offset25,15) == 0
+    packed = (bitwAnd(offset25,15) == 0)
 
     # offset 26 has a int16 (not uint16) value. 
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
@@ -160,16 +160,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     } else {
       # value at offset 26 is index of measurement with whole number of seconds
       shift = offset26
-      # If the top bit of tsOffset is set, then timestamp offset was artificially
-      # modified for backwards-compatibility ... therefore undo this...
       if (is.null(parameters)) {
+        frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+        # If the top bit of tsOffset is set, then timestamp offset was artificially
+        # modified for backwards-compatibility ... therefore undo this...
         if (bitwAnd(tsOffset, 0x8000L) != 0) {
           format = 1
-          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-          accrange = bitwShiftR(16,(bitwShiftR(samplerate_dynrange,6)))
-        } else { # & class(frequency_data) ==  "function") {
+        } else {
           format = 2
-          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
         }
       }
       if (format == 1) {
@@ -194,11 +192,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (complete) {
       
       if (packed) { #32 bit
-        # Read 4 byte for three measurements
+        # Read 4 bytes for three measurements
         packedData = readBin(fid, integer(), size = 4, n = blockLength, endian="little")
         # Unpack data
-        data = AxivityNumUnpack(packedData) #GGIRread:::
-        # data2 = numUnpack2(packedData)
+        data = AxivityNumUnpack(packedData)
         # Calculate number of bytes to skip
         nskip = 482 -  4 * (Naxes/3) * blockLength
       } else {
@@ -212,9 +209,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       seek(fid, nskip, origin = 'current')
       
       # Set names and Normalize accelerations
-      if (is.na(header_accrange == TRUE)) {
-        header_accrange = 8
-      }
       if (Naxes == 3) {
         colnames(data) = c("x", "y", "z")
         data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale  #/ 256
@@ -399,7 +393,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     pb = txtProgressBar(1, nr, style = 3)
   }
   pos = 1 # position of the first element to complete in data
-  prevRaw = readDataBlock(fid, struc = struc, header_accrange = header$accrange) # Read the first block
+  prevRaw = readDataBlock(fid, struc = struc) # Read the first block
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
@@ -427,9 +421,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     if (Nblocks2Skip <= 0) {
       # read block
-      raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
-                          parameters = prevRaw$parameters)
-      
+      raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
     } else {
       # skip series of blocks, but only do this once
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
