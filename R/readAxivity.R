@@ -94,9 +94,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    seek(fid, 4, origin = 'current') # skip packet header "AX" and packetlength.
+    seek(fid, 4, origin = 'current') # skip packet header "AX" and packet length.
     # offset 4 contains u16 with timestamp offset
     tsOffset = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+
     # read data for timestamp u32 at offset 14
     seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
     timeStamp = readBin(fid, integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
@@ -117,7 +118,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
       # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
       # So to restore the ADC value, double the packed value and add 512.
-      # Then voltage = ADC_value) * 6 /1024 
+      # Then voltage = ADC_value * 6 / 1024 
       battery = 3.0 * (readBin(fid, integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
       seek(fid, 2, origin = 'current') # skip events and battery
@@ -137,13 +138,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     offset26 = readBin(fid, integer(), size = 2, endian="little")
 
     if (is.null(parameters)) {
-      # number of observations in block U16 in offset 28
-      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
-      # Note that of AX6 is configured to only collect accelerometer data
+      # number of observations in block U16 at offset 28
+      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
+      # Note that if AX6 is configured to only collect accelerometer data
       # this will look as if it is a AX3
       blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
       accelScaleCode = bitwShiftR(offset18, 13)
-      accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
+      accelScale = 1 / (2^(8 + accelScaleCode))
       # top nibble of offset25 is the number of axes
       Naxes = bitwShiftR(offset25, 4)
     } else {
@@ -152,18 +153,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # auxiliary variables
     shift = 0
     fractional = 0
-    # Consider two possible formats.
-    # Very old file have zero in offset 24 and frequency in offset 26
-    if (samplerate_dynrange != 0) {
-      # value in offset 26 is index of measurement with whole number of seconds
+
+    if (samplerate_dynrange == 0) {
+      # Very old files have zero at offset 24 and frequency at offset 26
+      frequency_data = offset26
+    } else {
+      # value at offset 26 is index of measurement with whole number of seconds
       shift = offset26
-      # If tsOffset is not null then timestamp offset was artificially
+      # If the top bit of tsOffset is set, then timestamp offset was artificially
       # modified for backwards-compatibility ... therefore undo this...
       if (is.null(parameters)) {
         if (bitwAnd(tsOffset, 0x8000L) != 0) {
           format = 1
           frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-          accrange = bitwShiftR(16,(bitwShiftR(abs(samplerate_dynrange),6)))
+          accrange = bitwShiftR(16,(bitwShiftR(samplerate_dynrange,6)))
         } else { # & class(frequency_data) ==  "function") {
           format = 2
           frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
@@ -185,10 +188,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         # frequency is truncated to int in firmware
         shift = shift + bitwShiftR((fractional * frequency_data), 16);
       }
-    } else {
-      #Very old format, where offset 26 contains frequency
-      frequency_data = offset26
     }
+
     # Read data if necessary
     if (complete) {
       
