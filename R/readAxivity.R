@@ -125,15 +125,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     # sampling rate in one of file format U8 at offset 24
     samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
-    # format of data in block u8  in offset 25
-    # tmp = readBin(fid, integer(), size = 1)
-    offset25_raw = readBin(fid, raw())
-    offset25 = as.integer(offset25_raw)
+    
+    # offset 25, per documentation: 
+    # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
+    # bottom nibble: packing format" (2 means unpacked, 0 packed).
+    offset25 = readBin(fid, integer(), size = 1, signed = FALSE)
     packed = bitwAnd(offset25,15) == 0
 
     # offset 26 has a int16 (not uint16) value. 
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
-    offset_26 = readBin(fid, integer(), size = 2, endian="little")
+    offset26 = readBin(fid, integer(), size = 2, endian="little")
 
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
@@ -143,7 +144,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
-      Naxes = as.integer(substr(offset25_raw,1,1))
+      # top nibble of offset25 is the number of axes
+      Naxes = bitwShiftR(offset25, 4)
     } else {
       seek(fid, 2, origin = 'current')
     }
