@@ -44,7 +44,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Background info on data format:
   # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-technical.md
   #############################################################################
-  
+
   # Internal functions
   timestampDecoder = function(coded, fraction, shift, struc, configtz) {
     year = struc[[1]]
@@ -72,7 +72,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     start = year + fraction / 65536 + shift
     invisible(list(start = start, struc = struc))
   }
-  
+
   readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), parameters = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
@@ -90,7 +90,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       accelScaleCode = parameters$accelScaleCode
       accelScale = parameters$accelScale
       Naxes = parameters$Naxes
-      blockLength = parameters$blockLength
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
@@ -101,7 +100,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # read data for timestamp u32 at offset 14
     seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
     timeStamp = readBin(fid, integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
-    
+
     # Get light u16 at offset 18
     offset18 = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
     light = bitwAnd(offset18, 0x03ffL)
@@ -126,7 +125,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     # sampling rate in one of file format U8 at offset 24
     samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
-    
+
     # offset 25, per documentation: 
     # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
     # bottom nibble: packing format" (2 means unpacked, 0 packed).
@@ -137,19 +136,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
     offset26 = readBin(fid, integer(), size = 2, endian="little")
 
+    # number of observations in block U16 at offset 28
+    # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
+    # Note that if AX6 is configured to only collect accelerometer data
+    # this will look as if it is a AX3
+    blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
+
     if (is.null(parameters)) {
-      # number of observations in block U16 at offset 28
-      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
-      # Note that if AX6 is configured to only collect accelerometer data
-      # this will look as if it is a AX3
-      blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode))
       # top nibble of offset25 is the number of axes
       Naxes = bitwShiftR(offset25, 4)
-    } else {
-      seek(fid, 2, origin = 'current')
-    }
+    } 
+
     # auxiliary variables
     shift = 0
     fractional = 0
@@ -226,7 +225,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       parameters = list(accelScaleCode = accelScaleCode,
                         accelScale = accelScale,
                         Naxes = Naxes,
-                        blockLength = blockLength,
                         frequency_data = frequency_data,
                         format = format)
     }
@@ -324,7 +322,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       returnobject
     ))
   }
-  
+
 
   ################################################################################################
   # Main function
@@ -387,7 +385,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   
   #############################################################################
   # Reading of data
-  
+
   # Create progress bar if it is necessary
   if (progressBar) {
     pb = txtProgressBar(1, nr, style = 3)
@@ -439,7 +437,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevLength = prevRaw$length
     struc = raw$struc
     # Check are previous data block necessary
-    
+
     if (raw$start < start) {
       # Ignore this block and go to the next
       prevRaw = raw
@@ -523,8 +521,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     i = i + 1
   }
-  
-  
+
+
   #############################################################################
   # Process the last block of data if necessary
   if (pos <= nr & exists("prevStart") & exists("prevLength")) {
