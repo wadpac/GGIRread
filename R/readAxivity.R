@@ -126,14 +126,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # sampling rate in one of file format U8 at offset 24
     samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
     # format of data in block u8  in offset 25
-    # temp = readBin(fid, integer(), size = 1)
-    temp_raw = readBin(fid, raw(), size = 1)
-    temp = as.integer(temp_raw)
-    packed = bitwAnd(temp,15) == 0
+    # tmp = readBin(fid, integer(), size = 1)
+    tmp_raw = readBin(fid, raw(), size = 1)
+    tmp = as.integer(tmp_raw)
+    packed = bitwAnd(tmp,15) == 0
 
     # offset 26 has a int16 (not uint16) value. 
     #It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
-    temp = readBin(fid, integer(), size = 2, endian="little")
+    tmp = readBin(fid, integer(), size = 2, endian="little")
 
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
@@ -143,7 +143,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
-      Naxes = as.integer(substr(temp_raw,1,1))
+      Naxes = as.integer(substr(tmp_raw,1,1))
     } else {
       seek(fid, 2, origin = 'current')
     }
@@ -154,7 +154,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Very old file have zero in offset 24 and frequency in offset 26
     if (samplerate_dynrange != 0) {
       # value in offset 26 is index of measurement with whole number of seconds
-      shift = temp
+      shift = tmp
       # If tsOffset is not null then timestamp offset was artificially
       # modified for backwards-compatibility ... therefore undo this...
       if (is.null(parameters)) {
@@ -185,7 +185,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
     } else {
       #Very old format, where offset 26 contains frequency
-      frequency_data = temp
+      frequency_data = tmp
     }
     # Read data if necessary
     if (complete) {
@@ -197,16 +197,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         data = AxivityNumUnpack(packedData) #GGIRread:::
         # data2 = numUnpack2(packedData)
         # Calculate number of bytes to skip
-        temp = 482 -  4 * (Naxes/3) * blockLength
+        tmp = 482 -  4 * (Naxes/3) * blockLength
       } else {
         # Read unpacked data
         xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes, endian="little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
         # Calculate number of bytes to skip
-        temp = 482 - (2 * Naxes * blockLength)
+        tmp = 482 - (2 * Naxes * blockLength)
       }
       # Skip the rest of block
-      seek(fid, temp, origin = 'current')
+      seek(fid, tmp, origin = 'current')
       
       # Set names and Normalize accelerations
       if (is.na(header_accrange == TRUE)) {
