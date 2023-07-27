@@ -73,21 +73,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     invisible(list(start = start, struc = struc))
   }
   
-  unsigned8 = function(x) {
-    # Auxiliary function for normalisation of unsigned integers
-    if (x < 0)
-      return(x + 256) #2^8
-    else
-      return(x)
-  }
-  
-  unsigned16 = function(x) {
-    # Auxiliary function for normalisation of unsigned integers
-    if (x < 0)
-      return(x + 65536) #2^16
-    else
-      return(x)
-  }
   readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), header_accrange = NULL, parameters = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
@@ -109,58 +94,58 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    # Check the block header
-    # idstr = readChar(fid,2,useBytes = TRUE)
-    # seek(fid, 2, origin = 'current') # idstr and assume it is AX
-    # Read the data block. Extract several data fields
+    seek(fid, 4, origin = 'current') # skip packet header "AX" and packetlength.
     # offset 4 contains u16 with timestamp offset
-    seek(fid, 4, origin = 'current') # skip packetlength
-    tsOffset = readBin(fid, integer(), size = 2, endian="little")
-    # read data for timestamp u32 in offset 14
+    tsOffset = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+    # read data for timestamp u32 at offset 14
     seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
-    timeStamp = readBin(fid, integer(), size = 4, endian="little")
-    # Get light u16 in offset 18
-    offset18 = unsigned16(readBin(fid, integer(), size = 2, endian="little"))
+    timeStamp = readBin(fid, integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
+    
+    # Get light u16 at offset 18
+    offset18 = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
     light = bitwAnd(offset18, 0x03ffL)
+
     # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
     # Formula for the temperature is specified at 
     # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
     # Also see the following discussion:
     # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
-    temperature = bitwAnd(readBin(fid, integer(), size = 2, endian="little"), 0x03ffL) * 75.0 / 256 - 50;
+    temperature = bitwAnd(readBin(fid, integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
       seek(fid, 1, origin = 'current') # skip events
-
       # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
       # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
       # So to restore the ADC value, double the packed value and add 512.
       # Then voltage = ADC_value) * 6 /1024 
-      battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 256.0 + 1.0);
+      battery = 3.0 * (readBin(fid, integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
       seek(fid, 2, origin = 'current') # skip events and battery
       battery = 0
     }
-    # sampling rate in one of file format U8 in offset 24
-    samplerate_dynrange = readBin(fid, integer(), size = 1)
+    # sampling rate in one of file format U8 at offset 24
+    samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
     # format of data in block u8  in offset 25
     # temp = readBin(fid, integer(), size = 1)
     temp_raw = readBin(fid, raw(), size = 1)
     temp = as.integer(temp_raw)
     packed = bitwAnd(temp,15) == 0
-    # can be measurement with whole seconds or sample rate u16 in offset 26
-    temp = readBin(fid, integer(), size = 2, endian="little") # timestampOffset
+
+    # offset 26 has a int16 (not uint16) value. 
+    #It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
+    temp = readBin(fid, integer(), size = 2, endian="little")
+
     if (is.null(parameters)) {
       # number of observations in block U16 in offset 28
       # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
       # Note that of AX6 is configured to only collect accelerometer data
       # this will look as if it is a AX3
-      blockLength = readBin(fid, integer(), size = 2, endian="little") 
+      blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
       Naxes = as.integer(substr(temp_raw,1,1))
     } else {
-      seek(fid, 2, origin = 'current') # skip events
+      seek(fid, 2, origin = 'current')
     }
     # auxiliary variables
     shift = 0
