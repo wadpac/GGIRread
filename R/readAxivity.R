@@ -190,7 +190,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Read data if necessary
     if (complete) {
       
-      if (packed) { #32 bit
+      if (packed) {
         # Read 4 bytes for three measurements
         packedData = readBin(fid, integer(), size = 4, n = blockLength, endian="little")
         # Unpack data
@@ -275,7 +275,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
 
     # Next 2 bytes are packet length. No need to read it, it's always 1020
-    readChar(fid, 2, useBytes = TRUE) #offset 2 3
+    seek(fid, 2, origin = 'current')
 
     # offset 4 encodes hardware type: AX6 or AX3
     hwType = readBin(fid, integer(), size = 1, signed = FALSE)
@@ -397,13 +397,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
-  Npages = (end - start) + 1
-  rawTime = vector(mode = "numeric", 300 * Npages)
-  if (header$hardwareType == "AX3") {
-    rawAccel = matrix(0, nrow = 300 * Npages, ncol = 3)
-  } else {
-    rawAccel = matrix(0, nrow = 300 * Npages, ncol = 6)
-  }
+
+  # a block has at most 120 samples (40 samples for AX6, 
+  # 80 for unpacked AX3 or for AX6 only collecting accelerometer data, and 120 for packed AX3),
+  # so allocate enough space for this number of samples, plus an extra one needed for resampling.
+  maxSamples = 120
+  rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
+  rawTime = vector(mode = "numeric", maxSamples + 1)
+
   rawPos = 1
   i = 2
   samplingFrac = 0.97 # first assume that sampling rate is 97% of expected value or higher
