@@ -277,9 +277,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Next 2 bytes are packet length. No need to read it, it's always 1020
     readChar(fid, 2, useBytes = TRUE) #offset 2 3
 
-    # hardware type: AX6 or AX3
-    hwType = readBin(fid, raw()) #offset 4
-    if (hwType == "64") {
+    # offset 4 encodes hardware type: AX6 or AX3
+    hwType = readBin(fid, integer(), size = 1, signed = FALSE)
+    if (hwType == 0x64) {
       hardwareType = "AX6"
     } else {
       hardwareType = "AX3"
