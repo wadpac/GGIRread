@@ -482,7 +482,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
       next
     }
-    block1AfterSkip = FALSE
 
     # Create array of times
     time = seq(prevStart, raw$start, length.out = prevLength + 1)
