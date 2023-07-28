@@ -93,7 +93,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    seek(fid, 4, origin = 'current') # skip packet header "AX" and packet length.
+
+    idstr = readChar(fid, 2, useBytes = TRUE)
+    if (idstr != "AX") {
+      stop("Packet header is incorrect. First two characters must be AX.")
+    }
+
+    packetLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+    if (packetLength != 508) {
+      stop("Packet length is incorrect, should always be 508.")
+    }
+
     # offset 4 contains u16 with timestamp offset
     tsOffset = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
 
@@ -429,7 +439,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     } else {
       # skip series of blocks, but only do this once
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
-      prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
+      prevRaw$start = prevRaw$start + (blockDur * Nblocks2Skip) + 1
       skippedLast = TRUE
       block1AfterSkip = TRUE
       i = i + Nblocks2Skip
@@ -510,7 +520,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       temp[pos:last] = prevRaw$temperature
       battery[pos:last] = prevRaw$battery
     }
-    # Remove all rawdata exclude the last
+    # Remove all rawdata except for the last
     rawTime[1] = rawTime[rawLast]
     rawAccel[1,] = rawAccel[rawLast,]
     rawPos = 2
