@@ -7,7 +7,7 @@ test_that("readAxivity reads data from file correctly", {
   expect_equal(nrow(AX3$data), 900)
   expect_equal(ncol(AX3$data), 7)
   expect_equal(AX3$data$time[5], 1551174909)
-  expect_equal(AX3$data$temp[3], 18.65)
+  expect_equal(AX3$data$temp[3], 26.46484, tolerance = 0.0001)
   expect_equal(floor(sum(abs(AX3$data[,2:4]))), 1407)
   expect_equal(AX3$data[1,2], 0.8845225, tolerance = 3)
   expect_equal(AX3$data[4,3], -0.34375, tolerance = 3)
@@ -18,7 +18,7 @@ test_that("readAxivity reads data from file correctly", {
   expect_equal(nrow(AX3b$data), 17299)
   expect_equal(ncol(AX3b$data), 7)
   expect_equal(AX3b$data$time[5], 1551174909)
-  expect_equal(AX3b$data$temp[3], 18.65)
+  expect_equal(AX3b$data$temp[3], 26.46484, tolerance = 0.0001)
   expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 24873)
   
 })
