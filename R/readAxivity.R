@@ -376,11 +376,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   timeRes = seq(start, end, step)
   nr = length(timeRes) - 1
   timeRes = as.vector(timeRes[1:nr])
-  if (header$hardwareType == "AX3") {
-    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
-  } else { # AX6
-    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
-  }
   temp = vector(mode = "double", nr)
   battery = vector(mode = "double", nr)
   light = vector(mode = "double", nr)
@@ -396,6 +391,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   prevRaw = readDataBlock(fid, struc = struc) # Read the first block
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
+  }
+
+  # Don't rely on the type of device to determine the dimentionality of the data
+  # because AX6 can be configured to only collect accelerometer data.
+  if (prevRaw$parameters$Naxes == 3) { # AX3, or AX6 configured to only collect accelerometer data
+    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
+  } else { # AX6 configured to collect gyroscope data
+    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
   }
 
   # a block has at most 120 samples (40 samples for AX6, 
