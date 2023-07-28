@@ -3,7 +3,7 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   # Extract information from the fileheader
   suppressWarnings({fh = readLines(filename, 69)})
-  
+  # fh = fh[1:30]
   SN = gsub(pattern = "Device Unique Serial Code:", replacement = "",
             x = fh[grep(pattern = "Device Unique Serial Code", x = fh)[1]])
   firmware = gsub(pattern = "Device Firmware Version:", replacement = "",
