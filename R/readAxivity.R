@@ -47,33 +47,43 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   # Internal functions
   timestampDecoder = function(coded, fraction, shift, struc, configtz) {
-    year = struc[[1]]
-    if (year == 0) {
+    timestamp_numeric = struc[[1]]
+
+    # make sure timestamps are somewhat continous,
+    # and there hasn't been a large gap since the previous timestamp
+    coded_no_seconds = bitwShiftR(coded, 6)
+    if (coded_no_seconds != struc[3]) {
+      timestamp_numeric = 0
+    }
+
+    if (timestamp_numeric == 0) {
+      # very first timestamp, or the first one after a gap
+
       # Extract parts of date
       year = bitwAnd(bitwShiftR(coded, 26), 0x3fL) + 2000
       month = bitwAnd(bitwShiftR(coded, 22), 0x0fL)
       day = bitwAnd(bitwShiftR(coded, 17), 0x1f)
       hours = bitwAnd(bitwShiftR(coded, 12), 0x1fL)
-      mins = bitwAnd(bitwShiftR(coded, 6), 0x3fL)
+      mins = bitwAnd(coded_no_seconds, 0x3fL)
       secs = bitwAnd(coded, 0x3fL)
       # Form string representation of date and convert it to number
-      year_raw = as.POSIXct(paste0(year, "-", month, "-", day, " ",
-                                              hours, ":", mins, ":", secs),
-                            tz = configtz)
-      year = as.numeric(year_raw)
+      timestamp_text = as.POSIXct(paste0(year, "-", month, "-", day, " ",
+                                         hours, ":", mins, ":", secs),
+                                  tz = configtz)
+      timestamp_numeric = as.numeric(timestamp_text)
     } else {
       secs = bitwAnd(coded, 0x3fL)
       oldSecs = struc[[2]]
       if (secs < oldSecs) oldSecs = oldSecs - 60
-      year = year + (secs - oldSecs)
+      timestamp_numeric = timestamp_numeric + (secs - oldSecs)
     }
-    struc <- list(year,secs)
+    struc <- list(timestamp_numeric, secs, coded_no_seconds)
     # Add fractional part and shift
-    start = year + fraction / 65536 + shift
+    start = timestamp_numeric + fraction / 65536 + shift
     invisible(list(start = start, struc = struc))
   }
 
-  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), parameters = NULL){
+  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L,0), parameters = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
     #   start is start time in numeric form. To create string representation
@@ -104,7 +114,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       stop("Packet length is incorrect, should always be 508.")
     }
 
-    # offset 4 contains u16 with timestamp offset
+    # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
 
     # read data for timestamp u32 at offset 14
@@ -354,7 +364,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   })
   #############################################################################
   # read header
-  struc = list(0,0L)
+  struc = list(0,0L,0)
   if (is.null(header)) {
     header = readHeader(fid, numDBlocks)
   }
@@ -425,9 +435,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   struc_backup = struc
   block1AfterSkip = FALSE
   skippedLast = FALSE
+  blockDur = prevRaw$length / prevRaw$frequency
+
   while (i <= numDBlocks) {
     time2Skip = start - prevRaw$start # once this gets negative we've passed the point
-    blockDur = prevRaw$length / prevRaw$frequency
     if (skippedLast == FALSE) {
       Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
     } else {
