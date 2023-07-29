@@ -423,10 +423,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   # a block has at most 120 samples (40 samples for AX6, 
   # 80 for unpacked AX3 or for AX6 only collecting accelerometer data, and 120 for packed AX3),
-  # so allocate enough space for this number of samples, plus an extra one needed for resampling.
+  # so allocate enough space for this number of samples, plus an extra ones needed for resampling.
   maxSamples = 120
   rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
-  rawTime = vector(mode = "numeric", maxSamples + 1)
+  rawTime = vector(mode = "numeric", maxSamples + 2)
 
   rawPos = 1
   i = 2
@@ -494,19 +494,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       next
     }
 
-    # Create array of times
-    time = seq(prevStart, raw$start, length.out = prevLength + 1)
     # fill vector rawTime and matrix rawAccel for resampling
+    rawLast = prevLength + 1
+    rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    rawAccel[2:rawLast,] = as.matrix(prevRaw$data)
+
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    # Define number of rows in prevRaw$data
-    rawLast = prevLength + rawPos - 1
-    rawTime[rawPos:rawLast] = time[1:prevLength]
-    rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -548,27 +545,23 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     i = i + 1
   }
 
-
   #############################################################################
   # Process the last block of data if necessary
   if (pos <= nr & exists("prevStart") & exists("prevLength")) {
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
     prevLength = prevRaw$length
-    # Create array of times
-    time = seq(prevStart, newTimes, length.out = prevLength + 1) #Row eddited by EM 18/12/2017. Correction of the final time.
-    # Fragment below was changed by EM 24.04.2017 to unify resampling process.
+
     # fill vector rawTime and matrix rawAccel for resampling
+    rawLast = prevLength + 1
+    rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    rawAccel[2:rawLast,] = as.matrix(prevRaw$data)
+
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    # Define number of rows in prevRaw$data
-    rawLast = prevLength + rawPos - 1
-    rawTime[rawPos:rawLast] = time[1:prevLength]
-    rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
