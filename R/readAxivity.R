@@ -487,7 +487,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # fill vector rawTime and matrix rawAccel for resampling
     rawLast = prevLength + 1
     rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-    rawAccel[2:rawLast,] = as.matrix(prevRaw$data)
+    rawAccel[2:rawLast,] = prevRaw$data
 
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
@@ -545,7 +545,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # fill vector rawTime and matrix rawAccel for resampling
     rawLast = prevLength + 1
     rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-    rawAccel[2:rawLast,] = as.matrix(prevRaw$data)
+    rawAccel[2:rawLast,] = prevRaw$data
 
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
