@@ -590,6 +590,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Form outcome
   return(invisible(list(
     header = header,
-    data = as.data.frame(cbind(time = timeRes, accelRes, temp,  battery, light), stringsAsFactors = TRUE)
+    data = cbind.data.frame(time = timeRes, accelRes, temp,  battery, light, stringsAsFactors = TRUE)
   )))
 }
