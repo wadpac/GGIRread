@@ -217,13 +217,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         # Unpack data
         data = AxivityNumUnpack(packedData)
         # Calculate number of bytes to skip
-        nskip = 480 -  4 * (Naxes/3) * blockLength
       } else {
         # Read unpacked data
         xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian="little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
         # Calculate number of bytes to skip
-        nskip = 480 - (2 * Naxes * blockLength)
       }
       checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian="little")
       
