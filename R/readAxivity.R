@@ -285,39 +285,34 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     
     # Start from the file origin
     seek(fid,0)
+    block = readBin(fid, "raw", n=1024)
+
     # Read block header and check correctness of name
-    idstr = readChar(fid, 2, useBytes = TRUE) #offset 0 1
+    idstr = readChar(block, 2, useBytes = TRUE) #offset 0 1
     if (idstr != "MD") {
       stop("Header block is incorrect. First two characters must be MD.")
     }
 
-    # Next 2 bytes are packet length. No need to read it, it's always 1020
-    seek(fid, 2, origin = 'current')
-
     # offset 4 encodes hardware type: AX6 or AX3
-    hwType = readBin(fid, integer(), size = 1, signed = FALSE)
+    hwType = readBin(block[5], integer(), size = 1, signed = FALSE)
     if (hwType == 0x64) {
       hardwareType = "AX6"
     } else {
       hardwareType = "AX3"
     }
     # session id and device id
-    lowerDeviceId = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") #offset 5 6
-    sessionID = readBin(fid, integer(), size = 4, endian="little") #offset 7 8 9 10
-    upperDeviceId = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") #offset 11 12
+    lowerDeviceId = readBin(block[6:7], integer(), size = 2, signed = FALSE, endian="little") #offset 5 6
+    sessionID = readBin(block[8:11], integer(), size = 4, endian="little") #offset 7 8 9 10
+    upperDeviceId = readBin(block[12:13], integer(), size = 2, signed = FALSE, endian="little") #offset 11 12
     if (upperDeviceId == 65535) {
       upperDeviceId = 0
     }
     uniqueSerialCode = bitwOr(bitwShiftL(upperDeviceId, 16), lowerDeviceId)
-    seek(fid, 23, origin = 'current') #offset 13..35
     # sample rate and dynamic range accelerometer
-    samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE) #offset 36
+    samplerate_dynrange = readBin(block[37], integer(), size = 1, signed = FALSE) #offset 36
     frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
     accrange = bitwShiftR(16, (bitwShiftR(samplerate_dynrange, 6)))
-    seek(fid, 4, origin = 'current') #offset 37..40
-    version = readBin(fid, integer(), size = 1, signed = FALSE) #offset 41
-    # Skip 982 bytes and go to the first data block
-    seek(fid, 982, origin = 'current') #offset 42..1024
+    version = readBin(block[42], integer(), size = 1, signed = FALSE) #offset 41
 
     # Read the first data block without data
     datas = readDataBlock(fid, complete = FALSE)
