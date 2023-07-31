@@ -43,7 +43,7 @@
     Boolean to indicate whether battery voltage should be loaded
   }
   \item{header}{
-    Default header to be used if header cannot be extracted
+    Header to be reused if it was extracted earlier
   }
 }
 \value{
