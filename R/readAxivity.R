@@ -576,24 +576,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
   }
   #===============================================================================
-  # Do not export sections of the data with zeros in all channels, because they were not actual recordings
-  # zeros are introduced when the user asks for more data than the length of the recording
-  emptydata = which(rowSums(accelRes) == 0 & temp == 0 & battery == 0 & light == 0)
-  if (length(emptydata) > 0) {
-    startends = which(diff(emptydata) != 1)
-    if (length(startends) > 0) {
-      lastmeasurement = max(startends)
-    } else {
-      lastmeasurement = emptydata[1]
-    }
-    if (length(lastmeasurement) > 0) {
-      cut = c(lastmeasurement:nrow(accelRes))
-      accelRes = accelRes[-cut,]
-      battery = battery[-cut]
-      light = light[-cut]
-      temp = temp[-cut]
-      timeRes = timeRes[-cut]
-    }
+  # If the user asked for more data than the length of the recording,
+  # there will be 0s at the end of the result lists; get rid of them.
+  if (last < nrow(accelRes)) {
+    cut = c(last+1:nrow(accelRes))
+    accelRes = accelRes[-cut,]
+    battery = battery[-cut]
+    light = light[-cut]
+    temp = temp[-cut]
+    timeRes = timeRes[-cut]
   }
   #===============================================================================
   # Form outcome
