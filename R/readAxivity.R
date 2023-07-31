@@ -103,26 +103,29 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
+    block = readBin(fid, "raw", n=512)
+    if (length(block) < 512) {
+      return(NULL)
+    }
 
-    idstr = readChar(fid, 2, useBytes = TRUE)
+    idstr = readChar(block, 2, useBytes = TRUE)
     if (idstr != "AX") {
       stop("Packet header is incorrect. First two characters must be AX.")
     }
 
-    packetLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+    packetLength = readBin(block[3:4], integer(), size = 2, signed = FALSE, endian="little")
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
 
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
-    tsOffset = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+    tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian="little")
 
     # read data for timestamp u32 at offset 14
-    seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
-    timeStamp = readBin(fid, integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
+    timeStamp = readBin(block[15:18], integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
 
     # Get light u16 at offset 18
-    offset18 = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
+    offset18 = readBin(block[19:20], integer(), size = 2, signed = FALSE, endian="little")
     light = bitwAnd(offset18, 0x03ffL)
 
     # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
@@ -130,37 +133,35 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
     # Also see the following discussion:
     # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
-    temperature = bitwAnd(readBin(fid, integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256.0 - 50;
+    temperature = bitwAnd(readBin(block[21:22], integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256.0 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
-      seek(fid, 1, origin = 'current') # skip events
       # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
       # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
       # So to restore the ADC value, double the packed value and add 512.
       # Then voltage = ADC_value * 6 / 1024 
-      battery = 3.0 * (readBin(fid, integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
+      battery = 3.0 * (readBin(block[24], integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
-      seek(fid, 2, origin = 'current') # skip events and battery
       battery = 0
     }
     # sampling rate in one of file format U8 at offset 24
-    samplerate_dynrange = readBin(fid, integer(), size = 1, signed = FALSE)
+    samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
 
     # offset 25, per documentation: 
     # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
     # bottom nibble: packing format" (2 means unpacked, 0 packed).
-    offset25 = readBin(fid, integer(), size = 1, signed = FALSE)
+    offset25 = readBin(block[26], integer(), size = 1, signed = FALSE)
     packed = (bitwAnd(offset25,15) == 0)
 
     # offset 26 has a int16 (not uint16) value. 
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
-    offset26 = readBin(fid, integer(), size = 2, endian="little")
+    offset26 = readBin(block[27:28], integer(), size = 2, endian="little")
 
     # number of observations in block U16 at offset 28
     # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
     # Note that if AX6 is configured to only collect accelerometer data
     # this will look as if it is a AX3
-    blockLength = readBin(fid, integer(), size = 2, signed = FALSE, endian="little") 
+    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian="little") 
 
     if (is.null(parameters)) {
       accelScaleCode = bitwShiftR(offset18, 13)
@@ -212,22 +213,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       
       if (packed) {
         # Read 4 bytes for three measurements
-        packedData = readBin(fid, integer(), size = 4, n = blockLength, endian="little")
+        packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian="little")
         # Unpack data
         data = AxivityNumUnpack(packedData)
         # Calculate number of bytes to skip
         nskip = 480 -  4 * (Naxes/3) * blockLength
       } else {
         # Read unpacked data
-        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes, endian="little")
+        xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian="little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
         # Calculate number of bytes to skip
         nskip = 480 - (2 * Naxes * blockLength)
       }
-      checksum = readBin(fid, integer(), size = 2, signed = FALSE, endian="little")
-
-      # Skip the rest of block
-      seek(fid, nskip, origin = 'current')
+      checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian="little")
       
       # Set names and Normalize accelerations
       if (Naxes == 3) {
@@ -240,8 +238,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         data[,c("gx", "gy", "gz")] = (data[,c("gx", "gy", "gz")] / 2^15) * gyroRange
         data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale
       }
-    } else {
-      seek(fid, 482, origin = 'current')
     }
     if (is.null(parameters)) {
       parameters = list(accelScaleCode = accelScaleCode,
@@ -269,6 +265,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   
     return(invisible(rawdata_list))
   }
+
   readHeader = function(fid, numDBlocks) {
     # fid is file identifier
     # numDBlocks is number of data blocks
@@ -547,7 +544,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   #############################################################################
   # Process the last block of data if necessary
-  if (pos <= nr & exists("prevStart") & exists("prevLength")) {
+  if (prevRaw$start >= start & pos <= nr & exists("prevStart") & exists("prevLength")) {
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
     prevLength = prevRaw$length
