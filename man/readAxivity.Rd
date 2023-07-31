@@ -8,7 +8,8 @@
 }
 \usage{
   readAxivity(filename, start = 0, end = 0, progressBar = FALSE, 
-    desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE)
+    desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE,
+    header = NULL)
 }
 \arguments{
   \item{filename}{
@@ -40,6 +41,9 @@
   }
   \item{loadbattery}{
     Boolean to indicate whether battery voltage should be loaded
+  }
+  \item{header}{
+    Default header to be used if header cannot be extracted
   }
 }
 \value{
