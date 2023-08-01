@@ -9,7 +9,7 @@
 \usage{
   readAxivity(filename, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE,
-    header = NULL, check_checksum = TRUE, frequency_tol = 0.1)
+    header = NULL, frequency_tol = 0.1)
 }
 \arguments{
   \item{filename}{
@@ -44,9 +44,6 @@
   }
   \item{header}{
     Header to be reused if it was extracted earlier
-  }
-  \item{check_checksum}{
-    Boolean to indicate what checksum should be checked.
   }
   \item{frequency_tol}{
     Numeric value representing the tolerance for frequency bias expressed

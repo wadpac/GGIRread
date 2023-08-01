@@ -1,6 +1,6 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
                        configtz = c(), interpolationType = 1, loadbattery = FALSE,
-                       header = NULL, check_checksum = TRUE, frequency_tol = 0.1) {
+                       header = NULL, frequency_tol = 0.1) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The original version of the code in this function was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -119,20 +119,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       stop("Packet length is incorrect, should always be 508.")
     }
     checksum_pass = TRUE
-    if (check_checksum == TRUE) {
-      # Perform checksum
-      checksum = sum(readBin(block, n = 256,
-                             integer(),
-                             size = 2,
-                             signed = FALSE,
-                             endian = "little"))
-      checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
-      if (checksum != 0) {
-        checksum_pass = FALSE
-      }
+    # Perform checksum
+    checksum = sum(readBin(block, n = 256,
+                           integer(),
+                           size = 2,
+                           signed = FALSE,
+                           endian = "little"))
+    checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
+    if (checksum != 0) {
+      checksum_pass = FALSE
     }
     
-
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian="little")
 

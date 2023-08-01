@@ -6,10 +6,11 @@
       \item Fixed bug in temperature extraction Axivity cwa files (credits: Lena Kushleyeva)
       \item readAxivity now able to recognise when AX6 has been configured without 
       gyroscope sensor and only provides accerometer data. Fixes #31 (credits: Lena Kushleyeva)
-      \item readAxivity now 25\% faster (credits: Lena Kushleyeva)
-      \item readAxivity now performsg checksum, sampling frequency check, 
-      and impute blocks for which checks fail with in the output a log of these events.
-      This step slows down readAxivity 18\%. 
+      \item readAxivity refactored and faster (credits: Lena Kushleyeva)
+      but also expanded with checksum check and sampling frequency check, 
+      data blocks are imputed when checks fail and this is logged in the output. 
+      These extra steps have slowed down readAxivity. The net speed increase is 
+      approximately 5\%.
     }
 }
 \section{Changes in version 0.2.9 (GitHub-only-release date:20-07-2023)}{
