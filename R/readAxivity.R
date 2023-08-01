@@ -387,6 +387,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (start < 0)
       start = 0
     start = origin + start * pageLength * step
+  } else {
+    start = as.numeric(as.POSIXct(start, tz = configtz))
   }
   if (is.numeric(end)) {
     end = end * pageLength
@@ -394,6 +396,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       end = numDBlocks * 150
     }
     end = origin + end * step
+  } else {
+    end = as.numeric(as.POSIXct(end, tz = configtz))
   }
   # If data is not necessary then stop work
   if (end <= start) {
