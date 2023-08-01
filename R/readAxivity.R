@@ -595,6 +595,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
     } else {
       # Impute the data because integrity check did not pass
+      if (last - pos >  prevRaw$frequency * 259200) { # 3600 * 24 * 5 = 259200
+        stop(paste0("\nreadAxivity encountered a time gap in the file of ",
+                    round((last - pos) / (3600 * 24), digits = 2), " days"))
+      }
+      
       tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
       for (axi in 1:3) tmp[, axi] = imputedValues[axi]
     }
