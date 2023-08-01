@@ -491,7 +491,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     
     
-    frequency_observed = length(rawTime) / diff(range(rawTime))
+    frequency_observed = length(rawTime[1:rawLast]) / diff(range(rawTime[1:rawLast]))
     #------------------------------------------------------------
     # Check block integrity:
     # The following code checks whether any of the following conditions are met:
