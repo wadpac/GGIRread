@@ -114,7 +114,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       stop("Packet header is incorrect. First two characters must be AX.")
     }
 
-    packetLength = readBin(block[3:4], integer(), size = 2, signed = FALSE, endian="little")
+    packetLength = readBin(block[3:4], integer(), size = 2, signed = FALSE, endian = "little")
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
@@ -131,17 +131,17 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
-    tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian="little")
+    tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian = "little")
 
     
     # offset 10: sequence ID
     blockID = readBin(block[11:14], integer(), size = 4)
     
     # read data for timestamp u32 at offset 14
-    timeStamp = readBin(block[15:18], integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
+    timeStamp = readBin(block[15:18], integer(), size = 4, endian = "little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
 
     # Get light u16 at offset 18
-    offset18 = readBin(block[19:20], integer(), size = 2, signed = FALSE, endian="little")
+    offset18 = readBin(block[19:20], integer(), size = 2, signed = FALSE, endian = "little")
     light = bitwAnd(offset18, 0x03ffL)
 
     # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
@@ -149,7 +149,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
     # Also see the following discussion:
     # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
-    temperature = bitwAnd(readBin(block[21:22], integer(), size = 2, signed = FALSE, endian="little"), 0x03ffL) * 75.0 / 256.0 - 50;
+    temperature = bitwAnd(readBin(block[21:22], integer(), size = 2, signed = FALSE, endian = "little"), 0x03ffL) * 75.0 / 256.0 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
       # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
@@ -171,13 +171,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
     # offset 26 has a int16 (not uint16) value. 
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
-    offset26 = readBin(block[27:28], integer(), size = 2, endian="little")
+    offset26 = readBin(block[27:28], integer(), size = 2, endian = "little")
 
     # number of observations in block U16 at offset 28
     # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
     # Note that if AX6 is configured to only collect accelerometer data
     # this will look as if it is a AX3
-    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian="little") 
+    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian = "little") 
 
     if (is.null(parameters)) {
       accelScaleCode = bitwShiftR(offset18, 13)
@@ -321,9 +321,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       hardwareType = "AX3"
     }
     # session id and device id
-    lowerDeviceId = readBin(block[6:7], integer(), size = 2, signed = FALSE, endian="little") #offset 5 6
-    sessionID = readBin(block[8:11], integer(), size = 4, endian="little") #offset 7 8 9 10
-    upperDeviceId = readBin(block[12:13], integer(), size = 2, signed = FALSE, endian="little") #offset 11 12
+    lowerDeviceId = readBin(block[6:7], integer(), size = 2, signed = FALSE, endian = "little") #offset 5 6
+    sessionID = readBin(block[8:11], integer(), size = 4, endian = "little") #offset 7 8 9 10
+    upperDeviceId = readBin(block[12:13], integer(), size = 2, signed = FALSE, endian = "little") #offset 11 12
     if (upperDeviceId == 65535) {
       upperDeviceId = 0
     }
