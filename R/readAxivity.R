@@ -533,7 +533,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #  than frequency_tol
     # If yes, then we consider the block faulty
     # and impute the acceleration and if applicable gyroscope values
-    # We log this even in output object QClog, which will allow the user to
+    # We log this event in output object QClog, which will allow the user to
     # decide on alternative imputation strategies.
     
     impute = FALSE
@@ -596,6 +596,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     } else {
       # Impute the data because integrity check did not pass
       if (last - pos >  prevRaw$frequency * 259200) { # 3600 * 24 * 5 = 259200
+        # Error if time gap is very large to avoid filling up memory
         stop(paste0("\nreadAxivity encountered a time gap in the file of ",
                     round((last - pos) / (3600 * 24), digits = 2), " days"))
       }
