@@ -2,46 +2,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                        configtz = c(), interpolationType = 1, loadbattery = FALSE,
                        header = NULL, frequency_tol = 0.1) {
   if (length(configtz) == 0) configtz = desiredtz
-  # Credits: The original version of the code in this function was 
+  # Credits: The original version of this code developed outside GitHub was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
-  # filename is namer of cwa file to read
-  # start can be timestamp "year-month-day hr:min:sec" or non-negative integer
-  #       which is page number. Page size is 300 of measurements with specified
-  #       frequency.
-  # end can be timestamp "year-month-day hr:min:sec" or non-negative integer
-  #       which is page number. End must be not less than start. If end is
-  #       less or equal to start then there is no data read. Page size is 300 of
-  #       measurements with specified frequency.
-  # progressBar is trigger to switch on/off the text progress bar. If progressBar
-  #       is TRUE then the function displays the progress bar but it works
-  #       slightly slower
-  # desiredtz is desired time zone
-  # Returned structure contains all data from start inclusive till end exclusive.
-  # If start == end then data section of final structure is empty.
-  # Page size is 300 observations per page
-  #
-  # Structure of output is list with following elements
-  #   header is list of header information
-  #       uniqueSerialCode is unque serial code of used device
-  #       frequency is measurement frequency. All data will be resampled
-  #           for this frequency.
-  #       start is timestamp in numeric form. To get text representation
-  #           it is enough to use
-  #               as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
-  #       device is "Axivity"
-  #       firmwareVersion is version of firmware
-  #       blocks is number of datablocks with 80 or 120 raw observations in each.
-  #           Unfortunately frequency of measurement is varied in this device.
-  #   data is data.frame with following columns
-  #       time is timestamp in numeric form. To get text representation
-  #           it is enough to use
-  #               as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
-  #       x, y, z are three accelerations
-  #       temperature is temperature for the block
-  #       battery is battery charge for the block
-  #       light is light sensor measurement for the block
-  #
+  # Documentation moved to standard place for documentation which is readAxivity.Rd
   # Background info on data format:
   # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-technical.md
   #############################################################################
