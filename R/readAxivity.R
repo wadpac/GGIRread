@@ -103,7 +103,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    block = readBin(fid, "raw", n=512)
+    block = readBin(fid, raw(), n=512)
     if (length(block) < 512) {
       return(NULL)
     }
@@ -216,12 +216,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian="little")
         # Unpack data
         data = AxivityNumUnpack(packedData)
-        # Calculate number of bytes to skip
       } else {
         # Read unpacked data
         xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian="little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
-        # Calculate number of bytes to skip
       }
       checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian="little")
       
@@ -283,7 +281,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     
     # Start from the file origin
     seek(fid,0)
-    block = readBin(fid, "raw", n=1024)
+    block = readBin(fid, raw(), n=1024)
 
     # Read block header and check correctness of name
     idstr = readChar(block, 2, useBytes = TRUE) #offset 0 1
