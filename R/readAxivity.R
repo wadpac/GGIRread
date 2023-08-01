@@ -52,7 +52,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # make sure timestamps are somewhat continous,
     # and there hasn't been a large gap since the previous timestamp
     coded_no_seconds = bitwShiftR(coded, 6)
-    if (coded_no_seconds != struc[3]) {
+    if (coded_no_seconds != struc[[3]]) {
       timestamp_numeric = 0
     }
 
@@ -213,15 +213,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       
       if (packed) {
         # Read 4 bytes for three measurements
-        packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian="little")
+        packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian = "little")
         # Unpack data
         data = AxivityNumUnpack(packedData)
       } else {
         # Read unpacked data
-        xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian="little")
+        xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian = "little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
       }
-      checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian="little")
+      checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian = "little")
       
       # Set names and Normalize accelerations
       if (Naxes == 3) {
@@ -401,19 +401,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     return(invisible(list(header = header, data = NULL)))
   }
 
-  # Don't rely on the type of device to determine the dimentionality of the data
-  # because AX6 can be configured to only collect accelerometer data.
-  if (prevRaw$parameters$Naxes == 3) { # AX3, or AX6 configured to only collect accelerometer data
-    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
-  } else { # AX6 configured to collect gyroscope data
-    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
-  }
-
   # a block has at most 120 samples (40 samples for AX6, 
   # 80 for unpacked AX3 or for AX6 only collecting accelerometer data, and 120 for packed AX3),
   # so allocate enough space for this number of samples, plus an extra ones needed for resampling.
   maxSamples = 120
-  rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
+
+  # Don't rely on the type of device to determine the dimentionality of the data
+  # because AX6 can be configured to only collect accelerometer data.
+  if (prevRaw$parameters$Naxes == 3) { # AX3, or AX6 configured to only collect accelerometer data
+    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
+    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
+  } else { # AX6 configured to collect gyroscope data
+    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
+    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 6)
+  }
   rawTime = vector(mode = "numeric", maxSamples + 2)
 
   rawPos = 1

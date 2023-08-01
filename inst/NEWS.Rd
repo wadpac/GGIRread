@@ -1,6 +1,14 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.2.10 (release date: ??-??-2023)}{
+    \itemize{
+      \item Fixed bug in temperature extraction Axivity cwa files (credits: Lena Kushleyeva)
+      \item readAxivity now able to recognise that AX6 configured without 
+      gyroscope only provides accerometer data. Fixes #31 (credits: Lena Kushleyeva)
+      \item Refactored code readAxivity with 25\% speead increase (credits: Lena Kushleyeva)
+    }
+}
 \section{Changes in version 0.2.9 (GitHub-only-release date:20-07-2023)}{
     \itemize{
       \item Replace bug fix to resample function in 0.2.8 and instead fix the 
