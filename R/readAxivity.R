@@ -1,5 +1,6 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
-                       configtz = c(), interpolationType = 1, loadbattery = FALSE, header = NULL) {
+                       configtz = c(), interpolationType = 1, loadbattery = FALSE,
+                       header = NULL, check_checksum = TRUE, frequency_tol = 0.1) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The original version of the code in this function was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -117,10 +118,28 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
+    checksum = NA
+    if (check_checksum == TRUE) {
+      # Perform checksum
+      checksum = sum(readBin(block, n = 256,
+                             integer(),
+                             size = 2,
+                             signed = FALSE,
+                             endian = "little"))
+      checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
+      if (checksum != 0) {
+        warning(paste0("\nChecksum is not zero: ", checksum))
+      }
+    }
+    
 
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian="little")
 
+    
+    # offset 10: sequence ID
+    blockID = readBin(block[11:14], integer(), size = 4)
+    
     # read data for timestamp u32 at offset 14
     timeStamp = readBin(block[15:18], integer(), size = 4, endian="little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
 
@@ -221,8 +240,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian = "little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
       }
-      checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian = "little")
-      
+
       # Set names and Normalize accelerations
       if (Naxes == 3) {
         colnames(data) = c("x", "y", "z")
@@ -242,6 +260,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                         frequency_data = frequency_data,
                         format = format)
     }
+    
+    if (blockID == 0) {
+      # force timestampDecoder to extract full timestamp
+      # this could for example happen when curious participant plugs
+      # AX device into computer
+      struc[[1]] = 0 
+    }
     tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc, configtz)
     start = tsDeco$start
     struc = tsDeco$struc
@@ -253,7 +278,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       light = light,
       length = blockLength,
       struc = struc,
-      parameters = parameters
+      parameters = parameters,
+      checksum = checksum,
+      blockID = blockID
     )
     if (complete) {
       rawdata_list$data = data
@@ -426,6 +453,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   skippedLast = FALSE
   blockDur = prevRaw$length / prevRaw$frequency
 
+  QClog = NULL # Initialise log of data quality issues
+  
   while (i <= numDBlocks) {
     time2Skip = start - prevRaw$start # once this gets negative we've passed the point
     if (skippedLast == FALSE) {
@@ -486,13 +515,72 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # fill vector rawTime and matrix rawAccel for resampling
     rawLast = prevLength + 1
     rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-    rawAccel[2:rawLast,] = prevRaw$data
+    # Following line is commented out and moved further down, because we only
+    # want to use the data if it passes the integrity checks, otherwise we will impute the data.
+    # rawAccel[2:rawLast,] = prevRaw$data 
 
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
+    
+    
+    frequency_observed = length(rawTime) / diff(range(rawTime))
+    #------------------------------------------------------------
+    # Check block integrity:
+    # The following code checks whether any of the following conditions are met:
+    # - blockID is not zero and not consecutive from previous blockID
+    # - checksum is not zero
+    # - observed and expected sampling frequency differ by a fraction larger 
+    #  than frequency_tol
+    # If yes, then we consider the block faulty
+    # and impute the acceleration and if applicable gyroscope values
+    # We log this even in output object QClog, which will allow the user to
+    # decide on alternative imputation strategies.
+    
+    impute = FALSE
+    doQClog = FALSE
+    frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
+    if ((raw$blockID != 0 &
+         raw$blockID - prevRaw$blockID != 1) |
+        raw$checksum != 0 |
+        frequency_bias > frequency_tol) {
+      # Log and impute this event
+      doQClog = TRUE
+      impute = TRUE
+      
+      # Prepare imputation with last recorded value from previous block
+      # normalized to vector 1 g
+      imputedValues = prevRaw$data[nrow(prevRaw$data), 1:3]
+      VectorG = sqrt(sum(imputedValues^2))
+      if (VectorG > 0.8 & VectorG < 1.2) {
+        # only trust vector as proxy for orientation if it is between 0.8 and 1.2
+        imputedValues = imputedValues / VectorG
+      } else {
+        imputedValues = c(0, 0, 1)
+      }
+    } else {
+      # integrity check passes, so use data
+      rawAccel[2:rawLast,] = prevRaw$data
+      # If frequency bias is larger than 0.05 then still log it even though it is
+      # not imputed
+      if (frequency_bias > 0.05) {
+        doQClog = TRUE
+      }
+    }
+    if (doQClog == TRUE) {
+      QClog = rbind(QClog, data.frame(checksum = raw$checksum,
+                                      blockID_previous = prevRaw$blockID,
+                                      blockID_current = raw$blockID,
+                                      start_previous = prevRaw$start,
+                                      start_current = raw$start,
+                                      blockLengthSeconds = raw$start - prevRaw$start,
+                                      frequency_blockheader = prevRaw$frequency,
+                                      frequency_observed = frequency_observed,
+                                      imputed = impute))
+    }
+    
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -505,7 +593,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       last = last + positions2add
       if (last > nr) last = nr
     }
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
+    
+    if (impute == FALSE) {
+      tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
+    } else {
+      # Impute the data because integrity check did not pass
+      tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
+      for (axi in 1:3) tmp[, axi] = imputedValues[axi]
+    }
+    
     # put result to specified position
     last = nrow(tmp) + pos - 1
 
@@ -589,6 +685,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Form outcome
   return(invisible(list(
     header = header,
-    data = cbind.data.frame(time = timeRes, accelRes, temp,  battery, light, stringsAsFactors = TRUE)
+    data = cbind.data.frame(time = timeRes, accelRes, temp,  battery, light, stringsAsFactors = TRUE),
+    QClog = QClog
   )))
 }

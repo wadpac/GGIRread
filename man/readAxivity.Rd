@@ -9,7 +9,7 @@
 \usage{
   readAxivity(filename, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE,
-    header = NULL)
+    header = NULL, check_checksum = TRUE, frequency_tol = 0.1)
 }
 \arguments{
   \item{filename}{
@@ -45,11 +45,25 @@
   \item{header}{
     Header to be reused if it was extracted earlier
   }
+  \item{check_checksum}{
+    Boolean to indicate what checksum should be checked.
+  }
+  \item{frequency_tol}{
+    Numeric value representing the tolerance for frequency bias expressed
+    as a fraction of the expected sampling frequency. For example, 0.10 indicates
+    that we accept the sampling frequency configured at 100 Hertz to vary between
+    90 and 110 Hertz. If this condition is not met the data will be imputed with
+    a constant value and the start and end time will be logged in the QClog output object.
+  }
+  
 }
 \value{
   \item{\code{data}}{dataframe with timestamp, raw x, -y, and, -z acceleration values,
   temperature, battery and light}
   \item{\code{header}}{file header}
+  \item{\code{QClog}}{dataframe with log of integrity checks on each block including:
+  checksum, sequence ID and start of previuos and current block, and sampling frequency
+  observed as well as sampling frequency from block header}
 }
 \examples{
   \donttest{
