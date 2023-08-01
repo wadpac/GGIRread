@@ -1,5 +1,5 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
-                       configtz = c(), interpolationType = 1, loadbattery = FALSE) {
+                       configtz = c(), interpolationType = 1, loadbattery = FALSE, header = NULL) {
   if (length(configtz) == 0) configtz = desiredtz
   # Credits: The original version of the code in this function was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
@@ -44,51 +44,46 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Background info on data format:
   # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-technical.md
   #############################################################################
-  
+
   # Internal functions
   timestampDecoder = function(coded, fraction, shift, struc, configtz) {
-    year = struc[[1]]
-    if (year == 0) {
+    timestamp_numeric = struc[[1]]
+
+    # make sure timestamps are somewhat continous,
+    # and there hasn't been a large gap since the previous timestamp
+    coded_no_seconds = bitwShiftR(coded, 6)
+    if (coded_no_seconds != struc[[3]]) {
+      timestamp_numeric = 0
+    }
+
+    if (timestamp_numeric == 0) {
+      # very first timestamp, or the first one after a gap
+
       # Extract parts of date
       year = bitwAnd(bitwShiftR(coded, 26), 0x3fL) + 2000
       month = bitwAnd(bitwShiftR(coded, 22), 0x0fL)
       day = bitwAnd(bitwShiftR(coded, 17), 0x1f)
       hours = bitwAnd(bitwShiftR(coded, 12), 0x1fL)
-      mins = bitwAnd(bitwShiftR(coded, 6), 0x3fL)
+      mins = bitwAnd(coded_no_seconds, 0x3fL)
       secs = bitwAnd(coded, 0x3fL)
       # Form string representation of date and convert it to number
-      year_raw = as.POSIXct(paste0(year, "-", month, "-", day, " ",
-                                              hours, ":", mins, ":", secs),
-                            tz = configtz)
-      year = as.numeric(year_raw)
+      timestamp_text = as.POSIXct(paste0(year, "-", month, "-", day, " ",
+                                         hours, ":", mins, ":", secs),
+                                  tz = configtz)
+      timestamp_numeric = as.numeric(timestamp_text)
     } else {
       secs = bitwAnd(coded, 0x3fL)
       oldSecs = struc[[2]]
       if (secs < oldSecs) oldSecs = oldSecs - 60
-      year = year + (secs - oldSecs)
+      timestamp_numeric = timestamp_numeric + (secs - oldSecs)
     }
-    struc <- list(year,secs)
+    struc <- list(timestamp_numeric, secs, coded_no_seconds)
     # Add fractional part and shift
-    start = year + fraction / 65536 + shift
+    start = timestamp_numeric + fraction / 65536 + shift
     invisible(list(start = start, struc = struc))
   }
-  
-  unsigned8 = function(x) {
-    # Auxiliary function for normalisation of unsigned integers
-    if (x < 0)
-      return(x + 256) #2^8
-    else
-      return(x)
-  }
-  
-  unsigned16 = function(x) {
-    # Auxiliary function for normalisation of unsigned integers
-    if (x < 0)
-      return(x + 65536) #2^16
-    else
-      return(x)
-  }
-  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L), header_accrange = NULL, parameters = NULL){
+
+  readDataBlock = function(fid, complete = TRUE, struc = list(0,0L,0), parameters = NULL){
     # Read one block of data and return list with following elements
     #   frequency is frequency recorded in this block
     #   start is start time in numeric form. To create string representation
@@ -105,72 +100,94 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       accelScaleCode = parameters$accelScaleCode
       accelScale = parameters$accelScale
       Naxes = parameters$Naxes
-      blockLength = parameters$blockLength
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    # Check the block header
-    # idstr = readChar(fid,2,useBytes = TRUE)
-    # seek(fid, 2, origin = 'current') # idstr and assume it is AX
-    # Read the data block. Extract several data fields
-    # offset 4 contains u16 with timestamp offset
-    seek(fid, 4, origin = 'current') # skip packetlength
-    tsOffset = readBin(fid, integer(), size = 2)
-    # read data for timestamp u32 in offset 14
-    seek(fid, 8, origin = 'current') # skip sessionId and sequenceID
-    timeStamp = readBin(fid, integer(), size = 4)
-    # Get light u16 in offset 18
-    offset18 = unsigned16(readBin(fid, integer(), size = 2))
+    block = readBin(fid, raw(), n=512)
+    if (length(block) < 512) {
+      return(NULL)
+    }
+
+    idstr = readChar(block, 2, useBytes = TRUE)
+    if (idstr != "AX") {
+      stop("Packet header is incorrect. First two characters must be AX.")
+    }
+
+    packetLength = readBin(block[3:4], integer(), size = 2, signed = FALSE, endian = "little")
+    if (packetLength != 508) {
+      stop("Packet length is incorrect, should always be 508.")
+    }
+
+    # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
+    tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian = "little")
+
+    # read data for timestamp u32 at offset 14
+    timeStamp = readBin(block[15:18], integer(), size = 4, endian = "little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
+
+    # Get light u16 at offset 18
+    offset18 = readBin(block[19:20], integer(), size = 2, signed = FALSE, endian = "little")
     light = bitwAnd(offset18, 0x03ffL)
-    # Read and recalculate temperature u16 in offset 20
-    temperature = (150.0 * readBin(fid, integer(), size = 2) - 20500.0) / 1000.0;
+
+    # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
+    # Formula for the temperature is specified at 
+    # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
+    # Also see the following discussion:
+    # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
+    temperature = bitwAnd(readBin(block[21:22], integer(), size = 2, signed = FALSE, endian = "little"), 0x03ffL) * 75.0 / 256.0 - 50;
     if (loadbattery == TRUE) {
       # Read and recalculate battery charge u8 in offset 23
-      seek(fid, 1, origin = 'current') # skip events
-      battery = 3.0 * (unsigned8(readBin(fid, integer(), size = 1)) / 512.0 + 1.0);
+      # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
+      # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
+      # So to restore the ADC value, double the packed value and add 512.
+      # Then voltage = ADC_value * 6 / 1024 
+      battery = 3.0 * (readBin(block[24], integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
-      seek(fid, 2, origin = 'current') # skip events
       battery = 0
     }
-    # sampling rate in one of file format U8 in offset 24
-    samplerate_dynrange = readBin(fid, integer(), size = 1)
-    # format of data in block u8  in offset 25
-    # temp = readBin(fid, integer(), size = 1)
-    temp_raw = readBin(fid, raw(), size = 1)
-    temp = as.integer(temp_raw)
-    packed = bitwAnd(temp,15) == 0
-    # can be measurement with whole seconds or sample rate u16 in offset 26
-    temp = readBin(fid, integer(), size = 2) # timestampOffset
+    # sampling rate in one of file format U8 at offset 24
+    samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
+
+    # offset 25, per documentation: 
+    # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
+    # bottom nibble: packing format" (2 means unpacked, 0 packed).
+    offset25 = readBin(block[26], integer(), size = 1, signed = FALSE)
+    packed = (bitwAnd(offset25,15) == 0)
+
+    # offset 26 has a int16 (not uint16) value. 
+    # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
+    offset26 = readBin(block[27:28], integer(), size = 2, endian = "little")
+
+    # number of observations in block U16 at offset 28
+    # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
+    # Note that if AX6 is configured to only collect accelerometer data
+    # this will look as if it is a AX3
+    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian = "little") 
+
     if (is.null(parameters)) {
-      # number of observations in block U16 in offset 28
-      # blockLength is expected to be 40 for AX6, 80 or 120 for AX3
-      # Note that of AX6 is configured to only collect accelerometer data
-      # this will look as if it is a AX3
-      blockLength = readBin(fid, integer(), size = 2) 
       accelScaleCode = bitwShiftR(offset18, 13)
-      accelScale = 1 / (2^(8 + accelScaleCode)) # abs removed
-      Naxes = as.integer(substr(temp_raw,1,1))
-    } else {
-      seek(fid, 2, origin = 'current') # skip events
-    }
+      accelScale = 1 / (2^(8 + accelScaleCode))
+      # top nibble of offset25 is the number of axes
+      Naxes = bitwShiftR(offset25, 4)
+    } 
+
     # auxiliary variables
     shift = 0
     fractional = 0
-    # Consider two possible formats.
-    # Very old file have zero in offset 24 and frequency in offset 26
-    if (samplerate_dynrange != 0) {
-      # value in offset 26 is index of measurement with whole number of seconds
-      shift = temp
-      # If tsOffset is not null then timestamp offset was artificially
-      # modified for backwards-compatibility ... therefore undo this...
+
+    if (samplerate_dynrange == 0) {
+      # Very old files have zero at offset 24 and frequency at offset 26
+      frequency_data = offset26
+    } else {
+      # value at offset 26 is index of measurement with whole number of seconds
+      shift = offset26
       if (is.null(parameters)) {
+        frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+        # If the top bit of tsOffset is set, then timestamp offset was artificially
+        # modified for backwards-compatibility ... therefore undo this...
         if (bitwAnd(tsOffset, 0x8000L) != 0) {
           format = 1
-          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-          accrange = bitwShiftR(16,(bitwShiftR(abs(samplerate_dynrange),6)))
-        } else { # & class(frequency_data) ==  "function") {
+        } else {
           format = 2
-          frequency_data = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
         }
       }
       if (format == 1) {
@@ -189,35 +206,24 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         # frequency is truncated to int in firmware
         shift = shift + bitwShiftR((fractional * frequency_data), 16);
       }
-    } else {
-      #Very old format, where offset 26 contains frequency
-      frequency_data = temp
     }
+
     # Read data if necessary
     if (complete) {
       
-      if (packed) { #32 bit
-        # Read 4 byte for three measurements
-        packedData = readBin(fid, integer(), size = 4, n = blockLength)
+      if (packed) {
+        # Read 4 bytes for three measurements
+        packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian = "little")
         # Unpack data
-        data = AxivityNumUnpack(packedData) #GGIRread:::
-        # data2 = numUnpack2(packedData)
-        # Calculate number of bytes to skip
-        temp = 482 -  4 * (Naxes/3) * blockLength
+        data = AxivityNumUnpack(packedData)
       } else {
         # Read unpacked data
-        xyz = readBin(fid, integer(), size = 2, n = blockLength * Naxes)
+        xyz = readBin(block[31:510], integer(), size = 2, n = blockLength * Naxes, endian = "little")
         data = matrix(xyz, ncol = Naxes, byrow = T)
-        # Calculate number of bytes to skip
-        temp = 482 - (2 * Naxes * blockLength)
       }
-      # Skip the rest of block
-      seek(fid, temp, origin = 'current')
+      checksum = readBin(block[511:512], integer(), size = 2, signed = FALSE, endian = "little")
       
       # Set names and Normalize accelerations
-      if (is.na(header_accrange == TRUE)) {
-        header_accrange = 8
-      }
       if (Naxes == 3) {
         colnames(data) = c("x", "y", "z")
         data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale  #/ 256
@@ -228,14 +234,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         data[,c("gx", "gy", "gz")] = (data[,c("gx", "gy", "gz")] / 2^15) * gyroRange
         data[,c("x", "y", "z")] = data[,c("x", "y", "z")] * accelScale
       }
-    } else {
-      seek(fid, 482, origin = 'current')
     }
     if (is.null(parameters)) {
       parameters = list(accelScaleCode = accelScaleCode,
                         accelScale = accelScale,
                         Naxes = Naxes,
-                        blockLength = blockLength,
                         frequency_data = frequency_data,
                         format = format)
     }
@@ -258,6 +261,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   
     return(invisible(rawdata_list))
   }
+
   readHeader = function(fid, numDBlocks) {
     # fid is file identifier
     # numDBlocks is number of data blocks
@@ -277,46 +281,45 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     
     # Start from the file origin
     seek(fid,0)
+    block = readBin(fid, raw(), n=1024)
+
     # Read block header and check correctness of name
-    idstr = readChar(fid, 2, useBytes = TRUE) #offset 0 1
-    if (idstr == "MD") {
-      # It is correct header block read information from it
-      readChar(fid, 2, useBytes = TRUE) #offset 2 3
-      # hardware type: AX6 or AX3
-      hwType = readBin(fid, raw(), size = 1) #offset 4
-      if (hwType == "64") {
-        hardwareType = "AX6"
-      } else {
-        hardwareType = "AX3"
-      }
-      # session id and device id
-      lowerDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 5 6
-      sessionID = readBin(fid, integer(), size = 4) #offset 7 8 9 10
-      upperDeviceId = readBin(fid, integer(), size = 2, signed = FALSE) #offset 11 12
-      if (upperDeviceId >= 65535) upperDeviceId = 0
-      uniqueSerialCode = upperDeviceId * 65536 + lowerDeviceId
-      seek(fid, 23, origin = 'current') #offset 13..35
-      # sample rate and dynamic range accelerometer
-      samplerate_dynrange = readBin(fid, integer(), size = 1) #offset 36
-      frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
-      if (samplerate_dynrange < 0) samplerate_dynrange = samplerate_dynrange + 256
-      accrange = bitwShiftR(16, (bitwShiftR(abs(samplerate_dynrange), 6)))
-      seek(fid, 4, origin = 'current') #offset 37..40
-      version = readBin(fid, integer(), size = 1) #offset 41
-      # Skip 982 bytes and go to the first data block
-      seek(fid, 982, origin = 'current') #offset 42..1024
-      # Read the first data block without data
-      datas = readDataBlock(fid, complete = FALSE)
-      if (is.null(datas)) {
-        stop("Error in the first data block reading")
-      }
-      if (frequency_header != datas$frequency) {
-        warning("Inconsistent value of measurement frequency: there is ",
-                frequency_header, " in header and ", datas$frequency, " in the first data block ")
-      }
-    } else {
-      return(invisible(NULL))
+    idstr = readChar(block, 2, useBytes = TRUE) #offset 0 1
+    if (idstr != "MD") {
+      stop("Header block is incorrect. First two characters must be MD.")
     }
+
+    # offset 4 encodes hardware type: AX6 or AX3
+    hwType = readBin(block[5], integer(), size = 1, signed = FALSE)
+    if (hwType == 0x64) {
+      hardwareType = "AX6"
+    } else {
+      hardwareType = "AX3"
+    }
+    # session id and device id
+    lowerDeviceId = readBin(block[6:7], integer(), size = 2, signed = FALSE, endian = "little") #offset 5 6
+    sessionID = readBin(block[8:11], integer(), size = 4, endian = "little") #offset 7 8 9 10
+    upperDeviceId = readBin(block[12:13], integer(), size = 2, signed = FALSE, endian = "little") #offset 11 12
+    if (upperDeviceId == 65535) {
+      upperDeviceId = 0
+    }
+    uniqueSerialCode = bitwOr(bitwShiftL(upperDeviceId, 16), lowerDeviceId)
+    # sample rate and dynamic range accelerometer
+    samplerate_dynrange = readBin(block[37], integer(), size = 1, signed = FALSE) #offset 36
+    frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+    accrange = bitwShiftR(16, (bitwShiftR(samplerate_dynrange, 6)))
+    version = readBin(block[42], integer(), size = 1, signed = FALSE) #offset 41
+
+    # Read the first data block without data
+    datas = readDataBlock(fid, complete = FALSE)
+    if (is.null(datas)) {
+      stop("Error reading the first data block.")
+    }
+    if (frequency_header != datas$frequency) {
+      warning("Inconsistent value of measurement frequency: there is ",
+              frequency_header, " in header and ", datas$frequency, " in the first data block ")
+    }
+
     start = as.POSIXct(datas$start, origin = "1970-01-01", tz = desiredtz)
     
     returnobject = list(
@@ -329,7 +332,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       returnobject
     ))
   }
-  
+
 
   ################################################################################################
   # Main function
@@ -349,8 +352,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   })
   #############################################################################
   # read header
-  struc = list(0,0L)
-  header = readHeader(fid, numDBlocks)
+  struc = list(0,0L,0)
+  if (is.null(header)) {
+    header = readHeader(fid, numDBlocks)
+  }
   # preprocess start and stop
   origin = as.numeric(header$start)
   step = 1/header$frequency
@@ -379,34 +384,39 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   timeRes = seq(start, end, step)
   nr = length(timeRes) - 1
   timeRes = as.vector(timeRes[1:nr])
-  if (header$hardwareType == "AX3") {
-    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
-  } else if (header$hardwareType == "AX6") {
-    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
-  }
   temp = vector(mode = "double", nr)
   battery = vector(mode = "double", nr)
   light = vector(mode = "double", nr)
   
   #############################################################################
   # Reading of data
-  
+
   # Create progress bar if it is necessary
   if (progressBar) {
     pb = txtProgressBar(1, nr, style = 3)
   }
   pos = 1 # position of the first element to complete in data
-  prevRaw = readDataBlock(fid, struc = struc, header_accrange = header$accrange) # Read the first block
+  prevRaw = readDataBlock(fid, struc = struc) # Read the first block
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
-  Npages = (end - start) + 1
-  rawTime = vector(mode = "numeric", 300 * Npages)
-  if (header$hardwareType == "AX3") {
-    rawAccel = matrix(0, nrow = 300 * Npages, ncol = 3)
-  } else {
-    rawAccel = matrix(0, nrow = 300 * Npages, ncol = 6)
+
+  # a block has at most 120 samples (40 samples for AX6, 
+  # 80 for unpacked AX3 or for AX6 only collecting accelerometer data, and 120 for packed AX3),
+  # so allocate enough space for this number of samples, plus an extra ones needed for resampling.
+  maxSamples = 120
+
+  # Don't rely on the type of device to determine the dimentionality of the data
+  # because AX6 can be configured to only collect accelerometer data.
+  if (prevRaw$parameters$Naxes == 3) { # AX3, or AX6 configured to only collect accelerometer data
+    accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
+    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
+  } else { # AX6 configured to collect gyroscope data
+    accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
+    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 6)
   }
+  rawTime = vector(mode = "numeric", maxSamples + 2)
+
   rawPos = 1
   i = 2
   samplingFrac = 0.97 # first assume that sampling rate is 97% of expected value or higher
@@ -414,9 +424,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   struc_backup = struc
   block1AfterSkip = FALSE
   skippedLast = FALSE
+  blockDur = prevRaw$length / prevRaw$frequency
+
   while (i <= numDBlocks) {
-    time2Skip = start - prevRaw$start # once this gets negative we are passed the point
-    blockDur = prevRaw$length / prevRaw$frequency
+    time2Skip = start - prevRaw$start # once this gets negative we've passed the point
     if (skippedLast == FALSE) {
       Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
     } else {
@@ -424,13 +435,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     if (Nblocks2Skip <= 0) {
       # read block
-      raw = readDataBlock(fid, header_accrange = header$accrange, struc = struc,
-                          parameters = prevRaw$parameters)
-      
+      raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
     } else {
       # skip series of blocks, but only do this once
       seek(fid, 512 * Nblocks2Skip, origin = 'current')
-      prevRaw$start = prevRaw$start + ((prevRaw$length / prevRaw$frequency) * Nblocks2Skip) + 1
+      prevRaw$start = prevRaw$start + (blockDur * Nblocks2Skip) + 1
       skippedLast = TRUE
       block1AfterSkip = TRUE
       i = i + Nblocks2Skip
@@ -444,7 +453,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     prevLength = prevRaw$length
     struc = raw$struc
     # Check are previous data block necessary
-    
+
     if (raw$start < start) {
       # Ignore this block and go to the next
       prevRaw = raw
@@ -465,7 +474,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       samplingFrac = samplingFrac - 0.1
       if (samplingFrac < 0.2) {
         skippedLast = TRUE #read file in old way block by block
-        warning(paste0("GGIRread is having difficulty to read this .cwa file.",
+        warning(paste0("GGIRread is having difficulty reading this .cwa file.",
                        " This could be an issue with the .cwa files. Please report",
                        " this issue to the GGIRread maintainers",
                        " via https://github.com/wadpac/GGIRread/issues and to ",
@@ -473,25 +482,21 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
       next
     }
-    block1AfterSkip = FALSE
 
-    # Create array of times
-    time = seq(prevStart, raw$start, length.out = prevLength + 1)
     # fill vector rawTime and matrix rawAccel for resampling
+    rawLast = prevLength + 1
+    rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    rawAccel[2:rawLast,] = prevRaw$data
+
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    # Define number of rows in prevRaw$data
-    rawLast = prevLength + rawPos - 1
-    rawTime[rawPos:rawLast] = time[1:prevLength]
-    rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
-    if (pos + 200 > nr) last = nr
+    if (last > nr) last = nr
     if (rawTime[rawLast] > timeRes[last]) {
       # there has been a time jump
       # so, time jump needs to be adjusted for in last index
@@ -511,7 +516,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       temp[pos:last] = prevRaw$temperature
       battery[pos:last] = prevRaw$battery
     }
-    # Remove all rawdata exclude the last
+    # Remove all rawdata except for the last
     rawTime[1] = rawTime[rawLast]
     rawAccel[1,] = rawAccel[rawLast,]
     rawPos = 2
@@ -528,32 +533,28 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     i = i + 1
   }
-  
-  
+
   #############################################################################
   # Process the last block of data if necessary
-  if (pos <= nr & exists("prevStart") & exists("prevLength")) {
+  if (prevRaw$start >= start & pos <= nr & exists("prevStart") & exists("prevLength")) {
     # Calculate pseudo time for the "next" block
     newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
     prevLength = prevRaw$length
-    # Create array of times
-    time = seq(prevStart, newTimes, length.out = prevLength + 1) #Row eddited by EM 18/12/2017. Correction of the final time.
-    # Fragment below was changed by EM 24.04.2017 to unify resampling process.
+
     # fill vector rawTime and matrix rawAccel for resampling
+    rawLast = prevLength + 1
+    rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    rawAccel[2:rawLast,] = prevRaw$data
+
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    # Define number of rows in prevRaw$data
-    rawLast = prevLength + rawPos - 1
-    rawTime[rawPos:rawLast] = time[1:prevLength]
-    rawAccel[rawPos:rawLast,] = as.matrix(prevRaw$data)
-    # lastTime = time[prevLength]
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
-    if (pos + 200 > nr) last = nr
+    if (last > nr) last = nr
     if (rawTime[rawLast] > timeRes[last]) {
       # there has been a time jump
       # so, time jump needs to be adjusted for in last index
@@ -574,29 +575,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
   }
   #===============================================================================
-  # Do not export sections of the data with zeros in all channels, because they were not actual recordings
-  # zeros are introduced when the user asks for more data than the length of the recording
-  emptydata = which(rowSums(accelRes) == 0 & temp == 0 & battery == 0 & light == 0)
-  if (length(emptydata) > 0) {
-    startends = which(diff(emptydata) != 1)
-    if (length(startends) > 0) {
-      lastmeasurement = max(startends)
-    } else {
-      lastmeasurement = emptydata[1]
-    }
-    if (length(lastmeasurement) > 0) {
-      cut = c(lastmeasurement:nrow(accelRes))
-      accelRes = accelRes[-cut,]
-      battery = battery[-cut]
-      light = light[-cut]
-      temp = temp[-cut]
-      timeRes = timeRes[-cut]
-    }
+  # If the user asked for more data than the length of the recording,
+  # there will be 0s at the end of the result lists; get rid of them.
+  if (last < nrow(accelRes)) {
+    cut = c(last+1:nrow(accelRes))
+    accelRes = accelRes[-cut,]
+    battery = battery[-cut]
+    light = light[-cut]
+    temp = temp[-cut]
+    timeRes = timeRes[-cut]
   }
   #===============================================================================
   # Form outcome
   return(invisible(list(
     header = header,
-    data = as.data.frame(cbind(time = timeRes, accelRes, temp,  battery, light), stringsAsFactors = TRUE)
+    data = cbind.data.frame(time = timeRes, accelRes, temp,  battery, light, stringsAsFactors = TRUE)
   )))
 }
