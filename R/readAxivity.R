@@ -118,7 +118,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
-    checksum = NA
+    checksum_pass = TRUE
     if (check_checksum == TRUE) {
       # Perform checksum
       checksum = sum(readBin(block, n = 256,
@@ -128,7 +128,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                              endian = "little"))
       checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
       if (checksum != 0) {
-        warning(paste0("\nChecksum is not zero: ", checksum))
+        checksum_pass = FALSE
       }
     }
     
@@ -279,7 +279,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       length = blockLength,
       struc = struc,
       parameters = parameters,
-      checksum = checksum,
+      checksum_pass = checksum_pass,
       blockID = blockID
     )
     if (complete) {
@@ -531,7 +531,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # Check block integrity:
     # The following code checks whether any of the following conditions are met:
     # - blockID is not zero and not consecutive from previous blockID
-    # - checksum is not zero
+    # - checksum_pass is FALSE
     # - observed and expected sampling frequency differ by a fraction larger 
     #  than frequency_tol
     # If yes, then we consider the block faulty
@@ -544,7 +544,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
     if ((raw$blockID != 0 &
          raw$blockID - prevRaw$blockID != 1) |
-        raw$checksum != 0 |
+        raw$checksum_pass == FALSE |
         frequency_bias > frequency_tol) {
       # Log and impute this event
       doQClog = TRUE
@@ -570,7 +570,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
     }
     if (doQClog == TRUE) {
-      QClog = rbind(QClog, data.frame(checksum = raw$checksum,
+      QClog = rbind(QClog, data.frame(checksum_pass = raw$checksum_pass,
                                       blockID_previous = prevRaw$blockID,
                                       blockID_current = raw$blockID,
                                       start_previous = prevRaw$start,

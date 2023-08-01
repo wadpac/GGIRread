@@ -7,8 +7,9 @@
       \item readAxivity now able to recognise when AX6 has been configured without 
       gyroscope sensor and only provides accerometer data. Fixes #31 (credits: Lena Kushleyeva)
       \item readAxivity now 25\% faster (credits: Lena Kushleyeva)
-      \item Adding checksum, sampling frequency check, impute block for which checks
-      fail and log these events
+      \item readAxivity now performsg checksum, sampling frequency check, 
+      and impute blocks for which checks fail with in the output a log of these events.
+      This step slows down readAxivity 18\%. 
     }
 }
 \section{Changes in version 0.2.9 (GitHub-only-release date:20-07-2023)}{
