@@ -568,7 +568,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       if (last - pos >  prevRaw$frequency * 259200) { # 3600 * 24 * 5 = 259200
         # Error if time gap is very large to avoid filling up memory
         stop(paste0("\nreadAxivity encountered a time gap in the file of ",
-                    round((last - pos) / (3600 * 24), digits = 2), " days"))
+                    round((last - pos) / (3600 * 24) / prevRaw$frequency, digits = 2), " days"))
       }
       
       tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
