@@ -82,24 +82,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
-    checksum_pass = TRUE
-    # Perform checksum
-    checksum = sum(readBin(block, n = 256,
-                           integer(),
-                           size = 2,
-                           signed = FALSE,
-                           endian = "little"))
-    checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
-    if (checksum != 0) {
-      checksum_pass = FALSE
-    }
     
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian = "little")
 
-    
     # offset 10: sequence ID
-    blockID = readBin(block[11:14], integer(), size = 4)
+    blockID = readBin(block[11:14], integer(), size = 4, endian = "little")
     
     # read data for timestamp u32 at offset 14
     timeStamp = readBin(block[15:18], integer(), size = 4, endian = "little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
@@ -126,6 +114,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     # sampling rate in one of file format U8 at offset 24
     samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
+
+    checksum_pass = TRUE
+    if (samplerate_dynrange != 0) { # Very old files that have zero at offset 24 don't have a checksum
+      # Perform checksum
+      checksum = sum(readBin(block, n = 256,
+                             integer(),
+                             size = 2,
+                             signed = FALSE,
+                             endian = "little"))
+      checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
+      if (checksum != 0) {
+        checksum_pass = FALSE
+      }
+    }
 
     # offset 25, per documentation: 
     # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
