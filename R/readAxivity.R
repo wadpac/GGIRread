@@ -554,11 +554,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
     }
     if (doQClog == TRUE) {
+      # Note: This is always a description of the previous block
       QClog = rbind(QClog, data.frame(checksum_pass = prevRaw$checksum_pass,
-                                      blockID_previous = prevRaw$blockID,
-                                      blockID_current = raw$blockID,
-                                      start_previous = prevRaw$start,
-                                      start_current = raw$start,
+                                      blockID_current = prevRaw$blockID,
+                                      blockID_next = raw$blockID,
+                                      start = prevRaw$start,
+                                      end = raw$start,
                                       blockLengthSeconds = raw$start - prevRaw$start,
                                       frequency_blockheader = prevRaw$frequency,
                                       frequency_observed = frequency_observed,

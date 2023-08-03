@@ -54,6 +54,9 @@
     that we accept the sampling frequency configured at 100 Hertz to vary between
     90 and 110 Hertz. If this condition is not met the data will be imputed with
     a constant value and the start and end time will be logged in the QClog output object.
+    Regardless of the setting the function will always log instances when frequency 
+    differs by more than 5\%, but if this is less than frequency_tol the block will
+    not be imputed.
   }
   
 }
