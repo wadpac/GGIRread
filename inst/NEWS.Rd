@@ -1,12 +1,15 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.2.10 (release date: ??-??-2023)}{
+\section{Changes in version 0.2.10 (release date: 03-08-2023)}{
     \itemize{
       \item Fixed bug in temperature extraction Axivity cwa files (credits: Lena Kushleyeva)
       \item readAxivity now able to recognise when AX6 has been configured without 
       gyroscope sensor and only provides accerometer data. Fixes #31 (credits: Lena Kushleyeva)
-      \item readAxivity now 25\% faster (credits: Lena Kushleyeva)
+      \item readAxivity refactored and faster (credits: Lena Kushleyeva)
+      but also expanded with checksum check and sampling frequency check, 
+      data blocks are imputed when checks fail and this is logged in the output. 
+      The net speed improvement is approximately 15\%-20\%.
     }
 }
 \section{Changes in version 0.2.9 (GitHub-only-release date:20-07-2023)}{
