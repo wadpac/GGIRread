@@ -82,24 +82,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
-    checksum_pass = TRUE
-    # Perform checksum
-    checksum = sum(readBin(block, n = 256,
-                           integer(),
-                           size = 2,
-                           signed = FALSE,
-                           endian = "little"))
-    checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
-    if (checksum != 0) {
-      checksum_pass = FALSE
-    }
     
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian = "little")
 
-    
     # offset 10: sequence ID
-    blockID = readBin(block[11:14], integer(), size = 4)
+    blockID = readBin(block[11:14], integer(), size = 4, endian = "little")
     
     # read data for timestamp u32 at offset 14
     timeStamp = readBin(block[15:18], integer(), size = 4, endian = "little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
@@ -126,6 +114,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     # sampling rate in one of file format U8 at offset 24
     samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
+
+    checksum_pass = TRUE
+    if (samplerate_dynrange != 0) { # Very old files that have zero at offset 24 don't have a checksum
+      # Perform checksum
+      checksum = sum(readBin(block, n = 256,
+                             integer(),
+                             size = 2,
+                             signed = FALSE,
+                             endian = "little"))
+      checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
+      if (checksum != 0) {
+        checksum_pass = FALSE
+      }
+    }
 
     # offset 25, per documentation: 
     # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
@@ -420,78 +422,94 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   QClog = NULL # Initialise log of data quality issues
   
-  while (i <= numDBlocks) {
-    time2Skip = start - prevRaw$start # once this gets negative we've passed the point
-    if (skippedLast == FALSE) {
-      Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
-    } else {
-      Nblocks2Skip = 0
-    }
-    if (Nblocks2Skip <= 0) {
-      # read block
-      raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
-    } else {
-      # skip series of blocks, but only do this once
-      seek(fid, 512 * Nblocks2Skip, origin = 'current')
-      prevRaw$start = prevRaw$start + (blockDur * Nblocks2Skip) + 1
-      skippedLast = TRUE
-      block1AfterSkip = TRUE
-      i = i + Nblocks2Skip
-      next
-    }
-    if (is.null(raw)) {
-      break
-    }
-    # Save start and length of the previous block
-    prevStart = prevRaw$start
-    prevLength = prevRaw$length
-    struc = raw$struc
-    # Check are previous data block necessary
+  while (i <= numDBlocks + 1) {
 
-    if (raw$start < start) {
-      # Ignore this block and go to the next
-      prevRaw = raw
-      i = i + 1
-      block1AfterSkip = FALSE
-      next
-    }
-    if (block1AfterSkip == TRUE) {
-      # Oops start was missed, because sampling rate was lower than expected
-      # Go back to beginning of file and use lower samplingFrac
-      i = 2
-      seek(fid, 0)
-      seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
-      struc = struc_backup
-      prevRaw = prevRaw_backup
-      skippedLast = FALSE
-      block1AfterSkip = FALSE
-      samplingFrac = samplingFrac - 0.1
-      if (samplingFrac < 0.2) {
-        skippedLast = TRUE #read file in old way block by block
-        warning(paste0("GGIRread is having difficulty reading this .cwa file.",
-                       " This could be an issue with the .cwa files. Please report",
-                       " this issue to the GGIRread maintainers",
-                       " via https://github.com/wadpac/GGIRread/issues and to ",
-                       " Axivity Ltd."), call. = FALSE)
+    if (i == numDBlocks + 1) {
+      # Process the last block of data if necessary
+      if (prevRaw$start >= start & pos <= nr & exists("prevStart") & exists("prevLength")) {
+        # Calculate pseudo time for the "next" block
+        newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
+        prevLength = prevRaw$length
+
+        # fill vector rawTime and matrix rawAccel for resampling
+        rawLast = prevLength + 1
+        rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
       }
-      next
-    }
+      else {
+        break
+      }
+    } else {
+      time2Skip = start - prevRaw$start # once this gets negative we've passed the point
+      if (skippedLast == FALSE) {
+        Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
+      } else {
+        Nblocks2Skip = 0
+      }
+      if (Nblocks2Skip <= 0) {
+        # read block
+        raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
+      } else {
+        # skip series of blocks, but only do this once
+        seek(fid, 512 * Nblocks2Skip, origin = 'current')
+        prevRaw$start = prevRaw$start + (blockDur * Nblocks2Skip) + 1
+        skippedLast = TRUE
+        block1AfterSkip = TRUE
+        i = i + Nblocks2Skip
+        next
+      }
+      if (is.null(raw)) {
+        break
+      }
+      # Save start and length of the previous block
+      prevStart = prevRaw$start
+      prevLength = prevRaw$length
+      struc = raw$struc
+      # Check are previous data block necessary
 
-    # fill vector rawTime and matrix rawAccel for resampling
-    rawLast = prevLength + 1
-    rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-    # Following line is commented out and moved further down, because we only
-    # want to use the data if it passes the integrity checks, otherwise we will impute the data.
-    # rawAccel[2:rawLast,] = prevRaw$data 
+      if (raw$start < start) {
+        # Ignore this block and go to the next
+        prevRaw = raw
+        i = i + 1
+        block1AfterSkip = FALSE
+        next
+      }
+      if (block1AfterSkip == TRUE) {
+        # Oops start was missed, because sampling rate was lower than expected
+        # Go back to beginning of file and use lower samplingFrac
+        i = 2
+        seek(fid, 0)
+        seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
+        struc = struc_backup
+        prevRaw = prevRaw_backup
+        skippedLast = FALSE
+        block1AfterSkip = FALSE
+        samplingFrac = samplingFrac - 0.1
+        if (samplingFrac < 0.2) {
+          skippedLast = TRUE #read file in old way block by block
+          warning(paste0("GGIRread is having difficulty reading this .cwa file.",
+                         " This could be an issue with the .cwa files. Please report",
+                         " this issue to the GGIRread maintainers",
+                         " via https://github.com/wadpac/GGIRread/issues and to ",
+                         " Axivity Ltd."), call. = FALSE)
+        }
+        next
+      }
+
+      # fill vector rawTime and matrix rawAccel for resampling
+      rawLast = prevLength + 1
+      rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+      # Following line is commented out and moved further down, because we only
+      # want to use the data if it passes the integrity checks, otherwise we will impute the data.
+      # rawAccel[2:rawLast,] = prevRaw$data 
+    } 
 
     if (rawPos == 1) {
       rawAccel[1,] = (prevRaw$data[1,])
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    
-    
-    frequency_observed = length(rawTime[1:rawLast]) / diff(range(rawTime[1:rawLast]))
+
+    frequency_observed = rawLast / (rawTime[rawLast] - rawTime[1])
     #------------------------------------------------------------
     # Check block integrity:
     # The following code checks whether any of the following conditions are met:
@@ -507,9 +525,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     impute = FALSE
     doQClog = FALSE
     frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
-    if ((raw$blockID != 0 &
+    if ((i <= numDBlocks &
+         raw$blockID != 0 &
          raw$blockID - prevRaw$blockID != 1) |
-        raw$checksum_pass == FALSE |
+        prevRaw$checksum_pass == FALSE |
         frequency_bias > frequency_tol) {
       # Log and impute this event
       doQClog = TRUE
@@ -535,7 +554,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
     }
     if (doQClog == TRUE) {
-      QClog = rbind(QClog, data.frame(checksum_pass = raw$checksum_pass,
+      QClog = rbind(QClog, data.frame(checksum_pass = prevRaw$checksum_pass,
                                       blockID_previous = prevRaw$blockID,
                                       blockID_current = raw$blockID,
                                       start_previous = prevRaw$start,
@@ -545,7 +564,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                                       frequency_observed = frequency_observed,
                                       imputed = impute))
     }
-    
+
     ###########################################################################
     # resampling of measurements
     last = pos + 200;
@@ -566,7 +585,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       if (last - pos >  prevRaw$frequency * 259200) { # 3600 * 24 * 5 = 259200
         # Error if time gap is very large to avoid filling up memory
         stop(paste0("\nreadAxivity encountered a time gap in the file of ",
-                    round((last - pos) / (3600 * 24), digits = 2), " days"))
+                    round((last - pos) / (3600 * 24) / prevRaw$frequency, digits = 2), " days"))
       }
       
       tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
@@ -599,47 +618,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       break
     }
     i = i + 1
-  }
-
-  #############################################################################
-  # Process the last block of data if necessary
-  if (prevRaw$start >= start & pos <= nr & exists("prevStart") & exists("prevLength")) {
-    # Calculate pseudo time for the "next" block
-    newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
-    prevLength = prevRaw$length
-
-    # fill vector rawTime and matrix rawAccel for resampling
-    rawLast = prevLength + 1
-    rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-    rawAccel[2:rawLast,] = prevRaw$data
-
-    if (rawPos == 1) {
-      rawAccel[1,] = (prevRaw$data[1,])
-      rawTime[1] = prevStart - 0.00001
-      rawPos = 2
-    }
-    ###########################################################################
-    # resampling of measurements
-    last = pos + 200;
-    if (last > nr) last = nr
-    if (rawTime[rawLast] > timeRes[last]) {
-      # there has been a time jump
-      # so, time jump needs to be adjusted for in last index
-      timejump = rawTime[rawLast] - timeRes[last]
-      positions2add = floor(timejump * prevRaw$frequency)
-      last = last + positions2add
-      if (last > nr) last = nr
-    }
-    tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
-    # put result to specified position
-    last = nrow(tmp) + pos - 1
-    if (last >= pos) {
-      accelRes[pos:last,] = tmp
-      # Fill light, temp and battery
-      light[pos:last] = prevRaw$light
-      temp[pos:last] = prevRaw$temperature
-      battery[pos:last] = prevRaw$battery
-    }
   }
   #===============================================================================
   # If the user asked for more data than the length of the recording,
