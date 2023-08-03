@@ -491,8 +491,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       rawTime[1] = prevStart - 0.00001
       rawPos = 2
     }
-    
-    
+
     frequency_observed = length(rawTime[1:rawLast]) / diff(range(rawTime[1:rawLast]))
     #------------------------------------------------------------
     # Check block integrity:
@@ -511,7 +510,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
     if ((raw$blockID != 0 &
          raw$blockID - prevRaw$blockID != 1) |
-        raw$checksum_pass == FALSE |
+        prevRaw$checksum_pass == FALSE |
         frequency_bias > frequency_tol) {
       # Log and impute this event
       doQClog = TRUE
@@ -537,7 +536,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
     }
     if (doQClog == TRUE) {
-      QClog = rbind(QClog, data.frame(checksum_pass = raw$checksum_pass,
+      QClog = rbind(QClog, data.frame(checksum_pass = prevRaw$checksum_pass,
                                       blockID_previous = prevRaw$blockID,
                                       blockID_current = raw$blockID,
                                       start_previous = prevRaw$start,
