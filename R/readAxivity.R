@@ -604,8 +604,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       battery[pos:last] = prevRaw$battery
     }
     # Remove all rawdata except for the last
-    rawTime[1] = rawTime[rawLast]
-    rawAccel[1,] = rawAccel[rawLast,]
+    rawTime[1] = timeRes[last]
+    rawAccel[1,] = accelRes[last, ]
     rawPos = 2
     # Now current become previous
     prevRaw = raw
