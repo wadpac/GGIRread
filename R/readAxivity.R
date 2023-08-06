@@ -534,9 +534,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       doQClog = TRUE
       impute = TRUE
       
-      # Prepare imputation with last recorded value from previous block
+      # Prepare imputation with last recorded value, from the last non-faulty block,
       # normalized to vector 1 g
-      imputedValues = prevRaw$data[nrow(prevRaw$data), 1:3]
+      imputedValues = rawAccel[1, 1:3]
       VectorG = sqrt(sum(imputedValues^2))
       if (VectorG > 0.8 & VectorG < 1.2) {
         # only trust vector as proxy for orientation if it is between 0.8 and 1.2
@@ -604,8 +604,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       battery[pos:last] = prevRaw$battery
     }
     # Remove all rawdata except for the last
-    rawTime[1] = rawTime[rawLast]
-    rawAccel[1,] = rawAccel[rawLast,]
+    rawTime[1] = timeRes[last]
+    rawAccel[1,] = accelRes[last, ]
     rawPos = 2
     # Now current become previous
     prevRaw = raw
