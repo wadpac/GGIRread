@@ -8,7 +8,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   B = as.data.frame(B, stringsAsFactors = TRUE)
   #-------------------------------------------------------
   # extract info from header: fileEncoding does not seem to be consistent, so try variants
-  header = header_rownames = c()
+  header = c()
   Nlines = 18
   options(warn = -1) # ignore warnings with unknown character is fields
   skiprow = 0
@@ -26,24 +26,20 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
                                          header = TRUE,
                                          fileEncoding = "WINDOWS-1252"))}, silent = TRUE)
     }
-    if (length(header) == 0) {
-      try(expr = {header = suppressWarnings(read.csv(filename, skipNul = TRUE,
-                                         nrow = Nlines, skip = skiprow,
-                                         header = TRUE,
-                                         fileEncoding = "UTF-8"))}, silent = TRUE)
+    for (fEn in c("UTF-8", "latin1")) {
+      if (length(header) == 0) {
+        try(expr = {header = suppressWarnings(read.csv(filename, skipNul = TRUE,
+                                                       nrow = Nlines, skip = skiprow,
+                                                       header = TRUE,
+                                                       fileEncoding = fEn))}, silent = TRUE)
+      }
     }
-    if (length(header) == 0) {
-      try(expr = {header = suppressWarnings(read.csv(filename, skipNul = TRUE,
-                                         nrow = Nlines, skip = skiprow,
-                                         header = TRUE,
-                                         fileEncoding = "latin1"))}, silent = TRUE)
-    }
+    
     if (length(header) > 0) {
-      header_rownames = rownames(header)
       if (isTRUE(all.equal(as.character(1:Nlines), header_rownames))) {
         header = as.character(header[,1])
       } else {
-        header = header_rownames
+        header = rownames(header)
       }
     }
     
