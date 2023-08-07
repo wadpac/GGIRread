@@ -20,7 +20,7 @@ Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
 Description: Reads data collected from wearable acceleratometers as used in sleep and physical activity research. Currently supports file formats: binary data from 'GENEActiv' <https://activinsights.com/>, binary data from GENEA devices (not for sale), and .cwa-format and .wav-format data from 'Axivity' <https://axivity.com>. Primarily designed to complement R package GGIR <https://CRAN.R-project.org/package=GGIR>.
 URL: https://github.com/wadpac/GGIRread/
 BugReports: https://github.com/wadpac/GGIRread/issues
-License: Apache License (== 2.0) | file LICENSE
+License: Apache License (== 2.0)
 Suggests: testthat
 Imports: matlab, bitops, Rcpp (>= 0.12.10), tuneR
 Depends: stats, utils, R (>= 3.5.0)
