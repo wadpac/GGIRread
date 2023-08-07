@@ -109,5 +109,6 @@
 }
 \author{
   Evgeny Mirkes <em322@leicester.ac.uk>
+  Lena Kushleyeva
   Vincent van Hees <v.vanhees@accelting.com>
 }
