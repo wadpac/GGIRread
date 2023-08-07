@@ -8,7 +8,7 @@ readWav = function(filename, start = 1, end = 100, units = "minutes") {
   B = as.data.frame(B, stringsAsFactors = TRUE)
   #-------------------------------------------------------
   # extract info from header: fileEncoding does not seem to be consistent, so try variants
-  header = c()
+  header =  header_rownames = NULL
   Nlines = 18
   options(warn = -1) # ignore warnings with unknown character is fields
   skiprow = 0
