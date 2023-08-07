@@ -1,6 +1,6 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
-test_that("readAxivity reads data from file correctly", {
+test_that("readAxivity reads data from AX3 file correctly", {
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
   expect_equal(AX3$header$device, "Axivity")
@@ -11,7 +11,8 @@ test_that("readAxivity reads data from file correctly", {
   expect_equal(floor(sum(abs(AX3$data[,2:4]))), 1407)
   expect_equal(AX3$data[1,2], 0.8845225, tolerance = 3)
   expect_equal(AX3$data[4,3], -0.34375, tolerance = 3)
- 
+  expect_true(is.null(AX3$QClog))
+  
   # ask for more data then there is in the file
   AX3b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 1000)
   expect_equal(AX3b$header$device, "Axivity")
@@ -22,6 +23,35 @@ test_that("readAxivity reads data from file correctly", {
   expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 24873)
   
 })
+
+test_that("readAxivity reads data from AX6 file correctly", {
+  cwafile  = system.file("testfiles/ax6_testfile.cwa", package = "GGIRread")[1]
+  AX6 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
+  expect_equal(AX6$header$device, "Axivity")
+  expect_equal(nrow(AX6$data), 900)
+  expect_equal(ncol(AX6$data), 10)
+  expect_equal(AX6$data$time[5], 1577131450)
+  expect_equal(AX6$data$temp[3], 27.34375, tolerance = 0.0001)
+  expect_equal(floor(sum(abs(AX6$data[,2:4]))), 40302)
+  expect_equal(floor(sum(abs(AX6$data[,5:7]))), 4496)
+  expect_equal(AX6$data[1,2], 0.2906018, tolerance = 3)
+  expect_equal(AX6$data[4,3], -0.5111694, tolerance = 3)
+  expect_equal(AX6$data[30,5], 0.003796769, tolerance = 3)
+  expect_true(is.null(AX6$QClog))
+  
+  
+  # ask for more data then there is in the file
+  AX6b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 1000)
+  expect_equal(AX6b$header$device, "Axivity")
+  expect_equal(nrow(AX6b$data), 11128)
+  expect_equal(ncol(AX6b$data), 10)
+  expect_equal(AX6b$data$time[5],  1577131450)
+  expect_equal(AX6b$data$temp[3], 27.34375, tolerance = 0.0001)
+  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 955066)
+  expect_true(is.null(AX6b$QClog))
+  
+})
+
 
 test_that("readAxivity reads timezones correctly", {
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]

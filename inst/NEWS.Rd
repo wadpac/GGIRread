@@ -1,7 +1,14 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.2.10 (release date: 03-08-2023)}{
+\section{Changes in version 0.3.0 (release date: 07-08-2023)}{
+    \itemize{
+      \item Improved imputation of faulty blocks
+      \item Unit test added for AX6 files
+      \item License update to Apache 2.0.
+    }
+}
+\section{Changes in version 0.2.10 (GitHub-only-release date: 03-08-2023)}{
     \itemize{
       \item Fixed bug in temperature extraction Axivity cwa files (credits: Lena Kushleyeva)
       \item readAxivity now able to recognise when AX6 has been configured without 
