@@ -3,7 +3,7 @@
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 \section{Changes in version 0.3.0 (release date: 07-08-2023)}{
     \itemize{
-      \item Improved imputation of faulty blocks
+      \item Improved imputation of faulty blocks readAxivity
       \item Unit test added for AX6 files
       \item License update to Apache 2.0.
     }
