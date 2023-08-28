@@ -16,15 +16,12 @@
     filename (required) is name of cwa file to read
   }
   \item{start}{
-    start can be timestamp "year-month-day hr:min:sec" or non-negative integer
-    which is block number. Block size is 300 of measurements with specified 
-    frequency.
+    non-negative integer which is a cwa file block number.
   }
   \item{end}{
-    end can be timestamp "year-month-day hr:min:sec" or non-negative integer
-    which is block number. End must be not less than start. If end is less
-    or equal to start then there is no data read. Block size is 300 of 
-    measurements with specified frequency.
+    non-negative integer which is a cwa file block number.
+    End must be not be less than start.
+    If end is less or equal to start, then there is no data read.
   }
   \item{progressBar}{
     Is trigger to switch on/off the text progress bar. If progressBar
