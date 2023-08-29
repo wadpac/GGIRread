@@ -588,8 +588,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         stop(paste0("\nreadAxivity encountered a time gap in the file of ",
                     round((last - pos) / (3600 * 24) / prevRaw$frequency, digits = 2), " days"))
       }
-      
-      tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
+
+      # Figure out the number of points to impute, numImp.
+      # numImp should be such that timeRes[numImp + pos + 1] is the last point in timeRes[] < rawTime[rawLast]
+      numImp = length(which(timeRes[pos:last]<rawTime[rawLast]))
+      tmp = matrix(0, numImp, prevRaw$parameters$Naxes)
       for (axi in 1:3) tmp[, axi] = imputedValues[axi]
     }
     
