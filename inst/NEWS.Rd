@@ -3,11 +3,11 @@
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 \section{Changes in version 0.3.1 (release date: 30-08-2023)}{
     \itemize{
-      \item No iterate through cwa files using native cwea blocks insted of 300
+      \item Now iterates through cwa files using native cwa blocks instead of 300
       sample pages.
-      \item Deprecated option to iterate based on timestamps.
       \item Now properly accounts for unexpected high sampling rate for the imputation.
-      \item Deprecated readWav function, see #48 for justification
+      \item Deprecated option to iterate based on timestamps.
+      \item Deprecated readWav function, see #48 for justification.
     }
 }
 \section{Changes in version 0.3.0 (release date: 07-08-2023)}{
