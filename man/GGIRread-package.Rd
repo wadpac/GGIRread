@@ -15,7 +15,7 @@
   Package: \tab GGIRread\cr
   Type: \tab Package\cr
   Version: \tab 0.3.1\cr
-  Date: \tab 2023-08-07\cr
+  Date: \tab 2023-08-30\cr
   License: \tab LGPL (>= 2.0, < 3)\cr
   }
 }
