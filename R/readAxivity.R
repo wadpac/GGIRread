@@ -2,6 +2,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                        configtz = c(), interpolationType = 1, loadbattery = FALSE,
                        header = NULL, frequency_tol = 0.1) {
   if (length(configtz) == 0) configtz = desiredtz
+  blockBytes = 512
+  headerBytes = 1024
   # Credits: The original version of this code developed outside GitHub was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
@@ -14,7 +16,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   timestampDecoder = function(coded, fraction, shift, struc, configtz) {
     timestamp_numeric = struc[[1]]
 
-    # make sure timestamps are somewhat continous,
+    # make sure timestamps are somewhat continuous,
     # and there hasn't been a large gap since the previous timestamp
     coded_no_seconds = bitwShiftR(coded, 6)
     if (coded_no_seconds != struc[[3]]) {
@@ -68,8 +70,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       frequency_data = parameters$frequency_data
       format = parameters$format
     }
-    block = readBin(fid, raw(), n=512)
-    if (length(block) < 512) {
+    block = readBin(fid, raw(), n=blockBytes)
+    if (length(block) < blockBytes) {
       return(NULL)
     }
 
@@ -271,7 +273,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     
     # Start from the file origin
     seek(fid,0)
-    block = readBin(fid, raw(), n=1024)
+    block = readBin(fid, raw(), n=headerBytes)
 
     # Read block header and check correctness of name
     idstr = readChar(block, 2, useBytes = TRUE) #offset 0 1
@@ -310,17 +312,16 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
               frequency_header, " in header and ", datas$frequency, " in the first data block ")
     }
 
-    start = as.POSIXct(datas$start, origin = "1970-01-01", tz = desiredtz)
+    blockLength = datas$length # number of samples in a block
     
-    returnobject = list(
+    start = as.POSIXct(datas$start, origin = "1970-01-01", tz = desiredtz)
+
+    return(invisible(list(
       uniqueSerialCode = uniqueSerialCode, frequency = frequency_header,
       start = start,
       device = "Axivity", firmwareVersion = version, blocks = numDBlocks,
-      accrange = accrange, hardwareType = hardwareType
-    )
-    return(invisible(
-      returnobject
-    ))
+      accrange = accrange, hardwareType = hardwareType, blockLength = blockLength
+    )))
   }
 
 
@@ -333,8 +334,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     stop("At least file must be specified")
   }
   # Get file size in data blocks
-  numDBlocks = round(file.info(filename)$size / 512) - 2
-  pageLength = 300
+  numDBlocks = round(file.info(filename)$size / blockBytes) - 2
   # Open file
   fid = file(filename,"rb")
   on.exit({
@@ -342,171 +342,115 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   })
   #############################################################################
   # read header
-  struc = list(0,0L,0)
   if (is.null(header)) {
     header = readHeader(fid, numDBlocks)
   }
-  # preprocess start and stop
-  origin = as.numeric(header$start)
+  blockLength = header$blockLength # number of samples in a block
   step = 1/header$frequency
-  if (is.numeric(start)) {
-    if (start < 0)
-      start = 0
-    start = origin + start * pageLength * step
-  } else {
-    start = as.numeric(as.POSIXct(start, tz = configtz))
+
+  if (start < 0) {
+    start = 0
   }
-  if (is.numeric(end)) {
-    end = end * pageLength
-    if (end > numDBlocks * 150) {
-      end = numDBlocks * 150
-    }
-    end = origin + end * step
-  } else {
-    end = as.numeric(as.POSIXct(end, tz = configtz))
+  if (end > numDBlocks) {
+    end = numDBlocks
   }
   # If data is not necessary then stop work
   if (end <= start) {
     return(invisible(list(header = header, data = NULL)))
   }
-  #############################################################################
-  # reinitiate file and start reading of data and search the beginning of required
-  seek(fid,0)
-  # skip header
-  seek(fid, 1024, origin = 'current')
-  # Create data for results
-  timeRes = seq(start, end, step)
-  nr = length(timeRes) - 1
-  timeRes = as.vector(timeRes[1:nr])
-  temp = vector(mode = "double", nr)
-  battery = vector(mode = "double", nr)
-  light = vector(mode = "double", nr)
-  
-  #############################################################################
-  # Reading of data
 
   # Create progress bar if it is necessary
   if (progressBar) {
     pb = txtProgressBar(1, nr, style = 3)
   }
+
+  # Read the end block, to determine the end timestamp.
+  struc = list(0,0L,0)
+  if (end < numDBlocks) { # the end block isn't part of the data we'll read, but its start will be our ending timestamp
+    seek(fid, headerBytes + blockBytes * end, origin = 'start')
+    endBlock = readDataBlock(fid, struc = struc) 
+    endTimestamp = as.numeric(endBlock$start)
+  } else {
+    # end == numDBlocks, meaning we'll be reading all the remaining blocks.
+    # There is no block #numDBlocks, so we can't get the ending timestamp from the start of that block.
+    # Instead read the very last block of the file, and project what the ending timestamp should be.
+    seek(fid, headerBytes + blockBytes * (end-1), origin = 'start')
+    lastBlock = readDataBlock(fid, struc = struc) 
+    # the end timestamp should fall right after the actual very last timestamp of the file
+    endTimestamp = as.numeric(lastBlock$start) + blockLength * step
+    # now pad it generously in case there are gaps in the last block
+    endTimestamp = endTimestamp + 2 * blockLength * step
+  }
+
+  # Read the start block.
+  # Reinitiate file and skip header as well as the initial start-1 blocks
+  seek(fid, headerBytes + blockBytes * start, origin = 'start')
   pos = 1 # position of the first element to complete in data
-  prevRaw = readDataBlock(fid, struc = struc) # Read the first block
+  prevRaw = readDataBlock(fid, struc = struc) 
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
+  struc = prevRaw$struc
+  startTimestamp = as.numeric(prevRaw$start)
 
-  # a block has at most 120 samples (40 samples for AX6, 
-  # 80 for unpacked AX3 or for AX6 only collecting accelerometer data, and 120 for packed AX3),
-  # so allocate enough space for this number of samples, plus an extra ones needed for resampling.
-  maxSamples = 120
+  # allocate memory for results
+  timeRes = seq(startTimestamp, endTimestamp, step)
+  nr = length(timeRes) - 1
+  timeRes = as.vector(timeRes[1:nr])
+  temp = vector(mode = "double", nr)
+  battery = vector(mode = "double", nr)
+  light = vector(mode = "double", nr)
 
-  # Don't rely on the type of device to determine the dimentionality of the data
+  # Allocate enough space for the expected number of samples in a block, plus an extra ones needed for resampling.
+  # Don't rely on the type of device to determine the dimensionality of the data
   # because AX6 can be configured to only collect accelerometer data.
   if (prevRaw$parameters$Naxes == 3) { # AX3, or AX6 configured to only collect accelerometer data
     accelRes = matrix(0, nrow = nr, ncol = 3, dimnames = list(NULL, c("x", "y", "z")))
-    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 3)
+    rawAccel = matrix(0, nrow = blockLength + 1, ncol = 3)
   } else { # AX6 configured to collect gyroscope data
     accelRes = matrix(0, nrow = nr, ncol = 6, dimnames = list(NULL, c("gx", "gy", "gz", "x", "y", "z")))
-    rawAccel = matrix(0, nrow = maxSamples + 1, ncol = 6)
+    rawAccel = matrix(0, nrow = blockLength + 1, ncol = 6)
   }
-  rawTime = vector(mode = "numeric", maxSamples + 2)
-
+  rawTime = vector(mode = "numeric", blockLength + 2)
   rawPos = 1
-  i = 2
-  samplingFrac = 0.97 # first assume that sampling rate is 97% of expected value or higher
-  prevRaw_backup = prevRaw
-  struc_backup = struc
-  block1AfterSkip = FALSE
-  skippedLast = FALSE
-  blockDur = prevRaw$length / prevRaw$frequency
 
   QClog = NULL # Initialise log of data quality issues
-  
-  while (i <= numDBlocks + 1) {
 
-    if (i == numDBlocks + 1) {
-      # Process the last block of data if necessary
-      if (prevRaw$start >= start & pos <= nr & exists("prevStart") & exists("prevLength")) {
-        # Calculate pseudo time for the "next" block
-        newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
-        prevLength = prevRaw$length
+  # Read the data
+  for (ii in (start+1):end) {
+    if (ii == numDBlocks) {
+      # Process the last block in the file, if necessary
 
-        # fill vector rawTime and matrix rawAccel for resampling
-        rawLast = prevLength + 1
-        rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-      }
-      else {
-        break
-      }
-    } else {
-      time2Skip = start - prevRaw$start # once this gets negative we've passed the point
-      if (skippedLast == FALSE) {
-        Nblocks2Skip = floor((time2Skip/blockDur) * samplingFrac) 
-      } else {
-        Nblocks2Skip = 0
-      }
-      if (Nblocks2Skip <= 0) {
-        # read block
-        raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
-      } else {
-        # skip series of blocks, but only do this once
-        seek(fid, 512 * Nblocks2Skip, origin = 'current')
-        prevRaw$start = prevRaw$start + (blockDur * Nblocks2Skip) + 1
-        skippedLast = TRUE
-        block1AfterSkip = TRUE
-        i = i + Nblocks2Skip
-        next
-      }
+      # Calculate pseudo time for the "next" block
+      newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
+      prevLength = prevRaw$length
+
+      # fill vector rawTime and matrix rawAccel for resampling
+      rawLast = prevLength + 1
+      rawTime[2:(rawLast+1)] = seq(prevStart, newTimes, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    }
+    else { # read a new block
+      raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
+
       if (is.null(raw)) {
-        break
+        # this shouldn't happen
+        stop(paste0("\nreadAxivity encountered unexpected empty block at #", ii))
       }
+
       # Save start and length of the previous block
       prevStart = prevRaw$start
       prevLength = prevRaw$length
       struc = raw$struc
-      # Check are previous data block necessary
-
-      if (raw$start < start) {
-        # Ignore this block and go to the next
-        prevRaw = raw
-        i = i + 1
-        block1AfterSkip = FALSE
-        next
-      }
-      if (block1AfterSkip == TRUE) {
-        # Oops start was missed, because sampling rate was lower than expected
-        # Go back to beginning of file and use lower samplingFrac
-        i = 2
-        seek(fid, 0)
-        seek(fid, 512 + 1024, origin = 'start') # skip header and one block of data
-        struc = struc_backup
-        prevRaw = prevRaw_backup
-        skippedLast = FALSE
-        block1AfterSkip = FALSE
-        samplingFrac = samplingFrac - 0.1
-        if (samplingFrac < 0.2) {
-          skippedLast = TRUE #read file in old way block by block
-          warning(paste0("GGIRread is having difficulty reading this .cwa file.",
-                         " This could be an issue with the .cwa files. Please report",
-                         " this issue to the GGIRread maintainers",
-                         " via https://github.com/wadpac/GGIRread/issues and to ",
-                         " Axivity Ltd."), call. = FALSE)
-        }
-        next
-      }
 
       # fill vector rawTime and matrix rawAccel for resampling
       rawLast = prevLength + 1
       rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
-      # Following line is commented out and moved further down, because we only
-      # want to use the data if it passes the integrity checks, otherwise we will impute the data.
-      # rawAccel[2:rawLast,] = prevRaw$data 
-    } 
 
-    if (rawPos == 1) {
-      rawAccel[1,] = (prevRaw$data[1,])
-      rawTime[1] = prevStart - 0.00001
-      rawPos = 2
+      if (rawPos == 1) {
+        rawAccel[1,] = (prevRaw$data[1,])
+        rawTime[1] = prevStart - 0.00001
+        rawPos = 2
+      }
     }
 
     frequency_observed = rawLast / (rawTime[rawLast] - rawTime[1])
@@ -525,10 +469,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     impute = FALSE
     doQClog = FALSE
     frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
-    if ((i <= numDBlocks &
-         raw$blockID != 0 &
-         raw$blockID - prevRaw$blockID != 1) |
-        prevRaw$checksum_pass == FALSE |
+    if ((ii < numDBlocks &&
+         raw$blockID != 0 &&
+         raw$blockID - prevRaw$blockID != 1) ||
+        prevRaw$checksum_pass == FALSE ||
         frequency_bias > frequency_tol) {
       # Log and impute this event
       doQClog = TRUE
@@ -580,7 +524,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     
     if (impute == FALSE) {
-      tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType) #GGIRread:::
+      tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     } else {
       # Impute the data because integrity check did not pass
       if (last - pos >  prevRaw$frequency * 259200) { # 3600 * 24 * 5 = 259200
@@ -588,12 +532,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         stop(paste0("\nreadAxivity encountered a time gap in the file of ",
                     round((last - pos) / (3600 * 24) / prevRaw$frequency, digits = 2), " days"))
       }
-      
-      tmp = matrix(0, last - pos + 1, prevRaw$parameters$Naxes)
+
+      # Figure out the number of points to impute, numImp.
+      # numImp should be such that timeRes[numImp + pos + 1] is the last point in timeRes[] < rawTime[rawLast]
+      numImp = length(which(timeRes[pos:last]<rawTime[rawLast]))
+      tmp = matrix(0, numImp, prevRaw$parameters$Naxes)
       for (axi in 1:3) tmp[, axi] = imputedValues[axi]
     }
     
-    # put result to specified position
+    # put result into specified position
     last = nrow(tmp) + pos - 1
 
     # Fill light, temp and battery
@@ -607,18 +554,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     rawTime[1] = timeRes[last]
     rawAccel[1,] = accelRes[last, ]
     rawPos = 2
-    # Now current become previous
+    # Now current becomes previous
     prevRaw = raw
     pos = last + 1
     # Refresh progress bar if it is necessary
     if (progressBar) {
       setTxtProgressBar(pb, pos)
     }
-    # Check do we need read any more data
-    if (pos > nr) {
-      break
-    }
-    i = i + 1
   }
   #===============================================================================
   # If the user asked for more data than the length of the recording,
