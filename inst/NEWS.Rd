@@ -7,6 +7,7 @@
       sample pages.
       \item Deprecated option to iterate based on timestamps.
       \item Now properly accounts for unexpected high sampling rate for the imputation.
+      \item Deprecated readWav function, see #48 for justification
     }
 }
 \section{Changes in version 0.3.0 (release date: 07-08-2023)}{
