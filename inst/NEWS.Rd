@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.3.1 (release date: 30-08-2023)}{
+\section{Changes in version 0.3.1 (GitHub-only-release date: 30-08-2023)}{
     \itemize{
       \item Now iterates through cwa files using native cwa blocks instead of 300
       sample pages.
