@@ -1,23 +1,24 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
-\section{Changes in version 0.3.1 (GitHub-only-release date: 30-08-2023)}{
+\section{Changes in version 0.3.1 (GitHub-only-release date:11-10-2023)}{
     \itemize{
       \item Now iterates through cwa files using native cwa blocks instead of 300
       sample pages.
       \item Now properly accounts for unexpected high sampling rate for the imputation.
       \item Deprecated option to iterate based on timestamps.
       \item Deprecated readWav function, see #48 for justification.
+      \item This release already appeared on GitHub on 30 August but is now also submitted to CRAN
     }
 }
-\section{Changes in version 0.3.0 (release date: 07-08-2023)}{
+\section{Changes in version 0.3.0 (release date:07-08-2023)}{
     \itemize{
       \item Improved imputation of faulty blocks readAxivity
       \item Unit test added for AX6 files
       \item License update to Apache 2.0.
     }
 }
-\section{Changes in version 0.2.10 (GitHub-only-release date: 03-08-2023)}{
+\section{Changes in version 0.2.10 (GitHub-only-release date:03-08-2023)}{
     \itemize{
       \item Fixed bug in temperature extraction Axivity cwa files (credits: Lena Kushleyeva)
       \item readAxivity now able to recognise when AX6 has been configured without 
