@@ -9,7 +9,7 @@
 \usage{
   readAxivity(filename, start = 0, end = 0, progressBar = FALSE, 
     desiredtz = "", configtz = c(), interpolationType=1, loadbattery = FALSE,
-    header = NULL, frequency_tol = 0.1)
+    header = NULL, frequency_tol = 0.1, maxAllowedCorruptBlocks = 20)
 }
 \arguments{
   \item{filename}{
@@ -54,6 +54,9 @@
     Regardless of the setting the function will always log instances when frequency 
     differs by more than 5\%, but if this is less than frequency_tol the block will
     not be imputed.
+  }
+  \item{maxAllowedCorruptBlocks}{
+    Max number of consecutive blocks with a failed checksum that we'll tolerate.
   }
   
 }
