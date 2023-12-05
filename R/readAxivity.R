@@ -1,9 +1,11 @@
 readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desiredtz = "",
                        configtz = c(), interpolationType = 1, loadbattery = FALSE,
-                       header = NULL, frequency_tol = 0.1) {
+                       header = NULL, frequency_tol = 0.1,
+                       maxAllowedCorruptBlocks = 20) {
   if (length(configtz) == 0) configtz = desiredtz
   blockBytes = 512
   headerBytes = 1024
+
   # Credits: The original version of this code developed outside GitHub was 
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
@@ -75,6 +77,28 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       return(NULL)
     }
 
+    # sampling rate in one of file format U8 at offset 24
+    samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
+
+    if (samplerate_dynrange != 0) { # Very old files that have zero at offset 24 don't have a checksum
+      checksum = sum(readBin(block, n = 256,
+                             integer(),
+                             size = 2,
+                             signed = FALSE,
+                             endian = "little"))
+      checksum = checksum %% 65536 # 65536 = 2^16; the checksum is calculated as a 16-bit integer
+      if (checksum != 0) {
+        # Checksum doesn't match. This means some bits in this block got corrupted.
+        # We don't know which, so we can't trust this block. We skip it, and impute it later.
+        rawdata_list = list(
+          struc = struc,
+          parameters = parameters,
+          checksum_pass = FALSE
+        )
+        return(invisible(rawdata_list))
+      }
+    }
+
     idstr = readChar(block, 2, useBytes = TRUE)
     if (idstr != "AX") {
       stop("Packet header is incorrect. First two characters must be AX.")
@@ -113,22 +137,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       battery = 3.0 * (readBin(block[24], integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
       battery = 0
-    }
-    # sampling rate in one of file format U8 at offset 24
-    samplerate_dynrange = readBin(block[25], integer(), size = 1, signed = FALSE)
-
-    checksum_pass = TRUE
-    if (samplerate_dynrange != 0) { # Very old files that have zero at offset 24 don't have a checksum
-      # Perform checksum
-      checksum = sum(readBin(block, n = 256,
-                             integer(),
-                             size = 2,
-                             signed = FALSE,
-                             endian = "little"))
-      checksum = checksum %% 65536 # equals 2^16 the checksum is calculated on a 16bit integer
-      if (checksum != 0) {
-        checksum_pass = FALSE
-      }
     }
 
     # offset 25, per documentation: 
@@ -244,7 +252,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       length = blockLength,
       struc = struc,
       parameters = parameters,
-      checksum_pass = checksum_pass,
+      checksum_pass = TRUE,
       blockID = blockID
     )
     if (complete) {
@@ -302,14 +310,33 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     accrange = bitwShiftR(16, (bitwShiftR(samplerate_dynrange, 6)))
     version = readBin(block[42], integer(), size = 1, signed = FALSE) #offset 41
 
-    # Read the first data block without data
-    datas = readDataBlock(fid, complete = FALSE)
-    if (is.null(datas)) {
-      stop("Error reading the first data block.")
+    # Read the first data block without data.
+    # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
+    is_corrupt = TRUE
+    for (ii in 0:min(numDBlocks-1, maxAllowedCorruptBlocks)) {
+      datas = readDataBlock(fid, complete = FALSE)
+
+      if (is.null(datas)) {
+        stop("Error reading the first data block.")
+      }
+
+      if (datas$checksum_pass) {
+        is_corrupt = FALSE
+        break
+      }
+
+      warning("Skipping corrupt block #", ii)
     }
+    if (is_corrupt) {
+      if (ii==numDBlocks-1) {
+        stop("Error reading file. Every block is corrupt.")
+      }
+      stop("Error reading file. The first ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
+    }
+    
     if (frequency_header != datas$frequency) {
       warning("Inconsistent value of measurement frequency: there is ",
-              frequency_header, " in header and ", datas$frequency, " in the first data block ")
+              frequency_header, " in header and ", datas$frequency, " in the first data block. ")
     }
 
     blockLength = datas$length # number of samples in a block
@@ -340,6 +367,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   on.exit({
     close(fid)
   })
+
+  QClog = NULL # Initialise log of data quality issues
+
   #############################################################################
   # read header
   if (is.null(header)) {
@@ -368,14 +398,59 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   struc = list(0,0L,0)
   if (end < numDBlocks) { # the end block isn't part of the data we'll read, but its start will be our ending timestamp
     seek(fid, headerBytes + blockBytes * end, origin = 'start')
-    endBlock = readDataBlock(fid, struc = struc) 
+
+    # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
+    # Skip forward, so we'll end up reading more blocks than requested.
+    # This is important because when corrupt blocks are in the beginning of the requested interval,
+    # we also skip forward, ending up with fewer blocks than requested.
+    # for example, if we have a file with corrupt blocks 8-12, and we read the file 10 blocks at a time,
+    # then the 1st request will end up with blocks 1-12, and the 2nd request with blocks 13-20,
+    # and between the two requests, all 20 blocks will be accounted for.
+    is_corrupt = TRUE
+    for (ii in end : min(numDBlocks-1, end+maxAllowedCorruptBlocks)) {
+      endBlock = readDataBlock(fid, struc = struc) 
+
+      if (endBlock$checksum_pass) {
+        is_corrupt = FALSE
+        break
+      }
+
+      warning("Skipping corrupt end block #", ii)
+      end = end + 1
+    }
+    if (is_corrupt && ii == end+maxAllowedCorruptBlocks) {
+      stop("Error reading file. The last ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
+    }
     endTimestamp = as.numeric(endBlock$start)
-  } else {
+  }
+
+  if (end == numDBlocks) {
     # end == numDBlocks, meaning we'll be reading all the remaining blocks.
     # There is no block #numDBlocks, so we can't get the ending timestamp from the start of that block.
-    # Instead read the very last block of the file, and project what the ending timestamp should be.
-    seek(fid, headerBytes + blockBytes * (end-1), origin = 'start')
-    lastBlock = readDataBlock(fid, struc = struc) 
+    # Instead read the very last block of the file (if the last block is corrupt, fing the last non-corrupt one),
+    # then project what the ending timestamp should be.
+
+    # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
+    # SInce we are at the last block, we have to go backwards.
+    is_corrupt = TRUE
+    for (ii in (end-1) : max(start, end-maxAllowedCorruptBlocks-1)) {
+      seek(fid, headerBytes + blockBytes * ii, origin = 'start')
+      lastBlock = readDataBlock(fid, struc = struc)
+
+      if (lastBlock$checksum_pass) {
+        is_corrupt = FALSE
+        break
+      }
+
+      warning("Skipping corrupt end block #", ii)
+      end = end - 1
+    }
+    if (is_corrupt) {
+      if (start == end) {
+        stop("Error reading file. All requested blocks are corrupt.")
+      }
+      stop("Error reading file. The last ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
+    }
     # the end timestamp should fall right after the actual very last timestamp of the file
     endTimestamp = as.numeric(lastBlock$start) + blockLength * step
     # now pad it generously in case there are gaps in the last block
@@ -386,7 +461,36 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Reinitiate file and skip header as well as the initial start-1 blocks
   seek(fid, headerBytes + blockBytes * start, origin = 'start')
   pos = 1 # position of the first element to complete in data
-  prevRaw = readDataBlock(fid, struc = struc) 
+
+  # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
+  is_corrupt = TRUE
+  for (ii in 1 : min((end-start), maxAllowedCorruptBlocks+1)) {
+    prevRaw = readDataBlock(fid, struc = struc) 
+
+    if (prevRaw$checksum_pass) {
+      is_corrupt = FALSE
+      break
+    }
+    QClog = rbind(QClog, data.frame(checksum_pass = FALSE,
+                                    blockID_current = start, # the actual block ID wasn't read b/c the block is corrupt
+                                    blockID_next = start+1,
+                                    start = 0,
+                                    end = 0,
+                                    blockLengthSeconds = 0,
+                                    frequency_blockheader = 0,
+                                    frequency_observed = 0,
+                                    imputed = FALSE))
+
+    warning("Skipping corrupt start block #", start)
+    start = start + 1
+  }
+  if (is_corrupt) {
+    if (start == end) {
+      stop("Error reading file. All requested blocks are corrupt.")
+    }
+    stop("Error reading file. The first ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
+  }
+
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
@@ -414,7 +518,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   rawTime = vector(mode = "numeric", blockLength + 2)
   rawPos = 1
 
-  QClog = NULL # Initialise log of data quality issues
+  consecutiveCorrupt = 0
 
   # Read the data
   for (ii in (start+1):end) {
@@ -431,6 +535,31 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     else { # read a new block
       raw = readDataBlock(fid, struc = struc, parameters = prevRaw$parameters)
+      if (!raw$checksum_pass) {
+        # If the checksum doesn't match, we can't trust any of this block's data,
+        # so we have to completely skip the block.
+        # Depending on the nature of the faulty block, the data for the time period it represented
+        # will probably get imputed later, once we encounter a block with a valid checksum.
+        QClog = rbind(QClog, data.frame(checksum_pass = FALSE,
+                                        blockID_current = ii, # the actual block ID wasn't read b/c the block is corrupt
+                                        blockID_next = ii + 1,
+                                        start = 0,
+                                        end = 0,
+                                        blockLengthSeconds = 0,
+                                        frequency_blockheader = 0,
+                                        frequency_observed = 0,
+                                        imputed = FALSE))
+        warning("Skipping corrupt block #", ii)
+
+        consecutiveCorrupt = consecutiveCorrupt + 1
+        if (consecutiveCorrupt > maxAllowedCorruptBlocks) {
+          stop("Error reading file. ", maxAllowedCorruptBlocks+1, " consecutive blocks are corrupt.")
+        }
+
+        next
+      }
+
+      consecutiveCorrupt = 0
 
       if (is.null(raw)) {
         # this shouldn't happen
@@ -472,7 +601,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if ((ii < numDBlocks &&
          raw$blockID != 0 &&
          raw$blockID - prevRaw$blockID != 1) ||
-        prevRaw$checksum_pass == FALSE ||
         frequency_bias > frequency_tol) {
       # Log and impute this event
       doQClog = TRUE
@@ -499,7 +627,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     }
     if (doQClog == TRUE) {
       # Note: This is always a description of the previous block
-      QClog = rbind(QClog, data.frame(checksum_pass = prevRaw$checksum_pass,
+      QClog = rbind(QClog, data.frame(checksum_pass = TRUE,
                                       blockID_current = prevRaw$blockID,
                                       blockID_next = raw$blockID,
                                       start = prevRaw$start,
