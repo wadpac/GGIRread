@@ -1,6 +1,11 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+\section{Changes in version 0.3.2 (GitHub-only-release date:05-12-2023)}{
+    \itemize{
+      \item Improved handling of failed checksum #53 (credits: Lena Kushleyeva)
+    }
+}
 \section{Changes in version 0.3.1 (GitHub-only-release date:11-10-2023)}{
     \itemize{
       \item Now iterates through cwa files using native cwa blocks instead of 300
