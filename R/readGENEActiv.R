@@ -65,8 +65,6 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   } else {
     starttime_posix = as.POSIXlt(starttime, tz = configtz,
                                  format = "%Y-%m-%d %H:%M:%OS", origin = "1970-01-01")
-    starttime_posix = as.POSIXlt(as.numeric(starttime_posix),
-                                 tz = desiredtz, origin = "1970-01-01")
   }
   
   # Correct timestamps
