@@ -33,7 +33,9 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   if (starttime == "2010-09-16 09:10:00:000") {
     # If recording started at this specific date and time then
-    # that indicates a known bug, use timestamp from first page instead
+    # that indicates a known incorrectness of the timestamp (based on 
+    # correspondence with manufacturer). In this case we should use the
+    # timestamp from first page instead.
     starttime = gsub(pattern = "Page Time:", replacement = "",
                      x = fh[grep(pattern = "Page Time", x = fh)[1]])
   }
