@@ -31,6 +31,12 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
                      x = gsub(pattern = "Device Model:", replacement = "",
                         x = fh[grep(pattern = "Device Model", x = fh)[1]]))
   
+  if (starttime == "2010-09-16 09:10:00:000") {
+    # If recording started at this specific date and time then
+    # that indicates a known bug, use timestamp from first page instead
+    starttime = gsub(pattern = "Page Time:", replacement = "",
+                     x = fh[grep(pattern = "Page Time", x = fh)[1]])
+  }
   
   # Read acceleration, lux and temperature data
   rawdata = GENEActivReader(filename = filename,
