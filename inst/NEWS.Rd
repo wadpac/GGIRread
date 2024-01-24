@@ -6,7 +6,7 @@
       \item When GENEActiv device battery runs low before downloading data the timestamp in the file header will default to 2010-9-16. This is now corrected by using the timestamp from the first page header instead, issue #56
     }
 }
-\section{Changes in version 0.3.2 (GitHub-only-release date:05-12-2023)}{
+\section{Changes in version 0.3.2 (release date:05-12-2023)}{
     \itemize{
       \item Improved handling of failed checksum in .cwa files #53 (credits: Lena Kushleyeva)
     }
