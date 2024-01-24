@@ -3,3 +3,4 @@
 ^\.github
 prepareNewRelease.R
 LICENSE
+codecov.yml

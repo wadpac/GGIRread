@@ -3,7 +3,7 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   # Extract information from the fileheader
   suppressWarnings({fh = readLines(filename, 69)})
-  # fh = fh[1:30]
+  
   SN = gsub(pattern = "Device Unique Serial Code:", replacement = "",
             x = fh[grep(pattern = "Device Unique Serial Code", x = fh)[1]])
   firmware = gsub(pattern = "Device Firmware Version:", replacement = "",
@@ -12,8 +12,11 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
                   x = fh[grep(pattern = "Lux", x = fh)[1]]))
   Volts = as.numeric(gsub(pattern = "Volts:", replacement = "",
              x = fh[grep(pattern = "Volts", x = fh)[1]]))
-  starttime = gsub(pattern = "Start Time:", replacement = "",
-                  x = fh[grep(pattern = "Start Time", x = fh)[1]])
+  # We use first Page Time and not Start time from the file header
+  # because start time from the file header is known to be incorrect
+  # when battery runs out prior to end of recording
+  starttime = gsub(pattern = "Page Time:", replacement = "",
+                   x = fh[grep(pattern = "Page Time", x = fh)[1]])
   
   tzone = gsub(pattern = "Time Zone:", replacement = "",
                x = fh[grep(pattern = "Time Zone", x = fh)[1]])
@@ -30,8 +33,7 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   DeviceModel = gsub(pattern = " ", replacement = "",
                      x = gsub(pattern = "Device Model:", replacement = "",
                         x = fh[grep(pattern = "Device Model", x = fh)[1]]))
-  
-  
+
   # Read acceleration, lux and temperature data
   rawdata = GENEActivReader(filename = filename,
                             start = start, end = end, 
@@ -69,7 +71,7 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   
   # Correct timestamps
   page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
-  starttime_num = as.numeric(starttime_posix) + 5 + page_offset #tzone +
+  starttime_num = as.numeric(starttime_posix) + page_offset
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
   return(invisible(list(
     header = header,
