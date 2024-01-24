@@ -4,4 +4,3 @@
 prepareNewRelease.R
 LICENSE
 codecov.yml
-^.Rproj
