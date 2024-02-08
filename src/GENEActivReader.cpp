@@ -195,7 +195,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         i++;
                     } catch (const std::exception& ex) {
                         errCounter++;
-                        Rcpp::Rcerr << "data error at i = %d: %s i: " << i << " " << ex.what() << "\n";
+                        Rcpp::Rcerr << "data error at i = " << i << " : " << ex.what() << "\n";
                         break;  // rest of this block could be corrupted
                     }
                 }
