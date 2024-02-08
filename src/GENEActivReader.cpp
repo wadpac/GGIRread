@@ -195,7 +195,12 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
                         i++;
                     } catch (const std::exception& ex) {
                         errCounter++;
-                        Rcpp::Rcerr << "data error at i = " << i << " : " << ex.what() << "\n";
+                        std::string err_text = ex.what();
+
+                        // report any error other than the one expected at the end of file
+                        if (err_text.find("stoll: no conversion") == std::string::npos) {
+                            Rcpp::Rcerr << "data error at i = " << i << " : " << err_text << "\n";
+                        }
                         break;  // rest of this block could be corrupted
                     }
                 }
