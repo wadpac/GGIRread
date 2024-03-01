@@ -1,6 +1,13 @@
 \name{NEWS}
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
+
+\section{Changes in version 0.3.4 (release date:??-??-2024)}{
+    \itemize{
+      \item GENEActiv no longer prints error to console when more data is requested than is in the file because this is not an error, issue #58
+    }
+}
+
 \section{Changes in version 0.3.3 (release date:24-01-2024)}{
     \itemize{
       \item When GENEActiv device battery runs low before downloading data the timestamp in the file header will default to 2010-9-16. This is now corrected by using the timestamp from the first page header instead, issue #56
