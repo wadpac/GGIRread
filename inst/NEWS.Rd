@@ -5,6 +5,7 @@
 \section{Changes in version 0.3.4 (release date:??-??-2024)}{
     \itemize{
       \item GENEActiv no longer prints error to console when more data is requested than is in the file because this is not an error, issue #58
+      \item readGENEActiv: Fixed bug in incrementing time between file pages #61
     }
 }
 
