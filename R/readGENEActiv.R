@@ -70,7 +70,11 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   }
   
   # Correct timestamps
-  page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
+  if (start > 1) {
+    page_offset = (((start - 1) * 300) / rawdata$info$SampleRate)
+  } else {
+    page_offset = 0
+  }
   starttime_num = as.numeric(starttime_posix) + page_offset
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
   return(invisible(list(

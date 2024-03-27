@@ -2,9 +2,10 @@
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 
-\section{Changes in version 0.3.4 (release date:??-??-2024)}{
+\section{Changes in version 1.0.0 (release date:27-03-2024)}{
     \itemize{
-      \item GENEActiv no longer prints error to console when more data is requested than is in the file because this is not an error, issue #58
+      \item GENEActiv no longer prints error to console when more data is requested 
+      than is in the file because this is not an error, issue #58
     }
 }
 
