@@ -6,7 +6,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   blockBytes = 512
   headerBytes = 1024
 
-  # Credits: The original version of this code developed outside GitHub was 
+  # Credits: The original version of this code developed outside GitHub was
   # contributed by Dr. Evgeny Mirkes (Leicester University, UK)
   #========================================================================
   # Documentation moved to standard place for documentation which is readAxivity.Rd
@@ -108,13 +108,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (packetLength != 508) {
       stop("Packet length is incorrect, should always be 508.")
     }
-    
+
     # offset 4: if the top bit set, this contains a 15-bit fraction of a second for the timestamp
     tsOffset = readBin(block[5:6], integer(), size = 2, signed = FALSE, endian = "little")
 
     # offset 10: sequence ID
     blockID = readBin(block[11:14], integer(), size = 4, endian = "little")
-    
+
     # read data for timestamp u32 at offset 14
     timeStamp = readBin(block[15:18], integer(), size = 4, endian = "little") # the "signed" flag of readBin only works when reading 1 or 2 bytes
 
@@ -123,7 +123,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     light = bitwAnd(offset18, 0x03ffL)
 
     # Read and recalculate temperature, lower 10 bits of u16 at offset 20.
-    # Formula for the temperature is specified at 
+    # Formula for the temperature is specified at
     # https://github.com/digitalinteraction/openmovement/blob/545564d3bf45fc19914de1ad1523ed86538cfe5e/Docs/ax3/cwa.h#L102
     # Also see the following discussion:
     # https://github.com/digitalinteraction/openmovement/issues/11#issuecomment-1622278513
@@ -133,19 +133,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # https://github.com/digitalinteraction/openmovement/blob/master/Docs/ax3/ax3-auxiliary.md#battery-voltage
       # Battery is sampled as a 10-bit ADC value, but only the middle 8 bits are stored (the lowest bit is lost, and the highest bit is always 1).
       # So to restore the ADC value, double the packed value and add 512.
-      # Then voltage = ADC_value * 6 / 1024 
+      # Then voltage = ADC_value * 6 / 1024
       battery = 3.0 * (readBin(block[24], integer(), size = 1, signed = FALSE) / 256.0 + 1.0);
     } else {
       battery = 0
     }
 
-    # offset 25, per documentation: 
-    # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz; 
+    # offset 25, per documentation:
+    # "top nibble: number of axes, 3=Axyz, 6=Gxyz/Axyz, 9=Gxyz/Axyz/Mxyz;
     # bottom nibble: packing format" (2 means unpacked, 0 packed).
     offset25 = readBin(block[26], integer(), size = 1, signed = FALSE)
     packed = (bitwAnd(offset25,15) == 0)
 
-    # offset 26 has a int16 (not uint16) value. 
+    # offset 26 has a int16 (not uint16) value.
     # It's the "relative sample index from the start of the buffer where the whole-second timestamp is valid"
     offset26 = readBin(block[27:28], integer(), size = 2, endian = "little")
 
@@ -153,14 +153,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # blockLength is expected to be 40 for AX6, 80 or 120 for AX3.
     # Note that if AX6 is configured to only collect accelerometer data
     # this will look as if it is a AX3
-    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian = "little") 
+    blockLength = readBin(block[29:30], integer(), size = 2, signed = FALSE, endian = "little")
 
     if (is.null(parameters)) {
       accelScaleCode = bitwShiftR(offset18, 13)
       accelScale = 1 / (2^(8 + accelScaleCode))
       # top nibble of offset25 is the number of axes
       Naxes = bitwShiftR(offset25, 4)
-    } 
+    }
 
     # auxiliary variables
     shift = 0
@@ -194,7 +194,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
         #    [0][1][2][3][4][5][6][7][8][9]
         # use 15-bits as 16-bit fractional time
         fractional = bitwShiftL(bitwAnd(tsOffset, 0x7fffL), 1);
-        
+
         # frequency is truncated to int in firmware
         shift = shift + bitwShiftR((fractional * frequency_data), 16);
       }
@@ -202,7 +202,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
     # Read data if necessary
     if (complete) {
-      
+
       if (packed) {
         # Read 4 bytes for three measurements
         packedData = readBin(block[31:510], integer(), size = 4, n = blockLength, endian = "little")
@@ -233,12 +233,12 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
                         frequency_data = frequency_data,
                         format = format)
     }
-    
+
     if (blockID == 0) {
       # force timestampDecoder to extract full timestamp
       # this could for example happen when curious participant plugs
       # AX device into computer
-      struc[[1]] = 0 
+      struc[[1]] = 0
     }
     tsDeco = timestampDecoder(timeStamp, fractional, -shift / frequency_data, struc, configtz)
     start = tsDeco$start
@@ -258,7 +258,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     if (complete) {
       rawdata_list$data = data
     }
-  
+
     return(invisible(rawdata_list))
   }
 
@@ -278,7 +278,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #   blocks is number of datablocks with 80 or 120 observations in each
     #       Unfortunately frequency of measurement is varied in this device.
     #
-    
+
     # Start from the file origin
     seek(fid,0)
     block = readBin(fid, raw(), n=headerBytes)
@@ -333,14 +333,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
       stop("Error reading file. The first ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
     }
-    
+
     if (frequency_header != datas$frequency) {
       warning("Inconsistent value of measurement frequency: there is ",
               frequency_header, " in header and ", datas$frequency, " in the first data block. ")
     }
 
     blockLength = datas$length # number of samples in a block
-    
+
     start = as.POSIXct(datas$start, origin = "1970-01-01", tz = desiredtz)
 
     return(invisible(list(
@@ -354,7 +354,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   ################################################################################################
   # Main function
-  
+
   # Parse input arguments
   nargin = nargs()
   if (nargin < 1) {
@@ -389,11 +389,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     return(invisible(list(header = header, data = NULL)))
   }
 
-  # Create progress bar if it is necessary
-  if (progressBar) {
-    pb = txtProgressBar(1, nr, style = 3)
-  }
-
   # Read the end block, to determine the end timestamp.
   struc = list(0,0L,0)
   if (end < numDBlocks) { # the end block isn't part of the data we'll read, but its start will be our ending timestamp
@@ -408,7 +403,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # and between the two requests, all 20 blocks will be accounted for.
     is_corrupt = TRUE
     for (ii in end : min(numDBlocks-1, end+maxAllowedCorruptBlocks)) {
-      endBlock = readDataBlock(fid, struc = struc) 
+      endBlock = readDataBlock(fid, struc = struc)
 
       if (endBlock$checksum_pass) {
         is_corrupt = FALSE
@@ -465,7 +460,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
   is_corrupt = TRUE
   for (ii in 1 : min((end-start), maxAllowedCorruptBlocks+1)) {
-    prevRaw = readDataBlock(fid, struc = struc) 
+    prevRaw = readDataBlock(fid, struc = struc)
 
     if (prevRaw$checksum_pass) {
       is_corrupt = FALSE
@@ -504,6 +499,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   temp = vector(mode = "double", nr)
   battery = vector(mode = "double", nr)
   light = vector(mode = "double", nr)
+
+  # Create progress bar if it is necessary
+  if (progressBar) {
+    pb = txtProgressBar(1, nr, style = 3)
+  }
 
   # Allocate enough space for the expected number of samples in a block, plus an extra ones needed for resampling.
   # Don't rely on the type of device to determine the dimensionality of the data
@@ -588,13 +588,13 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     # The following code checks whether any of the following conditions are met:
     # - blockID is not zero and not consecutive from previous blockID
     # - checksum_pass is FALSE
-    # - observed and expected sampling frequency differ by a fraction larger 
+    # - observed and expected sampling frequency differ by a fraction larger
     #  than frequency_tol
     # If yes, then we consider the block faulty
     # and impute the acceleration and if applicable gyroscope values
     # We log this event in output object QClog, which will allow the user to
     # decide on alternative imputation strategies.
-    
+
     impute = FALSE
     doQClog = FALSE
     frequency_bias = abs(frequency_observed - prevRaw$frequency) / prevRaw$frequency
@@ -605,7 +605,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Log and impute this event
       doQClog = TRUE
       impute = TRUE
-      
+
       # Prepare imputation with last recorded value, from the last non-faulty block,
       # normalized to vector 1 g
       imputedValues = rawAccel[1, 1:3]
@@ -650,7 +650,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       last = last + positions2add
       if (last > nr) last = nr
     }
-    
+
     if (impute == FALSE) {
       tmp = resample(rawAccel, rawTime, timeRes[pos:last], rawLast, type = interpolationType)
     } else {
@@ -667,7 +667,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       tmp = matrix(0, numImp, prevRaw$parameters$Naxes)
       for (axi in 1:3) tmp[, axi] = imputedValues[axi]
     }
-    
+
     # put result into specified position
     last = nrow(tmp) + pos - 1
 

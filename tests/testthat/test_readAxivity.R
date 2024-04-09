@@ -12,7 +12,7 @@ test_that("readAxivity reads data from AX3 file correctly", {
   expect_equal(AX3$data[1,2], 0.7656, tolerance = .0001, scale = 1)
   expect_equal(AX3$data[4,3], -0.3125, tolerance = .0001, scale = 1)
   expect_true(is.null(AX3$QClog))
-  
+
   # ask for more data then there is in the file
   AX3b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX3b$header$device, "Axivity")
@@ -21,10 +21,18 @@ test_that("readAxivity reads data from AX3 file correctly", {
   expect_equal(AX3b$data$time[5], 1551174906.040, tolerance = .001, scale = 1)
   expect_equal(AX3b$data$temp[3], 25.5859, tolerance = 0.0001, scale = 1)
   expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 25367)
-  
+
 })
 
-test_that("readAxivity handles failed checksums correctly", {  
+test_that("readAxivity does not fail on progressBar=TRUE for AX3 file", {
+  cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
+  AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1,
+                    end = 4, progressBar = TRUE)
+  expect_equal(AX3$header$device, "Axivity")
+})
+
+
+test_that("readAxivity handles failed checksums correctly", {
   # read the blocks 1-11 from the non-corrupt file
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 12)
@@ -42,7 +50,7 @@ test_that("readAxivity handles failed checksums correctly", {
 
   expect_false(is.null(AX3_0_12$QClog))
   expect_equal(nrow(AX3_0_12$QClog),1)
-  expect_false(AX3_0_12$QClog$checksum_pass[1]) 
+  expect_false(AX3_0_12$QClog$checksum_pass[1])
   expect_false(AX3_0_12$QClog$imputed[1])
   expect_equal(AX3_0_12$QClog$blockID_current[1], 0)
   expect_equal(AX3_0_12$QClog$blockID_next[1], 1)
@@ -51,12 +59,12 @@ test_that("readAxivity handles failed checksums correctly", {
   # and there should be nothing in QClog
   expect_warning(AX3_1_12 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 12),
                  "Skipping corrupt block #0") # the warning is there b/c block 0 is always read, and it's corrupt
-  
+
   expect_equal(AX3_1_12$header$device, "Axivity")
   expect_equal(nrow(AX3_1_12$data), nrow(AX3$data))
   expect_equal(floor(sum(abs(AX3_1_12$data[,2:4]))), floor(sum(abs(AX3$data[,2:4]))))
   expect_true(is.null(AX3_1_12$QClog))
-  
+
   # Now read a bigger chunk of the file, so that the corrupt blocks 13-14 fall in the middle
   expect_warning(AX3_1_20 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 20),
                  "Skipping corrupt block #13")
@@ -64,7 +72,7 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_equal(nrow(AX3_1_20$data), 2306)
   expect_equal(ncol(AX3_1_20$data), 7)
   expect_equal(floor(sum(abs(AX3_1_20$data[,2:4]))), 3244)
-  
+
   # there should be 3 entries in QClog: one each for blocks 13 and 14 with failed checksums (these initially get skipped, not imputed),
   # and one for block 12 that preceeds the corrupt blocks, because data needs to be imputed from block 12 (inclusive) to 15 (exclusive)
   expect_false(is.null(AX3_1_20$QClog))
@@ -78,9 +86,9 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_false(AX3_1_20$QClog$checksum_pass[2])
   expect_false(AX3_1_20$QClog$imputed[2])
   expect_equal(AX3_1_20$QClog$blockID_current[2], 14)
-  expect_equal(AX3_1_20$QClog$blockID_next[2], 15) 
+  expect_equal(AX3_1_20$QClog$blockID_next[2], 15)
 
-  expect_true(AX3_1_20$QClog$checksum_pass[3]) 
+  expect_true(AX3_1_20$QClog$checksum_pass[3])
   expect_true(AX3_1_20$QClog$imputed[3])
   expect_equal(AX3_1_20$QClog$blockID_current[3], 12) # we finally found the first valid block after #12, so we imputed block #12, up to 15
   expect_equal(AX3_1_20$QClog$blockID_next[3], 15) # the first valid block after 12 is 15
@@ -97,8 +105,8 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_true(all(abs(imputedValues - AX3_1_20$data[nrow11+100,2:4] ) < .0001))
   expect_true(all(abs(imputedValues - AX3_1_20$data[nrow11+200,2:4] ) < .0001))
   expect_true(all(abs(imputedValues - AX3_1_20$data[nrow11+360,2:4] ) < .0001))
-  expect_equal(sum(abs(imputedValues)), 
-               sum(abs(AX3_1_20$data[(nrow11+1) : (nrow11+360), 2:4])) / 360, 
+  expect_equal(sum(abs(imputedValues)),
+               sum(abs(AX3_1_20$data[(nrow11+1) : (nrow11+360), 2:4])) / 360,
                tolerance = .0001, scale = 1)
 
   # make sure a request for only corrupt blocks returns an error but doesn't crash
@@ -144,8 +152,8 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_false(AX3_13_20$QClog$checksum_pass[2])
   expect_false(AX3_13_20$QClog$imputed[2])
   expect_equal(AX3_13_20$QClog$blockID_current[2], 14)
-  expect_equal(AX3_13_20$QClog$blockID_next[2], 15) 
-  
+  expect_equal(AX3_13_20$QClog$blockID_next[2], 15)
+
   # Now see what happens if the corrupt blocks 13-14 fall at the very end of the requested interval
   # (but not at the end of the file).
   # These blocks should be skipped, and the file should be read until
@@ -177,9 +185,9 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_false(AX3_1_13$QClog$checksum_pass[2])
   expect_false(AX3_1_13$QClog$imputed[2])
   expect_equal(AX3_1_13$QClog$blockID_current[2], 14)
-  expect_equal(AX3_1_13$QClog$blockID_next[2], 15) 
+  expect_equal(AX3_1_13$QClog$blockID_next[2], 15)
 
-  expect_true(AX3_1_13$QClog$checksum_pass[3]) 
+  expect_true(AX3_1_13$QClog$checksum_pass[3])
   expect_true(AX3_1_13$QClog$imputed[3])
   expect_equal(AX3_1_13$QClog$blockID_current[3], 12) # we finally found the first valid block after #12, so we imputed blocks [12, 15)
   expect_equal(AX3_1_13$QClog$blockID_next[3], 15) # the first valid block after 12 is 15
@@ -211,10 +219,10 @@ test_that("readAxivity handles failed checksums correctly", {
     expect_error(readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 144, end = 145),
                  "All requested blocks are corrupt"),
   "Skipping corrupt end block")
-  
+
   # If there are corrupt blocks at the very end of the file, then the last non-corrupt block is
   # treated as the end block and no imputation is done.
-  # So in our case, since the end blocks 142-144 are corrupt, they are ignored and the file is 
+  # So in our case, since the end blocks 142-144 are corrupt, they are ignored and the file is
   # treated as if it had only 142 blocks (0-141)
   expect_warning(AX3_140_141 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 141),
                  "Skipping corrupt block #0")
@@ -268,8 +276,8 @@ test_that("readAxivity reads data from AX6 file correctly", {
   expect_equal(AX6$data[4,3], -0.5026558, tolerance = 0.0000001, scale = 1)
   expect_equal(AX6$data[30,5], -0.009452909, tolerance = 0.0000001, scale = 1)
   expect_true(is.null(AX6$QClog))
-  
-  
+
+
   # ask for more data then there is in the file
   AX6b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX6b$header$device, "Axivity")
@@ -279,7 +287,7 @@ test_that("readAxivity reads data from AX6 file correctly", {
   expect_equal(AX6b$data$temp[3], 27.34375, tolerance = 0.0001)
   expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960046)
   expect_true(is.null(AX6b$QClog))
-  
+
 })
 
 
@@ -293,17 +301,17 @@ test_that("readAxivity reads timezones correctly", {
   expect_equal(tzequal$data$time[1], 1551178507.215, tolerance = .001, scale = 1)
   expect_equal(format(as.POSIXlt(tzequal$data$time[1], tz = tzLon,
                                        origin = "1970-01-01")), "2019-02-26 10:55:07.215")
-  
+
   # desiredtz < configtz
   tzwest = readAxivity(filename = cwafile, desiredtz = tzLon, configtz = tzAms, start = 1, end = 4)
   expect_equal(tzwest$data$time[1], 1551174907.215, tolerance = .001, scale = 1)
-  expect_equal(format(as.POSIXlt(tzwest$data$time[1], tz = tzLon, 
+  expect_equal(format(as.POSIXlt(tzwest$data$time[1], tz = tzLon,
                                        origin = "1970-01-01")), "2019-02-26 09:55:07.215")
-  
+
   # desiredtz > configtz
   tzeast = readAxivity(filename = cwafile, desiredtz = tzAms, configtz = tzLon, start = 1, end = 4)
   expect_equal(tzeast$data$time[1], 1551178507.215, tolerance = .001, scale = 1)
-  expect_equal(format(as.POSIXlt(tzeast$data$time[1], tz = tzAms, 
+  expect_equal(format(as.POSIXlt(tzeast$data$time[1], tz = tzAms,
                                        origin = "1970-01-01")), "2019-02-26 11:55:07.215")
   options(old)
 })
