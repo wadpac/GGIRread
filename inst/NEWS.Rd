@@ -2,6 +2,12 @@
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 
+\section{Changes in version 1.0.1 (release date:??-??-2024)}{
+    \itemize{
+      \item Progress bar fixed, issue #63 (credits: John Muschellij)
+    }
+}
+
 \section{Changes in version 1.0.0 (release date:27-03-2024)}{
     \itemize{
       \item GENEActiv no longer prints error to console when more data is requested 
