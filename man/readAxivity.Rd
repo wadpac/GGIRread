@@ -32,9 +32,9 @@
     Desired timezone, a character with timezone database name.
   }
   \item{configtz}{
-    Only functional for AX3 cwa data at the moment. Timezone in which the accelerometer
-    was configured. Only use this argument if the timezone of configuration and
-    timezone in which recording took place are different.
+    Timezone in which the accelerometer was configured. 
+    Only use this argument if the timezone of configuration and timezone
+    in which recording took place are different.
   }
   \item{interpolationType}{
     Integer to indicate type of interpolation to be used, 1=linear, 2=nearest neighbour.
