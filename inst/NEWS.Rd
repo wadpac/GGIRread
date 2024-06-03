@@ -2,7 +2,7 @@
 \title{News for Package \pkg{GGIRread}}
 \newcommand{\cpkg}{\href{http://CRAN.R-project.org/package=#1}{\pkg{#1}}}
 
-\section{Changes in version 1.0.1 (release date:??-??-2024)}{
+\section{Changes in version 1.0.1 (release date:03-06-2024)}{
     \itemize{
       \item Progress bar fixed, issue #63 (credits: John Muschellij)
     }
