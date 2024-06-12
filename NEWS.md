@@ -1,7 +1,10 @@
+# Changes in version 1.0.2 (release date:??-??-2024)
+
+- Added a `NEWS.md` file to track changes to the package.
+- Stops interactive calling of `chooseCRANmirror` on `.onAttach` if interactive and CRAN mirror not set GGIR #1141.
+
 # Changes in version 1.0.1 (release date:03-06-2024)
 
-* Added a `NEWS.md` file to track changes to the package.
-- Stops interactive calling of `chooseCRANmirror` on `.onAttach` if interactive and CRAN mirror not set GGIR #1141.
 - Progress bar fixed, issue #63 (credits: John Muschelli)
 
 # Changes in version 1.0.0 (release date:27-03-2024)
