@@ -107,7 +107,7 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
   keep = c(acccol, vmcol)[!is.na(c(acccol, vmcol))]
   D = D[, keep, drop = FALSE]
   if (ncol(D) == 3 & is.na(vmcol)) {
-    D$vm = sqrt(D[,1]^2 + D[,2]^2 + D[,3]^2)
+    D$vm = sqrt(D[, 1] ^ 2 + D[, 2] ^ 2 + D[, 3] ^ 2)
   }
   # Extract information from header, if present
   if (headerAvailable == TRUE) {
@@ -129,12 +129,7 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
     if (colnames == TRUE) {
       datecol = grep("date", colnames(tmp), ignore.case = TRUE)
       timecol = grep("time|epoch", colnames(tmp), ignore.case = TRUE)
-      time = tmp[, timecol]
-      date = tmp[, datecol]
-      
-      starttime = time[1]
-      starttime = date[1]
-      timestamp = paste0(date, " ", time)
+      timestamp = paste0(tmp[, datecol], " ", tmp[1, timecol])
       format = timeformat
       timestamp_POSIX = as.POSIXlt(timestamp, tz = tz, format = format)
       if (all(is.na(timestamp_POSIX))) {
@@ -159,10 +154,7 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
   if (!is.null(desiredEpochSize)) {
     if (desiredEpochSize > epSizeShort) {
       step = desiredEpochSize %/% epSizeShort
-      D = rbind(rep(0, ncol(D)), D)
-      D = apply(D, 2, cumsum)
-      D = D[seq(1, nrow(D), by = step), , drop = FALSE]
-      D = apply(D, 2, diff)
+      D = sumAggregate(D, step)
       epSizeShort = epSizeShort * step
     }
     checkEpochMatch(desiredEpochSize, epSizeShort)

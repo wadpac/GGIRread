@@ -1,6 +1,10 @@
-# Collection of short function used in functions readActigraphCount, readActiwatchCount
+# Collection of short function used in functions
+# - readActigraphCount
+# - readActiwatchCount
+#-----------------------------------------------------------------------------------------
 checkTimeFormat = function(timestamp_POSIX, rawValue = " ?? ", timeformat = " ?? ",
                            timeformatName = NULL) {
+  # If timestamp_POSIX is NA gieve error message to inform user that something went wrong.
   if (is.na(timestamp_POSIX)) {
     stop(paste0("\nTime format in data ", rawValue, 
                 " does not match with time format ", timeformat,
@@ -10,6 +14,7 @@ checkTimeFormat = function(timestamp_POSIX, rawValue = " ?? ", timeformat = " ??
 }
 
 checkEpochMatch = function(desiredEpochSize, epSizeShort) {
+  # Check whether desired and derived epoch size match
   if (!is.null(desiredEpochSize) && epSizeShort != desiredEpochSize) {
     stop(paste0("\nThe short epoch size as specified by the user (",
                 desiredEpochSize, " seconds) does NOT match the short",
@@ -39,7 +44,21 @@ detectQuote = function(fn, index) {
 }
 
 getExtension <- function(filename){ 
+  # Extract file extension
   ex <- unlist(strsplit(basename(filename), split = "[.]"))
   if (length(ex) < 2) stop(paste0("Cannot recognise extension from '", filename, "' as filename, please check"), call. = FALSE)
   return(ex[-1])
+}
+
+sumAggregate = function(mat, step) {
+  # Aggregate matrix mat by taking the sum over step number of rows
+  mat = rbind(rep(0, ncol(mat)), mat)
+  cumsum2 = function(x) {
+    x = cumsum(ifelse(is.na(x), 0, x)) + x*0
+    return(x)
+  }
+  mat = apply(mat, 2, cumsum2)
+  mat = mat[seq(1, nrow(mat), by = step), , drop = FALSE]
+  mat = apply(mat, 2, diff)
+  return(mat)
 }

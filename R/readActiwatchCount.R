@@ -111,14 +111,7 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
   if (!is.null(desiredEpochSize)) {
     if (desiredEpochSize > epSizeShort) {
       step = desiredEpochSize %/% epSizeShort
-      D = rbind(rep(0, ncol(D)), D)
-      cumsum2 = function(x) {
-        x = cumsum(ifelse(is.na(x), 0, x)) + x*0
-        return(x)
-      }
-      D = apply(D, 2, cumsum2)
-      D = D[seq(1, nrow(D), by = step), , drop = FALSE]
-      D = apply(D, 2, diff)
+      D = sumAggregate(D, step)
       epSizeShort = epSizeShort * step
     }
     checkEpochMatch(desiredEpochSize, epSizeShort)
