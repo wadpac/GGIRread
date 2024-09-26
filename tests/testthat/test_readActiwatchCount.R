@@ -52,5 +52,12 @@ test_that("Actiwatch awd error correctly", {
   
 })
 
+test_that("checkTimeFormat also detect implausible year", {
+  rawValue = "6/28/21 10:10:10"
+  timeformat = "%m/%d/%y %H:%M:%S"
+  timestamp_POSIX = as.POSIXlt("6/28/21 10:10:10", format = "%m/%d/%Y %H:%M:%S")
+  expect_error(checkTimeFormat(timestamp_POSIX, rawValue = rawValue, timeformat = timeformat,
+                             timeformatName = NULL),
+               regexpr = "Timestamp recognised as 0021*")
 
-"\nThe short epoch size as specified by the user (5 seconds) does NOT match the short epoch size we see in the data (60 seconds). Please correct."
+})
