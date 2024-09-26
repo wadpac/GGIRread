@@ -2,6 +2,7 @@
 
 - Added a `NEWS.md` file to track changes to the package.
 - Stops interactive calling of `chooseCRANmirror` on `.onAttach` if interactive and CRAN mirror not set GGIR #1141.
+- Migrate read function for ActiGraph count data (csv) to GGIRread #68.
 
 # Changes in version 1.0.1 (release date:03-06-2024)
 
