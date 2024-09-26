@@ -1,6 +1,8 @@
 readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
-                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "") {
+                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "", timeformatName = "timeformat") {
+  # In GGIR set timeformatName to extEpochData_timeformat
   deviceSerialNumber = NULL
+  
   # Test if file has header by reading first ten rows
   # and checking whether it contains the word
   # serial number.
@@ -147,11 +149,11 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
     }
   }
   # Check timestamp is meaningful
-  if (all(is.na(timestamp_POSIX))) {
-    stop(paste0("\nTime format in data ", timestamp, " does not match with time format ",
-                timeformat,
-                " as specified by argument extEpochData_timeformat, please correct.\n"))
-  }
+  checkTimeFormat(timestamp_POSIX = timestamp_POSIX, rawValue = timestamp[1],
+                  timeformat = timeformat,
+                  timeformatName = timeformatName)
+  
+  
   # If requested, aggregate data to lower resolution to match desired 
   # epoch size in argument windowsizes
   if (!is.null(desiredEpochSize)) {
@@ -163,12 +165,7 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
       D = apply(D, 2, diff)
       epSizeShort = epSizeShort * step
     }
-    if (epSizeShort != desiredEpochSize) {
-      stop(paste0("\nThe short epoch size as specified by the user as the first value of argument windowsizes (",
-                  desiredEpochSize,
-                  " seconds) does NOT match the short epoch size we see in the data (", epSizeShort),
-           " seconds). Please correct.", call. = FALSE)
-    }
+    checkEpochMatch(desiredEpochSize, epSizeShort)
   }
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX,

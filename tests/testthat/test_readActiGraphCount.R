@@ -56,11 +56,16 @@ test_that("ActiGraph13_timestamps_headers.csv is correctly read", {
   expect_equal(nrow(D$data), 200)
   expect_equal(ncol(D$data), 4)
   expect_equal(sum(D$data), 256047)
-  
+})
+
+test_that("Actiwatch csv error correctly", {
+  file = system.file("testfiles/ActiGraph13_timestamps_headers.csv", package = "GGIRread")
   expect_error(readActiGraphCount(filename = file,
-                                desiredEpochSize = 5,
-                                timeformat = "%m/%d/%Y %H:%M:%S"))
+                                  desiredEpochSize = 5,
+                                  timeformat = "%m/%d/%Y %H:%M:%S"),
+               regexp = "Time format*")
   expect_error(readActiGraphCount(filename = file,
-                                desiredEpochSize = 0.5,
-                                timeformat = "%d-%m-%Y %H:%M:%S"))
+                                  desiredEpochSize = 0.5,
+                                  timeformat = "%d-%m-%Y %H:%M:%S"),
+               regexp = "The short*")
 })

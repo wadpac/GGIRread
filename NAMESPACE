@@ -1,6 +1,6 @@
 export(readGenea, readAxivity, readGENEActiv, 
        GENEActivReader, resample, readWav, 
-       readActiGraphCount)
+       readActiGraphCount, readActiwatchCount)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
 importFrom(data.table, fread)

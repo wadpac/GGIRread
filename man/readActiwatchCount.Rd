@@ -1,13 +1,13 @@
-\name{readActiGraphCount}
-\alias{readActiGraphCount}
+\name{readActiwatchCount}
+\alias{readActiwatchCount}
 \title{
-  Read ActiGraph Count data files (csv)
+  Read Actiwatch Count data files (csv)
 }
 \description{
-  Reads ActiGraph Count data file. Currently a variety of csv format are facilitated.
+  Reads Actiwatch Count data file. Currently a variety of csv format are facilitated.
 }
 \usage{
-  readActiGraphCount(filename = file, desiredEpochSize = NULL,
+  readActiwatchCount(filename = file, desiredEpochSize = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }
