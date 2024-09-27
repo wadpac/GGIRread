@@ -1,7 +1,7 @@
 export(readGenea, readAxivity, readGENEActiv, 
        GENEActivReader, resample, readWav, 
        readActiGraphCount, readActiwatchCount,
-       readActicalCount)
+       readActicalCount, mergePHBfilePairs)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
 importFrom(data.table, fread)
