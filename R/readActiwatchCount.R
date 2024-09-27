@@ -1,5 +1,6 @@
 readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
-                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "", timeformatName = "timeformat") {
+                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "",
+                            timeformatName = "timeformat") {
   # In GGIR set timeformatName to extEpochData_timeformat
 
   fileExtension = tolower(getExtension(filename))
@@ -9,35 +10,9 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
     # CSV
     #=========================================================
     # ! Assumptions that timeseries start before line 1000
-    index = 1000
-    while (index > 0) {
-      quote = detectQuote(fn = filename, index = index)
-      testraw = data.table::fread(input = filename,
-                                  header = FALSE, sep = ",", skip = index,
-                                  nrows = 2, data.table = FALSE, quote = quote)
-      if (length(testraw) > 0) {
-        if (nrow(testraw) == 2) {
-          if (testraw$V1[2] == testraw$V1[1] + 1) {
-            break
-          }
-        }
-      }
-      index = index - 100
-    }
-    # ! Assumption that first column are the epoch numbers
-    delta = 1 - testraw$V1[1]
-    index = index + delta
-    startFound = FALSE
-    while (startFound == FALSE) {
-      Dtest = data.table::fread(input = filename, sep = ",", skip = index, quote = quote, nrows = 1)  
-      if (Dtest$V1[1] == 1) {
-        startFound = TRUE
-      } else {
-        # This happens when file is has an empty row between each measurement point is stored
-        index = index - 1
-        if (index < 1) stop("Could not find start of recording", call. = FALSE)
-      }
-    }
+    startindex = 1000
+    quote = detectQuote(fn = filename, index = startindex)
+    index = findStartData(filename, quote, startindex)
     D = data.table::fread(input = filename, sep = ",", skip = index, quote = quote)
     # ! Assumption that column names are present 2 lines prior to timeseries
     colnames = data.table::fread(input = filename,
@@ -50,9 +25,12 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
     }
     colnames(D) = as.character(colnames)[1:ncol(D)]
     # ! Assumptions about columns names
-    colnames(D) = gsub(pattern = "datum|date", replacement = "date", x = colnames(D), ignore.case = TRUE)
-    colnames(D) = gsub(pattern = "tijd|time", replacement = "time", x = colnames(D), ignore.case = TRUE)
-    colnames(D) = gsub(pattern = "activiteit|activity", replacement = "ZCY", x = colnames(D), ignore.case = TRUE)
+    colnames(D) = gsub(pattern = "datum|date", replacement = "date", 
+                       x = colnames(D), ignore.case = TRUE)
+    colnames(D) = gsub(pattern = "tijd|time", replacement = "time",
+                       x = colnames(D), ignore.case = TRUE)
+    colnames(D) = gsub(pattern = "activiteit|activity", replacement = "ZCY",
+                       x = colnames(D), ignore.case = TRUE)
     timestamp_POSIX = as.POSIXct(x = paste(D$date[1:4], D$time[1:4], sep = " "),
                                  format = timeformat,
                                  tz = tz)
