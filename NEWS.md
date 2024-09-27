@@ -3,11 +3,14 @@
 - Added a `NEWS.md` file to track changes to the package.
 - Stops interactive calling of `chooseCRANmirror` on `.onAttach` if interactive and CRAN mirror not set GGIR #1141.
 - Migrate read function for ActiGraph (csv) and Actiwatch (csv/awd) count data to GGIRread #68.
-- Add read function for Actical (csv) count data #68.
+- Add function for reading Actical (csv) count data #68.
+- Add function to read and merge Philips Health Band file pairs (xlsx) #68.
+
 
 # Changes in version 1.0.1 (release date:03-06-2024)
 
 - Progress bar fixed, issue #63 (credits: John Muschelli)
+
 
 # Changes in version 1.0.0 (release date:27-03-2024)
 
