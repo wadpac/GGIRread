@@ -1,4 +1,4 @@
-readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
+readActiGraphCount = function(filename = NULL, desiredEpochSize = NULL,
                             timeformat = "%m/%d/%Y %H:%M:%S", tz = "", timeformatName = "timeformat") {
   # In GGIR set timeformatName to extEpochData_timeformat
   deviceSerialNumber = NULL

@@ -7,7 +7,7 @@
   Reads Actiwatch Count data file. Currently a variety of csv format are facilitated.
 }
 \usage{
-  readActiwatchCount(filename = file, desiredEpochSize = NULL,
+  readActiwatchCount(filename = NULL, desiredEpochSize = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }

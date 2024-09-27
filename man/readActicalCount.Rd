@@ -7,7 +7,7 @@
   Reads Actical Count data file.
 }
 \usage{
-  readActicalCount(filename = file, desiredEpochSize = NULL,
+  readActicalCount(filename = NULL, desiredEpochSize = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }

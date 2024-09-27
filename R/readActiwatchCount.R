@@ -1,4 +1,4 @@
-readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
+readActiwatchCount = function(filename = NULL, desiredEpochSize = NULL,
                             timeformat = "%m/%d/%Y %H:%M:%S", tz = "",
                             timeformatName = "timeformat") {
   # In GGIR set timeformatName to extEpochData_timeformat
