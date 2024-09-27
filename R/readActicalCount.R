@@ -7,6 +7,8 @@ readActicalCount = function(filename = file, desiredEpochSize = NULL,
   startindex = 300
   quote = detectQuote(fn = filename, index = startindex)
   startindex = findStartData(filename, quote, startindex)
+  # -1 because Actical starts at epoch 0 while function looks for epoch 1
+  startindex = startindex - 1 
   D = data.table::fread(input = filename, sep = ",", skip = startindex,
                         quote = quote, data.table = FALSE)
   # ! Assumption that column names are present 2 lines prior to timeseries
