@@ -62,8 +62,10 @@ getExtension <- function(filename){
   return(ex[-1])
 }
 
-sumAggregate = function(mat, step) {
-  # Aggregate matrix mat by taking the sum over step number of rows
+matAggregate = function(mat, step) {
+  # Aggregate matrix mat by taking over step number of rows
+  # as sum unless column names is sleep or nonwear in that case 
+  # we take the rounded mean.
   mat = rbind(rep(0, ncol(mat)), mat)
   cumsum2 = function(x) {
     x = cumsum(ifelse(is.na(x), 0, x)) + x*0
@@ -72,6 +74,10 @@ sumAggregate = function(mat, step) {
   mat = apply(mat, 2, cumsum2)
   mat = mat[seq(1, nrow(mat), by = step), , drop = FALSE]
   mat = apply(mat, 2, diff)
+  # Correct non incremental variables
+  for (niv in c("sleep", "nonwear")) {
+    if (niv %in% colnames(D)) D[, niv] = round(D[, niv] / step)
+  }
   return(mat)
 }
 

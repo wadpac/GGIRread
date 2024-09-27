@@ -34,8 +34,12 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
   if (any(grepl("serialnumber", fileHeader$item))) headerAvailable = TRUE
   
   # Depending on whether header is present assign number of rows to skip:
+  mode = NULL
   if (headerAvailable == TRUE) {
     skip = 10
+    # Extract mode number from header because this tells us how to interpret the columns
+    mode = as.numeric(fileHeader$value[grep(pattern = "mode", x = fileHeader$item)])
+    if (is.na(mode)) mode = NULL
   } else {
     tmp = data.table::fread(input = filename,
                             header = FALSE,
@@ -80,33 +84,50 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
     D = D[, -1, drop = FALSE]
   }
   # Identify columns with count data
-  acccol = vmcol = NA
+  acccol = NA
+  stepcol = NULL
   if (colnames == TRUE) {
     acccol = grep("axis|activity", colnames(D), ignore.case = TRUE)
     vmcol = grep("vector magnitude|vm", colnames(D), ignore.case = TRUE)
+    stepcol = grep("step", colnames(D), ignore.case = TRUE)
   } else {
-    # Then assume first 3 columns are axis1, axis2, axis3 if ncol(D) >= 3
-    # First column is VM if ncol(D) < 3
-    # Note that in ActiLife software the user can select
-    # the columns to export (e.g, it could be "Axis1", "Vector Magnitude", "Steps")
-    # which may mean that our assumptions here are not necessarily true.
-    if (ncol(D) >= 3) {
-      acccol = 1:3
+    if (!is.null(mode)) {
+      if ((mode >= 12 && mode <= 15) | (mode >= 28 && mode <= 31) |
+          (mode >= 44 && mode <= 47) | (mode >= 60 && mode <= 63)) {
+        acccol = 1:3
+      } else {
+        acccol = 1
+      }
+      if (mode %in% c(13, 15, 29, 31, 45, 47, 61, 63)) {
+        stepcol = 4
+      }
     } else {
-      vmcol = 1
+      # Then assume first 3 columns are axis1, axis2, axis3 if ncol(D) >= 3
+      # First column is VM if ncol(D) < 3
+      # Note that in ActiLife software the user can select
+      # the columns to export (e.g, it could be "Axis1", "Vector Magnitude", "Steps")
+      # which may mean that our assumptions here are not necessarily true.
+      if (ncol(D) >= 3) {
+        acccol = 1:3
+      } else {
+        acccol = 1
+      }
     }
   }
   # Assign colnames and formatting
-  if (is.na(acccol[1]) == FALSE) { 
+  if (length(acccol) == 3 && is.na(acccol[1]) == FALSE) { 
     colnames(D)[acccol] = c("y", "x", "z") # ActiGraph always stores y axis first
   }
-  if (is.na(vmcol[1]) == FALSE) { 
+  if (length(acccol) == 1 &&is.na(vmcol[1]) == FALSE) { 
     D = as.matrix(D, drop = FALSE) # Convert to matrix as data.frame will auto-collapse to vector
-    colnames(D)[vmcol] = c("vm")
+    colnames(D)[acccol] = "vm"
   }
-  keep = c(acccol, vmcol)[!is.na(c(acccol, vmcol))]
+  if (length(stepcol) == 1 && is.na(stepcol[1]) == FALSE) { 
+    colnames(D)[stepcol] = "steps"
+  }
+  keep = c(acccol, stepcol)[!is.na(c(acccol, stepcol))]
   D = D[, keep, drop = FALSE]
-  if (ncol(D) == 3 & is.na(vmcol)) {
+  if (ncol(D) >= 3) {
     D$vm = sqrt(D[, 1] ^ 2 + D[, 2] ^ 2 + D[, 3] ^ 2)
   }
   # Extract information from header, if present
@@ -154,7 +175,7 @@ readActiGraphCount = function(filename = file, desiredEpochSize = NULL,
   if (!is.null(desiredEpochSize)) {
     if (desiredEpochSize > epSizeShort) {
       step = desiredEpochSize %/% epSizeShort
-      D = sumAggregate(D, step)
+      D = matAggregate(D, step)
       epSizeShort = epSizeShort * step
     }
     checkEpochMatch(desiredEpochSize, epSizeShort)

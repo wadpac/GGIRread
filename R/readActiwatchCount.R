@@ -13,9 +13,9 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
     startindex = 1000
     quote = detectQuote(fn = filename, index = startindex)
     index = findStartData(filename, quote, startindex)
-    D = data.table::fread(input = filename, sep = ",", skip = index, quote = quote)
+    D = data.table::fread(input = filename, sep = ",", skip = index, quote = quote, data.table = FALSE)
     # ! Assumption that column names are present 2 lines prior to timeseries
-    colnames = data.table::fread(input = filename,
+    colnames = data.table::fread(input = filename, data.table = FALSE,
                                  header = FALSE, sep = ",",
                                  skip = index - 2, nrows = 1, quote = quote)
     if (all(is.na(colnames))) {
@@ -23,14 +23,17 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
                                    header = FALSE, sep = ",",
                                    skip = index - 4, nrows = 1, quote = quote)
     }
-    colnames(D) = as.character(colnames)[1:ncol(D)]
+    colnames = colnames[!is.na(colnames)]
+    D = D[, which(!is.na(colnames))]
+    colnames(D) = tolower(as.character(colnames))
     # ! Assumptions about columns names
-    colnames(D) = gsub(pattern = "datum|date", replacement = "date", 
-                       x = colnames(D), ignore.case = TRUE)
-    colnames(D) = gsub(pattern = "tijd|time", replacement = "time",
-                       x = colnames(D), ignore.case = TRUE)
-    colnames(D) = gsub(pattern = "activiteit|activity", replacement = "ZCY",
-                       x = colnames(D), ignore.case = TRUE)
+    # browser()
+    colnames(D)[grep(pattern = "datum|date", x = colnames(D))] = "date"
+    colnames(D)[grep(pattern = "tijd|time", x = colnames(D))] = "time"
+    colnames(D)[grep(pattern = "activiteit|activity", x = colnames(D))] = "counts"
+    colnames(D)[grep(pattern = "slapen|sleep", x = colnames(D))] = "sleep"
+    colnames(D)[grep(pattern = "niet-om|wear|worn", x = colnames(D))] = "nonwear"
+    D = D[, grep(pattern = "time|date|counts|sleep|nonwear", x = colnames(D))]
     timestamp_POSIX = as.POSIXct(x = paste(D$date[1:4], D$time[1:4], sep = " "),
                                  format = timeformat,
                                  tz = tz)
@@ -41,7 +44,7 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
     epSizeShort = mean(diff(as.numeric(timestamp_POSIX)))
     
     timestamp_POSIX = timestamp_POSIX[1]
-    D = D[, "ZCY"]
+    D = D[, -which(colnames(D) %in% c("date", "time"))]
   } else if (fileExtension == "awd") {
     #=========================================================
     # AWD
@@ -64,8 +67,8 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
     }
     D = data.table::fread(input = filename, header = FALSE, sep = ",",
                           skip = index, quote = quote)
-    D = D[,1]
-    colnames(D)[1] = "ZCY"
+    D = D[, 1:2]
+    colnames(D)[1:2] = c("counts", "light")
     header = data.table::fread(input = filename, header = FALSE, sep = ",", 
                                nrows =  7, quote = quote)
     # Get epoch size
@@ -83,18 +86,17 @@ readActiwatchCount = function(filename = file, desiredEpochSize = NULL,
 
   }
   D = as.matrix(D, drop = FALSE)
-  
+  if (quote == "") D = apply(D, 2, as.numeric)  
   # If requested, aggregate data to lower resolution to match desired 
   # epoch size in argument windowsizes
   if (!is.null(desiredEpochSize)) {
     if (desiredEpochSize > epSizeShort) {
       step = desiredEpochSize %/% epSizeShort
-      D = sumAggregate(D, step)
+      D = matAggregate(D, step)
       epSizeShort = epSizeShort * step
     }
     checkEpochMatch(desiredEpochSize, epSizeShort)
   }
-  if (quote == "") D$ZCY = as.numeric(D$ZCY)
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX))
 }

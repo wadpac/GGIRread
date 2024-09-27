@@ -48,18 +48,17 @@ readActicalCount = function(filename = file, desiredEpochSize = NULL,
   timestamp_POSIX = timestamp_POSIX[1]
   D = D[, -which(colnames(D) %in% c("date", "time"))]
   D = as.matrix(D, drop = FALSE)
-  
+  if (quote == "") D = apply(D, 2, as.numeric)
   # If requested, aggregate data to lower resolution to match desired
   # epoch size in argument windowsizes
   if (!is.null(desiredEpochSize)) {
     if (desiredEpochSize > epSizeShort) {
       step = desiredEpochSize %/% epSizeShort
-      D = sumAggregate(D, step)
+      D = matAggregate(D, step)
       epSizeShort = epSizeShort * step
     }
     checkEpochMatch(desiredEpochSize, epSizeShort)
   }
-  if (quote == "") D = apply(D, 2, as.numeric)
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX))
 }
