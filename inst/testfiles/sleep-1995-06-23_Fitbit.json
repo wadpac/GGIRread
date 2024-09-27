@@ -1,0 +1,200 @@
+[{
+  "logId" : 12345,
+  "dateOfSleep" : "1995-07-11",
+  "startTime" : "1995-07-11T02:28:30.000",
+  "endTime" : "1995-07-11T06:57:00.000",
+  "duration" : 16080000,
+  "minutesToFallAsleep" : 0,
+  "minutesAsleep" : 236,
+  "minutesAwake" : 32,
+  "minutesAfterWakeup" : 0,
+  "timeInBed" : 268,
+  "efficiency" : 96,
+  "type" : "stages",
+  "infoCode" : 0,
+  "logType" : "auto_detected",
+  "levels" : {
+    "summary" : {
+      "deep" : {
+        "count" : 4,
+        "minutes" : 59,
+        "thirtyDayAvgMinutes" : 45
+      },
+      "wake" : {
+        "count" : 11,
+        "minutes" : 32,
+        "thirtyDayAvgMinutes" : 45
+      },
+      "light" : {
+        "count" : 14,
+        "minutes" : 143,
+        "thirtyDayAvgMinutes" : 213
+      },
+      "rem" : {
+        "count" : 4,
+        "minutes" : 34,
+        "thirtyDayAvgMinutes" : 64
+      }
+    },
+    "data" : [{
+      "dateTime" : "1995-07-11T02:28:30.000",
+      "level" : "light",
+      "seconds" : 2160
+    },{
+      "dateTime" : "1995-07-11T03:04:30.000",
+      "level" : "deep",
+      "seconds" : 300
+    },{
+      "dateTime" : "1995-07-11T03:09:30.000",
+      "level" : "light",
+      "seconds" : 450
+    },{
+      "dateTime" : "1995-07-11T03:17:00.000",
+      "level" : "deep",
+      "seconds" : 1080
+    },{
+      "dateTime" : "1995-07-11T03:35:00.000",
+      "level" : "light",
+      "seconds" : 240
+    },{
+      "dateTime" : "1995-07-11T03:39:00.000",
+      "level" : "deep",
+      "seconds" : 1830
+    },{
+      "dateTime" : "1995-07-11T04:09:30.000",
+      "level" : "light",
+      "seconds" : 2670
+    },{
+      "dateTime" : "1995-07-11T04:54:00.000",
+      "level" : "deep",
+      "seconds" : 390
+    },{
+      "dateTime" : "1995-07-11T05:00:30.000",
+      "level" : "light",
+      "seconds" : 750
+    },{
+      "dateTime" : "1995-07-11T05:13:00.000",
+      "level" : "rem",
+      "seconds" : 270
+    },{
+      "dateTime" : "1995-07-11T05:17:30.000",
+      "level" : "light",
+      "seconds" : 1050
+    },{
+      "dateTime" : "1995-07-11T05:35:00.000",
+      "level" : "wake",
+      "seconds" : 600
+    },{
+      "dateTime" : "1995-07-11T05:45:00.000",
+      "level" : "light",
+      "seconds" : 240
+    },{
+      "dateTime" : "1995-07-11T05:49:00.000",
+      "level" : "wake",
+      "seconds" : 660
+    },{
+      "dateTime" : "1995-07-11T06:00:00.000",
+      "level" : "light",
+      "seconds" : 930
+    },{
+      "dateTime" : "1995-07-11T06:15:30.000",
+      "level" : "rem",
+      "seconds" : 300
+    },{
+      "dateTime" : "1995-07-11T06:20:30.000",
+      "level" : "light",
+      "seconds" : 630
+    },{
+      "dateTime" : "1995-07-11T06:31:00.000",
+      "level" : "rem",
+      "seconds" : 1560
+    }],
+    "shortData" : [{
+      "dateTime" : "1995-07-11T04:08:30.000",
+      "level" : "wake",
+      "seconds" : 60
+    },{
+      "dateTime" : "1995-07-11T04:15:30.000",
+      "level" : "wake",
+      "seconds" : 150
+    },{
+      "dateTime" : "1995-07-11T04:33:30.000",
+      "level" : "wake",
+      "seconds" : 60
+    },{
+      "dateTime" : "1995-07-11T05:00:30.000",
+      "level" : "wake",
+      "seconds" : 60
+    },{
+      "dateTime" : "1995-07-11T06:13:30.000",
+      "level" : "wake",
+      "seconds" : 90
+    },{
+      "dateTime" : "1995-07-11T06:22:30.000",
+      "level" : "wake",
+      "seconds" : 90
+    },{
+      "dateTime" : "1995-07-11T06:26:00.000",
+      "level" : "wake",
+      "seconds" : 120
+    },{
+      "dateTime" : "1995-07-11T06:33:30.000",
+      "level" : "wake",
+      "seconds" : 30
+    },{
+      "dateTime" : "1995-07-11T06:56:30.000",
+      "level" : "wake",
+      "seconds" : 30
+    }]
+  },
+  "mainSleep" : true
+},{
+  "logId" : 12345,
+  "dateOfSleep" : "1995-06-25",
+  "startTime" : "1995-06-24T22:47:30.000",
+  "endTime" : "1995-06-25T00:06:30.000",
+  "duration" : 4740000,
+  "minutesToFallAsleep" : 0,
+  "minutesAsleep" : 73,
+  "minutesAwake" : 6,
+  "minutesAfterWakeup" : 0,
+  "timeInBed" : 79,
+  "efficiency" : 92,
+  "type" : "classic",
+  "infoCode" : 2,
+  "logType" : "auto_detected",
+  "levels" : {
+    "summary" : {
+      "restless" : {
+        "count" : 1,
+        "minutes" : 5
+      },
+      "awake" : {
+        "count" : 1,
+        "minutes" : 1
+      },
+      "asleep" : {
+        "count" : 0,
+        "minutes" : 73
+      }
+    },
+    "data" : [{
+      "dateTime" : "1995-06-24T22:47:30.000",
+      "level" : "asleep",
+      "seconds" : 60
+    },{
+      "dateTime" : "1995-06-24T22:48:30.000",
+      "level" : "restless",
+      "seconds" : 300
+    },{
+      "dateTime" : "1995-06-24T22:53:30.000",
+      "level" : "awake",
+      "seconds" : 60
+    },{
+      "dateTime" : "1995-06-24T22:54:30.000",
+      "level" : "asleep",
+      "seconds" : 4320
+    }]
+  },
+  "mainSleep" : false
+}]

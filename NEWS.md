@@ -5,7 +5,7 @@
 - Migrate read function for ActiGraph (csv) and Actiwatch (csv/awd) count data to GGIRread #68.
 - Add function for reading Actical (csv) count data #68.
 - Add function to read and merge Philips Health Band file pairs (xlsx) #68.
-
+- Add function for reading Fitbit (json) with sleep, steps or calories #68.
 
 # Changes in version 1.0.1 (release date:03-06-2024)
 

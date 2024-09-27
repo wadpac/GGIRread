@@ -12,4 +12,6 @@ ActivInsights Ltd https://activinsights.com/ | GENEActiv Original and Sleep | .b
 Unilever Discover Ltd | Genea (no longer manufactured) | .bin | raw gravitational units | readGenea
 ActiGraph | ??? | .csv | count data | readActigraph
 Actiwatch | ??? | .csv and .awd | count data | readActiwatch
-Actical | ??? | .csv | count data | readActical
+Actical | ??? | .csv | count data | readActical.R
+Philips Health Band | ??? | .xlsx | count data | mergePHBfilePairs.R
+Fitbit | ??? | .json | sleep, steps or calories data | readFitbit.R
