@@ -25,17 +25,6 @@ checkTimeFormat = function(timestamp_POSIX, rawValue = " ?? ", timeformat = " ??
   }
 }
 
-checkEpochMatch = function(desiredEpochSize, epSizeShort) {
-  # Check whether desired and derived epoch size match
-  if (!is.null(desiredEpochSize) && epSizeShort != desiredEpochSize) {
-    stop(paste0("\nThe short epoch size as specified by the user (",
-                desiredEpochSize, " seconds) does NOT match the short",
-                " epoch size we see in the data (", epSizeShort,
-                " seconds). Please correct."), call. = FALSE)
-  }
-  return()
-}
-
 detectQuote = function(fn, index) {
   # data.table::fread has argument quote.
   # On some computers the quotes in the files are
@@ -62,24 +51,7 @@ getExtension <- function(filename){
   return(ex[-1])
 }
 
-matAggregate = function(mat, step) {
-  # Aggregate matrix mat by taking over step number of rows
-  # as sum unless column names is sleep or nonwear in that case 
-  # we take the rounded mean.
-  mat = rbind(rep(0, ncol(mat)), mat)
-  cumsum2 = function(x) {
-    x = cumsum(ifelse(is.na(x), 0, x)) + x*0
-    return(x)
-  }
-  mat = apply(mat, 2, cumsum2)
-  mat = mat[seq(1, nrow(mat), by = step), , drop = FALSE]
-  mat = apply(mat, 2, diff)
-  # Correct non incremental variables
-  for (niv in c("sleep", "nonwear")) {
-    if (niv %in% colnames(D)) D[, niv] = round(D[, niv] / step)
-  }
-  return(mat)
-}
+
 
 findStartData = function(filename, quote, startindex) {
   # Function used to find start of time series in Actiwatch and Actical data

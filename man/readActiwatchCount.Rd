@@ -7,17 +7,13 @@
   Reads Actiwatch Count data file. Currently a variety of csv format are facilitated.
 }
 \usage{
-  readActiwatchCount(filename = NULL, desiredEpochSize = NULL,
+  readActiwatchCount(filename = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }
 \arguments{
   \item{filename}{
     filename (required)
-  }
-  \item{desiredEpochSize}{
-    Numeric, desired epoch size in seconds. If set aggregate data by summation to
-    this epochsize.
   }
   \item{timeformat}{
     Character, timestemp format.

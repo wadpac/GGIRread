@@ -7,17 +7,13 @@
   Reads ActiGraph Count data file. Currently a variety of csv format are facilitated.
 }
 \usage{
-  readActiGraphCount(filename = NULL, desiredEpochSize = NULL,
+  readActiGraphCount(filename = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }
 \arguments{
   \item{filename}{
     filename (required)
-  }
-  \item{desiredEpochSize}{
-    Numeric, desired epoch size in seconds. If set aggregate data by summation to
-    this epochsize.
   }
   \item{timeformat}{
     Character, timestemp format.

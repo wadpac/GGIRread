@@ -1,4 +1,4 @@
-readActiwatchCount = function(filename = NULL, desiredEpochSize = NULL,
+readActiwatchCount = function(filename = NULL,
                             timeformat = "%m/%d/%Y %H:%M:%S", tz = "",
                             timeformatName = "timeformat") {
   # In GGIR set timeformatName to extEpochData_timeformat
@@ -86,17 +86,7 @@ readActiwatchCount = function(filename = NULL, desiredEpochSize = NULL,
 
   }
   D = as.matrix(D, drop = FALSE)
-  if (quote == "") D = apply(D, 2, as.numeric)  
-  # If requested, aggregate data to lower resolution to match desired 
-  # epoch size in argument windowsizes
-  if (!is.null(desiredEpochSize)) {
-    if (desiredEpochSize > epSizeShort) {
-      step = desiredEpochSize %/% epSizeShort
-      D = matAggregate(D, step)
-      epSizeShort = epSizeShort * step
-    }
-    checkEpochMatch(desiredEpochSize, epSizeShort)
-  }
+  if (quote == "") D = apply(D, 2, as.numeric)
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX))
 }

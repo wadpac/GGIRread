@@ -7,17 +7,13 @@
   Reads Actical Count data file.
 }
 \usage{
-  readActicalCount(filename = NULL, desiredEpochSize = NULL,
+  readActicalCount(filename = NULL,
                             timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
                             timeformatName = "timeformat")
 }
 \arguments{
   \item{filename}{
     filename (required)
-  }
-  \item{desiredEpochSize}{
-    Numeric, desired epoch size in seconds. If set aggregate data by summation to
-    this epochsize.
   }
   \item{timeformat}{
     Character, timestemp format.
