@@ -9,19 +9,16 @@
   xlsx file to csv.
 }
 \usage{
-  mergePHBfilePairs(inputPath = ".", outputPath = ".",
-                     timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
-                     desiredtz = "", configtz = NULL,
-                     timeformatName = "timeformat")
+  mergePHBfilePairs(filenames = NULL,
+                    timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
+                    desiredtz = "", configtz = NULL,
+                    timeformatName = "timeformat")
 }
 \arguments{
-  \item{inputPath}{
-    Character, file path where xlsx files are located that need to be merged. 
-    Assumption is that there is either one file starting with "Datalist_", one starting
-    with "Sleep_Wake_", or both for each recording.
-  }
-  \item{outputPath}{
-    Character, path to store the merge output
+  \item{filenames}{
+    Character vector, specifying the two filenames to be merged. 
+    Assumption is that there is one file starting with "Datalist_" and one starting
+    with "Sleep_Wake_".
   }
   \item{timeformat}{
     Character, timestemp format.
@@ -43,8 +40,7 @@
   }
 }
 \value{
-  Function does not output values. Instead it stores the merged data as file in the location
-  as specified by outputPath.
+  Merged data from the two files.
 }
 \author{
   Vincent T van Hees <v.vanhees@accelting.com>
