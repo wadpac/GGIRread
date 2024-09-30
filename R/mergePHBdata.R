@@ -28,7 +28,15 @@ mergePHBdata = function(filenames = NULL,
   }
   if (length(file1) > 0 && length(file2) > 0) {
     data2$data = data2$data[, which(colnames(data2$data) != "sleepEventMarker")]
-    data = merge(data1$data, data2$data, by = "timestamp")
+    d1 = data1$data
+    d2 = data2$data
+    if (length(which(is.na(d1$timestamp) == TRUE)) > 0 || 
+        length(which(is.na(d2$timestamp) == TRUE)) > 0) {
+      stop(paste0("NA values are found in the timestamps, ",
+                  "please check parameter ", timeformatName, 
+                  " which is set to ", timeformat), call. = FALSE)
+    }
+    data = merge(d1, d2, by = "timestamp")
   } else {
     if (length(file1) > 0) {
       data = data1$data
