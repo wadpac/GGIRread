@@ -24,7 +24,7 @@ test_that("Fitbit json is correctly read", {
   D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
   expect_equal(nrow(D), 47)
   expect_equal(ncol(D), 2)
-  expect_equal(format(D$dateTime[1]), "1995-06-23")
+  expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
   expect_equal(sum(D$calories), 69.56)
 })
 

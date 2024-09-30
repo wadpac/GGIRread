@@ -1,5 +1,5 @@
-\name{mergePHBfilePairs}
-\alias{mergePHBfilePairs}
+\name{mergePHBdata}
+\alias{mergePHBdata}
 \title{
   Merge Philips Health Band xlsx file pairs into one csv file
 }
@@ -9,7 +9,7 @@
   xlsx file to csv.
 }
 \usage{
-  mergePHBfilePairs(filenames = NULL,
+  mergePHBdata(filenames = NULL,
                     timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
                     desiredtz = "", configtz = NULL,
                     timeformatName = "timeformat")

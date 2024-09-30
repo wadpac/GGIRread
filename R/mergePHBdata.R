@@ -1,4 +1,4 @@
-mergePHBfilePairs = function(filenames = NULL,
+mergePHBdata = function(filenames = NULL,
                              timeformat = "%m/%d/%Y %H:%M:%S",
                              desiredtz = "", configtz = NULL,
                              timeformatName = "timeformat") {

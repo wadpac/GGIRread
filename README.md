@@ -10,8 +10,8 @@ Brand | Device name | File extension | Data type | GGIRread function
 Axivity Ltd https://axivity.com/ | AX3 and AX6 | .cwa | raw gravitational units |readAxivity
 ActivInsights Ltd https://activinsights.com/ | GENEActiv Original and Sleep | .bin | raw gravitational units  | readGENEActiv
 Unilever Discover Ltd | Genea (no longer manufactured) | .bin | raw gravitational units | readGenea
-ActiGraph | ??? | .csv | count data | readActigraph
-Actiwatch | ??? | .csv and .awd | count data | readActiwatch
-Actical | ??? | .csv | count data | readActical.R
-Philips Health Band | ??? | .xlsx | count data | mergePHBfilePairs.R
-Fitbit | ??? | .json | sleep, steps or calories data | readFitbit.R
+ActiGraph | ??? | .csv | count data | readActigraphCount
+Actiwatch | ??? | .csv and .awd | count data | readActiwatchCount
+Actical | ??? | .csv | count data | readActicalCount
+Philips Health Band | ??? | .xlsx | count data | readPHBCount
+Fitbit | ??? | .json | sleep, steps or calories data | readFitbit

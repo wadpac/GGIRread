@@ -1,11 +1,10 @@
 library(GGIRread)
 context("merge PHB files")
 test_that("merging of PHB files goes correctly", {
-  # prepare folder with test files
   file1 = system.file("testfiles/DataList_AH1234567890_PhilipsHealthBand.xlsx", package = "GGIRread")
   file2 = system.file("testfiles/Sleep_Wake_AH1234567890_PhilipsHealthBand.xlsx", package = "GGIRread")
   # apply function to merge the files
-  D = mergePHBfilePairs(filenames = c(file1, file2),
+  D = mergePHBdata(filenames = c(file1, file2),
                     timeformat = "%m-%d-%Y %H:%M:%S",
                     desiredtz =  "Europe/Amsterdam")
   expect_equal(nrow(D$data), 246)
