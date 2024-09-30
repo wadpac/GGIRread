@@ -8,7 +8,8 @@
 }
 \usage{
   readActicalCount(filename = NULL,
-                            timeformat = "\%m/\%d/\%Y \%H:\%M:\%S", tz = "",
+                            timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
+                            desiredtz = "", configtz = NULL,
                             timeformatName = "timeformat")
 }
 \arguments{
@@ -18,8 +19,16 @@
   \item{timeformat}{
     Character, timestemp format.
   }
-  \item{tz}{
-    Character, timezone name from the timezone database names.
+   \item{desiredtz}{
+    Character, timezone name where the accelerometer was worn. Timezone names are
+    expected to be the timezone database names, e.g. Europe/London. See also:
+    https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  }
+  \item{configtz}{
+    Character, timezone name where the accelerometer was configured. Leave NULL
+    if equal to desiredtz. Timezones name are expected to be the timezone database
+    names, e.g. Europe/London. See also:
+    https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   }
   \item{timeformatName}{
     Character, name of timeformat variable to print in error message when

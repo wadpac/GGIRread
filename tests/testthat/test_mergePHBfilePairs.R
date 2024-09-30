@@ -12,7 +12,9 @@ test_that("merging of PHB files goes correctly", {
   invisible(file.copy(from = file2, to = path, overwrite = TRUE))
   
   # apply function to merge the files
-  mergePHBfilePairs(inputPath = path, outputPath = path)
+  mergePHBfilePairs(inputPath = path, outputPath = path,
+                    timeformat = "%m-%d-%Y %H:%M:%S",
+                    desiredtz =  "Europe/Amsterdam")
   
   # check whether merged file exists
   newfiles = dir(path, full.names = TRUE)
@@ -25,7 +27,7 @@ test_that("merging of PHB files goes correctly", {
   expect_equal(ncol(data), 19)
   expect_equal(sum(data$counts), 50898)
   expect_equal(sum(data$steps), 1)
-  expect_equal(data$timestamp[1], "11-05-2022 01:10:00")
+  expect_equal(data$timestamp[1], "2022-11-05 01:10:00")
   
   # clean up
   if (dir.exists(path))  unlink(path, recursive = TRUE)

@@ -3,7 +3,7 @@ context("read Fitbit json")
 test_that("Fitbit json is correctly read", {
   # Sleep
   file = system.file("testfiles/sleep-1995-06-23_Fitbit.json", package = "GGIRread")
-  D = readFitbit(filename = file)
+  D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
   expect_equal(nrow(D), 695)
   expect_equal(ncol(D), 3)
   expect_equal(format(D$dateTime[1]), "1995-07-11 02:28:30")
@@ -13,7 +13,7 @@ test_that("Fitbit json is correctly read", {
   
   # Steps
   file = system.file("testfiles/steps-1995-06-23_Fitbit.json", package = "GGIRread")
-  D = readFitbit(filename = file)
+  D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
   expect_equal(nrow(D), 34)
   expect_equal(ncol(D), 2)
   expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
@@ -21,9 +21,25 @@ test_that("Fitbit json is correctly read", {
   
   # Calories
   file = system.file("testfiles/calories-1995-06-23_Fitbit.json", package = "GGIRread")
-  D = readFitbit(filename = file)
+  D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
   expect_equal(nrow(D), 47)
   expect_equal(ncol(D), 2)
   expect_equal(format(D$dateTime[1]), "1995-06-23")
   expect_equal(sum(D$calories), 69.56)
+})
+
+test_that("Timezones are correctly handled", {
+  file = system.file("testfiles/sleep-1995-06-23_Fitbit.json", package = "GGIRread")
+  # Configured and worn in same place
+  D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
+  expect_equal(format(D$dateTime[1]), "1995-07-11 02:28:30")
+  
+  # Configured 1 hour earlier than timezone where device was worn
+  D = readFitbit(filename = file, desiredtz =  "Europe/London", configtz =  "Europe/Amsterdam")
+  expect_equal(format(D$dateTime[1]), "1995-07-11 01:28:30")
+  
+  # Configured 6 hours later than timezone where device was worn
+  D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam",
+                 configtz =  "America/New_York")
+  expect_equal(format(D$dateTime[1]), "1995-07-11 08:28:30")
 })

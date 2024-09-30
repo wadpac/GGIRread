@@ -1,4 +1,5 @@
-readFitbit = function(filename = NULL) {
+readFitbit = function(filename = NULL, desiredtz = "",
+                      configtz = NULL) {
   # Assumptions made:
   # - sleep is sampled at 30 second resolution
   # - steps are sampled at 60 second resolution
@@ -16,7 +17,7 @@ readFitbit = function(filename = NULL) {
   
   #-------------------------------------------------
   # Main code
-  
+  if (length(configtz) == 0) configtz = desiredtz
   D = jsonlite::read_json(path = filename,
                 simplifyVector = FALSE,
                 flatten = FALSE)
@@ -30,7 +31,7 @@ readFitbit = function(filename = NULL) {
     for (i in 1:length(D)) {
       tmp = D[[i]][15]$levels
       data = as.data.frame(data.table::rbindlist(tmp$data, fill = TRUE))
-      data$dateTime = as.POSIXct(data$dateTime, format = "%Y-%m-%dT%H:%M:%S")
+      data$dateTime = as.POSIXct(data$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = configtz)
       if (i == 1) {
         all_data = data
       } else {
@@ -38,7 +39,7 @@ readFitbit = function(filename = NULL) {
       }
       if ("shortData" %in% names(tmp)) {
         shortData = data.table::rbindlist(tmp$shortData, fill = TRUE)
-        shortData$dateTime = as.POSIXct(shortData$dateTime, format = "%Y-%m-%dT%H:%M:%S")
+        shortData$dateTime = as.POSIXct(shortData$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = configtz)
         if (i == 1) {
           all_shortData = shortData
         } else {
@@ -74,12 +75,17 @@ readFitbit = function(filename = NULL) {
   } else if (dataType == "steps" || dataType == "calories") {
     epochSize = 60
     data = as.data.frame(data.table::rbindlist(D, fill = TRUE))
-    data$dateTime = as.POSIXct(data$dateTime, format = "%m/%d/%y %H:%M:%S")
+    data$dateTime = as.POSIXct(data$dateTime, format = "%m/%d/%y %H:%M:%S", tz = configtz)
     D = handleTimeGaps(data, epochSize = 60)
     D$value = as.numeric(D$value)
     colnames(D)[2] = dataType
   } else {
     stop("File type not recognised")
+  }
+  # Establish starttime in the correct timezone
+  if (configtz != desiredtz) {
+    D$dateTime = as.POSIXct(x = as.numeric(D$dateTime), tz = desiredtz,
+                               origin = "1970-01-01")
   }
   return(D)
 }

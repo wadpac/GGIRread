@@ -1,5 +1,9 @@
 readActiGraphCount = function(filename = NULL,
-                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "", timeformatName = "timeformat") {
+                            timeformat = "%m/%d/%Y %H:%M:%S",
+                            desiredtz = "",
+                            configtz = NULL,
+                            timeformatName = "timeformat") {
+  if (length(configtz) == 0) configtz = desiredtz
   # In GGIR set timeformatName to extEpochData_timeformat
   deviceSerialNumber = NULL
   
@@ -138,7 +142,7 @@ readActiGraphCount = function(filename = NULL,
     starttime = fileHeader$value[grep(pattern = "starttime", x = fileHeader$item)]
     startdate = fileHeader$value[grep(pattern = "startdate", x = fileHeader$item)]
     timestamp = paste0(startdate, " ", starttime)
-    timestamp_POSIX = as.POSIXlt(timestamp, tz = tz,
+    timestamp_POSIX = as.POSIXct(timestamp, tz = configtz,
                                  format = timeformat)
   } else if (headerAvailable == FALSE) {
     # Extract date/timestamp from first values of column
@@ -152,7 +156,7 @@ readActiGraphCount = function(filename = NULL,
       timecol = grep("time|epoch", colnames(tmp), ignore.case = TRUE)
       timestamp = paste0(tmp[, datecol], " ", tmp[1, timecol])
       format = timeformat
-      timestamp_POSIX = as.POSIXlt(timestamp, tz = tz, format = format)
+      timestamp_POSIX = as.POSIXct(timestamp, tz = configtz, format = format)
       if (all(is.na(timestamp_POSIX))) {
         stop(paste0("\nTimestamps are not available in the file, neither has",
                     " it a header to extract the timestamps from. Therefore, the file",
@@ -168,6 +172,13 @@ readActiGraphCount = function(filename = NULL,
   checkTimeFormat(timestamp_POSIX = timestamp_POSIX, rawValue = timestamp[1],
                   timeformat = timeformat,
                   timeformatName = timeformatName)
+
+  
+  # Establish starttime in the correct timezone
+  if (configtz != desiredtz) {
+    timestamp_POSIX = as.POSIXct(x = as.numeric(timestamp_POSIX), tz = desiredtz,
+                                 origin = "1970-01-01")
+  }
 
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX,

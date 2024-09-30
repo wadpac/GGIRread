@@ -1,17 +1,17 @@
-\name{readActiwatchCount}
-\alias{readActiwatchCount}
+\name{readPHBCount}
+\alias{readPHBCount}
 \title{
-  Read Actiwatch Count data files (csv)
+  Read PHB Count data files (xlsx)
 }
 \description{
-  Reads Actiwatch Count data file. Currently a variety of csv format are facilitated.
+  Reads Philips Health Band (PHB) Count data file.
 }
 \usage{
-  readActiwatchCount(filename = NULL,
-                            timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
-                            desiredtz = "", configtz = NULL,
-                            timeformatName = "timeformat")
-}
+  readPHBCount(filename = NULL,
+                timeformat = "\%m/\%d/\%Y \%H:\%M:\%S",
+                desiredtz = "", configtz = NULL,
+                timeformatName = "timeformat")
+    }
 \arguments{
   \item{filename}{
     filename (required)
@@ -19,7 +19,7 @@
   \item{timeformat}{
     Character, timestemp format.
   }
-  \item{desiredtz}{
+   \item{desiredtz}{
     Character, timezone name where the accelerometer was worn. Timezone names are
     expected to be the timezone database names, e.g. Europe/London. See also:
     https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
@@ -36,9 +36,7 @@
   }
 }
 \value{
-  \item{data}{Matrix with one or multiple columns}
-  \item{epochSize}{epoch size in seconds of data}
-  \item{startTime}{POSIXlt format timestamp on which recording starts }
+  Data.frame with time series, exact column names can vary between xlsx files.
 }
 \author{
   Vincent T van Hees <v.vanhees@accelting.com>

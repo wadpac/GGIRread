@@ -2,7 +2,8 @@ library(GGIRread)
 context("read ActiGraph csv files")
 test_that("ActiGraph61 is correctly read", {
   file = system.file("testfiles/ActiGraph61.csv", package = "GGIRread")
-  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S", tz =  "")
+  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S",
+                         desiredtz =  "Europe/Amsterdam")
   expect_equal(D$deviceSerialNumber, "MOS2D16160581")
   expect_equal(D$epochSize, 5)
   expect_equal(format(D$startTime), "2016-08-15 21:35:00")
@@ -14,7 +15,8 @@ test_that("ActiGraph61 is correctly read", {
 
 test_that("ActiGraph31 is correctly read", {
   file = system.file("testfiles/ActiGraph13.csv", package = "GGIRread")
-  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S", tz =  "")
+  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S",
+                         desiredtz =  "Europe/Amsterdam")
   expect_equal(D$deviceSerialNumber, "CLE2A2123456")
   expect_equal(D$epochSize, 15)
   expect_equal(format(D$startTime), "2013-08-26 09:00:00")
@@ -26,7 +28,8 @@ test_that("ActiGraph31 is correctly read", {
 
 test_that("ActiGraph13_timestamps_headers.csv is correctly read", {
   file = system.file("testfiles/ActiGraph13_timestamps_headers.csv", package = "GGIRread")
-  D = readActiGraphCount(filename = file, timeformat = "%d-%m-%Y %H:%M:%S", tz =  "")
+  D = readActiGraphCount(filename = file, timeformat = "%d-%m-%Y %H:%M:%S",
+                         desiredtz =  "Europe/Amsterdam")
   expect_equal(D$deviceSerialNumber, "TAS1D48140206")
   expect_equal(D$epochSize, 1)
   expect_equal(format(D$startTime), "2017-12-09 15:00:00")
@@ -41,4 +44,22 @@ test_that("Actiwatch csv error correctly", {
   expect_error(readActiGraphCount(filename = file,
                                   timeformat = "%m/%d/%Y %H:%M:%S"),
                regexp = "Time format*")
+})
+
+test_that("Timezones are correctly handled", {
+  file = system.file("testfiles/ActiGraph61.csv", package = "GGIRread")
+  # Configured and worn in same place
+  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S",
+                         desiredtz =  "Europe/Amsterdam")
+  expect_equal(format(D$startTime), "2016-08-15 21:35:00")
+  
+  # Configured 1 hour earlier than timezone where device was worn
+  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S",
+                         desiredtz =  "Europe/London", configtz =  "Europe/Amsterdam")
+  expect_equal(format(D$startTime), "2016-08-15 20:35:00")
+  
+  # Configured 6 hours later than timezone where device was worn
+  D = readActiGraphCount(filename = file, timeformat = "%m/%d/%Y %H:%M:%S",
+                         desiredtz =  "Europe/Amsterdam", configtz =  "America/New_York")
+  expect_equal(format(D$startTime), "2016-08-16 03:35:00")
 })

@@ -1,8 +1,11 @@
 readActiwatchCount = function(filename = NULL,
-                            timeformat = "%m/%d/%Y %H:%M:%S", tz = "",
+                            timeformat = "%m/%d/%Y %H:%M:%S",
+                            desiredtz = "",
+                            configtz = NULL,
                             timeformatName = "timeformat") {
   # In GGIR set timeformatName to extEpochData_timeformat
 
+  if (length(configtz) == 0) configtz = desiredtz
   fileExtension = tolower(getExtension(filename))
 
   if (fileExtension == "csv") {
@@ -36,7 +39,7 @@ readActiwatchCount = function(filename = NULL,
     D = D[, grep(pattern = "time|date|counts|sleep|nonwear", x = colnames(D))]
     timestamp_POSIX = as.POSIXct(x = paste(D$date[1:4], D$time[1:4], sep = " "),
                                  format = timeformat,
-                                 tz = tz)
+                                 tz = configtz)
     checkTimeFormat(timestamp_POSIX[1], 
                     rawValue = paste(D$date[1], D$time[1], sep = " "),
                     timeformat = timeformat,
@@ -78,7 +81,7 @@ readActiwatchCount = function(filename = NULL,
     # Get starttime 
     timestampFormat = paste0(unlist(strsplit(timeformat, " "))[1], " %H:%M")
     timestamp_POSIX = as.POSIXct(x = paste(header[2], header[3], sep = " "),
-                                 format = timestampFormat, tz = tz)
+                                 format = timestampFormat, tz = configtz)
     checkTimeFormat(timestamp_POSIX, 
                     rawValue = header[2],
                     timeformat = timeformat,
@@ -87,6 +90,12 @@ readActiwatchCount = function(filename = NULL,
   }
   D = as.matrix(D, drop = FALSE)
   if (quote == "") D = apply(D, 2, as.numeric)
+  
+  # Establish starttime in the correct timezone
+  if (configtz != desiredtz) {
+    timestamp_POSIX = as.POSIXct(x = as.numeric(timestamp_POSIX), tz = desiredtz,
+                                 origin = "1970-01-01")
+  }
   invisible(list(data = D, epochSize = epSizeShort,
                  startTime = timestamp_POSIX))
 }
