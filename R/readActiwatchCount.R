@@ -14,7 +14,7 @@ readActiwatchCount = function(filename = NULL,
     #=========================================================
     # ! Assumptions that timeseries start before line 1000
     startindex = 1000
-    quote = detectQuote(fn = filename, index = startindex)
+    quote = detectQuote(filename = filename, skip = startindex)
     index = findStartData(filename, quote, startindex)
     D = data.table::fread(input = filename, sep = ",", skip = index, quote = quote, data.table = FALSE)
     # ! Assumption that column names are present 2 lines prior to timeseries
@@ -55,7 +55,7 @@ readActiwatchCount = function(filename = NULL,
     # ! Assumption that first data row equals the first row with 3 columns
     index = 0
     
-    quote = detectQuote(fn = filename, index = 50)
+    quote = detectQuote(filename = filename, skip = 50)
     NC = 1
     while (NC >= 3) {
       testraw = data.table::fread(input = filename,

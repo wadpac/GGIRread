@@ -7,7 +7,7 @@ readActicalCount = function(filename = NULL,
   if (length(configtz) == 0) configtz = desiredtz
   # ! Assumptions that timeseries start before line 1000
   startindex = 300
-  quote = detectQuote(fn = filename, index = startindex)
+  quote = detectQuote(filename = filename, skip = startindex)
   startindex = findStartData(filename, quote, startindex)
   # -1 because Actical starts at epoch 0 while function looks for epoch 1
   startindex = startindex - 1 
