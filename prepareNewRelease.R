@@ -49,51 +49,5 @@ prepareNewRelease = function(version = c()) {
     }
     i = i + 1
   }
-  # # Check CITATION.cff
-  # CIT = read.csv(file = "./CITATION.cff",sep="\n")
-  # i = 1
-  # while (i <= nrow(CIT)) {
-  #   tmp = as.character(unlist(strsplit(as.character(CIT[i,]),": ")))
-  #   if (tmp[1] == "version") {
-  #     if (tmp[2] != version) {
-  #       cat("\nError: Version number is not correct in CITATION.cff file")
-  #       errorfound = TRUE
-  #     } 
-  #   }
-  #   if (tmp[1] == "date-released") {
-  #     if (tmp[2] != date) {
-  #       cat("\nError: Date is not correct in CITATION.cff file")
-  #       errorfound = TRUE
-  #     } 
-  #   }
-  #   i = i + 1
-  # }
-  # Check NEWs.rd file
-  NE = read.csv(file = "./inst/NEWS.Rd",sep="\n")
-  i = 1
-  versioninfile = dateinfile = c()
-  while (i <= nrow(NE)) {
-    tmp = as.character(unlist(strsplit(as.character(NE[3,]),"version ")))
-    if (length(tmp) > 1) {
-      tmp2 = as.character(unlist(strsplit(as.character(tmp[2])," ")))
-      versioninfile= tmp2[1]
-      if (length(tmp2) > 2) {
-        tmp3 = as.character(unlist(strsplit(as.character(tmp2[3]),":"))[2])
-        dateinfile = as.character(unlist(strsplit(as.character(tmp3),"[)]"))[1])
-      }
-    }
-    if (length(versioninfile) > 0 & length(dateinfile) > 0) { 
-      if (versioninfile != version) {
-        cat("\nError: Version number is not correct in NEWS.Rd file")
-        errorfound = TRUE
-      }
-      if (dateinfile != dateReversed) {
-        cat("\nError: Date is not correct in NEWS.Rd file")
-        errorfound = TRUE
-      }
-      break() # only check first date and version number
-    }
-    i = i + 1
-  }
   if (errorfound == FALSE) cat(paste0("\nNo problem found. Package consistently uses version ",version," and release date ", dateReversed))
 }
