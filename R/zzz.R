@@ -13,6 +13,7 @@
   }
   pkgs <- available.packages(repos = repos)
   cran_version <- package_version(pkgs[which(pkgs[,1] == "GGIRread"),"Version"])
+  if (length(cran_version) == 0) return() # handle no internet connection
   local_version <- utils::packageVersion("GGIRread")
   behind_cran <- cran_version > local_version
   if (interactive()) {

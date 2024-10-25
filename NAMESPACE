@@ -1,5 +1,12 @@
-export(readGenea, readAxivity, readGENEActiv, GENEActivReader, resample, readWav)
+export(readGenea, readAxivity, readGENEActiv, 
+       GENEActivReader, resample, readWav, 
+       readActiGraphCount, readActiwatchCount,
+       readActicalCount, readPHBCount,
+       readFitbit, mergePHBdata,
+       mergeFitbitData)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
+importFrom(data.table, fread)
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
-importFrom("utils", "read.csv")
+importFrom("utils", "read.csv", "write.csv")
+importFrom("utils", "available.packages")
