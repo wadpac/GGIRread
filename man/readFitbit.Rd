@@ -4,7 +4,8 @@
   Read Fitbit data files (json)
 }
 \description{
-  Reads Fitbit data file (json) with sleep, steps or calories.
+  Reads Fitbit data file (json) with sleep, steps or calories. Steps and calories
+  are converted to 30 second resolution to match resolution of sleep data.
 }
 \usage{
   readFitbit(filename = NULL, desiredtz = "", configtz = NULL)

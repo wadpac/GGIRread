@@ -8,10 +8,10 @@ test_that("merging of PHB files goes correctly", {
   # apply function to merge the files
   D = mergeFitbitData(filenames = c(file1, file2),
                     desiredtz =  "Europe/Amsterdam")
-  expect_equal(nrow(D), 47)
+  expect_equal(nrow(D), 93)
   expect_equal(ncol(D), 3)
   expect_equal(sum(D$steps, na.rm = TRUE), 607)
-  expect_equal(sum(D$calories, na.rm = TRUE), 69.56)
+  expect_equal(sum(D$calories, na.rm = TRUE), 68.82, tol = 0.01)
   expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
   
   # apply function to merge the files

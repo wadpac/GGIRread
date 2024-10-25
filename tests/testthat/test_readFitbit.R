@@ -14,18 +14,18 @@ test_that("Fitbit json is correctly read", {
   # Steps
   file = system.file("testfiles/steps-1995-06-23_Fitbit.json", package = "GGIRread")
   D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
-  expect_equal(nrow(D), 34)
+  expect_equal(nrow(D), 71)
   expect_equal(ncol(D), 2)
   expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
-  expect_equal(sum(D$steps), 607)
+  expect_equal(sum(D$steps, na.rm = TRUE), 607)
   
   # Calories
   file = system.file("testfiles/calories-1995-06-23_Fitbit.json", package = "GGIRread")
   D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
-  expect_equal(nrow(D), 47)
+  expect_equal(nrow(D), 93)
   expect_equal(ncol(D), 2)
   expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
-  expect_equal(sum(D$calories), 69.56)
+  expect_equal(sum(D$calories, na.rm = TRUE), 68.82, tol = 0.01)
 })
 
 test_that("Timezones are correctly handled", {

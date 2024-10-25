@@ -11,7 +11,11 @@ readFitbit = function(filename = NULL, desiredtz = "",
     startTime = timeRange[1]
     endTime = timeRange[2]
     timeFrame = data.frame(dateTime = seq(startTime, endTime, by = epochSize))
-    df = merge(df, timeFrame, by = c("dateTime"), all.x = TRUE)
+    df = merge(df, timeFrame, by = c("dateTime"), all.y = TRUE)
+    when_na = which(is.na(df$value))
+    if (length(when_na) > 0) {
+      df$value[when_na] = df$value[when_na - 1]
+    }
     return(df)
   }
   
@@ -73,11 +77,12 @@ readFitbit = function(filename = NULL, desiredtz = "",
     D = D[order(D$dateTime), ]
     colnames(D)[2] = "sleeplevel"
   } else if (dataType == "steps" || dataType == "calories") {
-    epochSize = 60
     data = as.data.frame(data.table::rbindlist(D, fill = TRUE))
     data$dateTime = as.POSIXct(data$dateTime, format = "%m/%d/%y %H:%M:%S", tz = configtz)
-    D = handleTimeGaps(data, epochSize = 60)
-    D$value = as.numeric(D$value)
+    # GGIR expects resolution to be consistent across variables
+    # so interpolate at 30 seconds to match resolution of sleep
+    D = handleTimeGaps(data, epochSize = 30)
+    D$value = as.numeric(D$value) / 2
     colnames(D)[2] = dataType
   } else {
     stop("File type not recognised")
