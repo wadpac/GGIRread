@@ -5,11 +5,11 @@
 }
 \description{
   Originally designed to read the wav accelerometer data format as stored with the OMGUI software
-  by Axivity Ltd and documented \href{https://github.com/digitalinteraction/openmovement/wiki/AX3-GUI#export-re-sampled-wav}{here}.
+  by Axivity Ltd and documented \href{https://github.com/openmovementproject/openmovement/wiki/AX3-GUI#export-re-sampled-wav}{here}.
   
   This function has been deprecated as wav files are hardly used, their formatting
-  is not consistent causing ongoing challenges with keeping the keep functional,
-  wav format not well facilitated for AX6 recording.
+  is not consistent causing ongoing challenges, and the wav format is not well 
+  facilitated for AX6 recordings.
 }
 \usage{
   readWav(filename, start = 1, end = 100,units="minutes")
