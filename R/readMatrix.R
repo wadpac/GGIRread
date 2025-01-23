@@ -1,7 +1,7 @@
 readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
-                         start = 1, end = NULL,
-                         desiredtz = "", configtz = NULL,
-                         interpolationType = 1) {
+                      start = 1, end = NULL,
+                      desiredtz = "", configtz = NULL,
+                      interpolationType = 1) {
   
   # Matrix devices binary files are organized in packets of data.
   
@@ -167,14 +167,20 @@ readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   acc_starts = packet_starti + 36; acc_stops = acc_starts + 6*acc_count - 1
   acc_data_raw = Map(function(start, stop) bin_data[start:stop], acc_starts, acc_stops)
   # gyro
-  gyro_starts = acc_stops + 1; gyro_stops = gyro_starts + 6*gyro_count - 1
-  gyro_data_raw = Map(function(start, stop) bin_data[start:stop], gyro_starts, gyro_stops)
+  if (any(gyro_count) > 0) { # gyroscope has been activated
+    gyro_starts = acc_stops + 1; gyro_stops = gyro_starts + 6*gyro_count - 1
+    gyro_data_raw = Map(function(start, stop) bin_data[start:stop], gyro_starts, gyro_stops)
+  }
   # temp
-  temp_starts = gyro_stops + 1; temp_stops = temp_starts + 4*temp_count - 1
-  temp_data_raw = Map(function(start, stop) bin_data[start:stop], temp_starts, temp_stops)
+  if (any(temp_count) > 0) { # temperature has been activated
+    temp_starts = gyro_stops + 1; temp_stops = temp_starts + 4*temp_count - 1
+    temp_data_raw = Map(function(start, stop) bin_data[start:stop], temp_starts, temp_stops)
+  }
   # heart
-  heart_starts = temp_stops + 1; heart_stops = heart_starts + 4*heart_count - 1
-  heart_data_raw = Map(function(start, stop) bin_data[start:stop], heart_starts, heart_stops)
+  if (any(heart_count) > 0) { # heart rate has been activated
+    heart_starts = temp_stops + 1; heart_stops = heart_starts + 4*heart_count - 1
+    heart_data_raw = Map(function(start, stop) bin_data[start:stop], heart_starts, heart_stops)
+  }
   
   # Handle between-packets timestamp gaps and corrections
   gaps = mapply(function(a, b) a - b, start_timestamps[-1], end_timestamps[-length(end_timestamps)])
@@ -204,18 +210,24 @@ readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
     seq(from = packet_t0[i], to = packet_t1[i], 
         length.out = acc_count[i])
   }))
-  gyro_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
-    seq(from = packet_t0[i], to = packet_t1[i], 
-        length.out = gyro_count[i])
-  }))
-  temp_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
-    seq(from = packet_t0[i], to = packet_t1[i], 
-        length.out = temp_count[i])
-  }))
-  heart_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
-    seq(from = packet_t0[i], to = packet_t1[i], 
-        length.out = heart_count[i])
-  }))
+  if (any(gyro_count) > 0) { # gyroscope has been activated
+    gyro_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
+      seq(from = packet_t0[i], to = packet_t1[i], 
+          length.out = gyro_count[i])
+    }))
+  }
+  if (any(temp_count) > 0) { # temperature has been activated
+    temp_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
+      seq(from = packet_t0[i], to = packet_t1[i], 
+          length.out = temp_count[i])
+    }))
+  }
+  if (any(heart_count) > 0) { # heart rate has been activated
+    heart_timestamps = unlist(lapply(seq_along(packet_t0), function(i) {
+      seq(from = packet_t0[i], to = packet_t1[i], 
+          length.out = heart_count[i])
+    }))
+  }
   
   # acc sensor data
   acc_readings = lapply(seq_along(packet_t0), function(i) {
@@ -230,68 +242,90 @@ readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   acc_data = matrix(unlist(acc_readings), ncol = 3, byrow = T)
   
   # gyro sensor data
-  gyro_readings = lapply(seq_along(packet_t0), function(i) {
-    readings = readBin(gyro_data_raw[[i]], "integer", size = 2, n = gyro_count[i] * 3, endian = "little")
-    readings * (gyro_range / 32767)
-  })
-  if (length(corrupt_packets) > 0) {
-    for (i in corrupt_packets) {
-      gyro_readings[[i]] = rep(0, length(gyro_readings[[i]]))
+  if (any(gyro_count) > 0) { # gyroscope has been activated
+    gyro_readings = lapply(seq_along(packet_t0), function(i) {
+      readings = readBin(gyro_data_raw[[i]], "integer", size = 2, n = gyro_count[i] * 3, endian = "little")
+      readings * (gyro_range / 32767)
+    })
+    if (length(corrupt_packets) > 0) {
+      for (i in corrupt_packets) {
+        gyro_readings[[i]] = rep(0, length(gyro_readings[[i]]))
+      }
     }
+    gyro_data = matrix(unlist(gyro_readings), ncol = 3, byrow = T)
   }
-  gyro_data = matrix(unlist(gyro_readings), ncol = 3, byrow = T)
-  
   # temp sensor data
-  temp_readings = lapply(seq_along(packet_t0), function(i) {
-    readings = readBin(temp_data_raw[[i]], "integer", size = 2, n = temp_count[i] * 3, endian = "little")
-    readings / 10
-  })
-  if (length(corrupt_packets) > 0) {
-    for (i in corrupt_packets) {
-      temp_readings[[i]] = rep(NA, length(temp_readings[[i]]))
+  if (any(temp_count) > 0) { # temperature has been activated
+    temp_readings = lapply(seq_along(packet_t0), function(i) {
+      readings = readBin(temp_data_raw[[i]], "integer", size = 2, n = temp_count[i] * 3, endian = "little")
+      readings / 10
+    })
+    if (length(corrupt_packets) > 0) {
+      for (i in corrupt_packets) {
+        # for imputing temperature, I use the average value between the previous
+        # valid value and the following valid value
+        x = (1:length(packet_starti))
+        x[corrupt_packets] = NA
+        prev_temp = ifelse(any(!is.na(x[1:(i - 1)])), 
+                           tail(x[which(!is.na(x[1:(i - 1)]))], 1), NA)
+        next_temp = ifelse(any(!is.na(x[1:(i - 1)])), 
+                           head(x[which(!is.na(x[1:(i - 1)]))], 1), NA)
+        temp_readings[[i]] = rep(mean(unlist(temp_readings[prev_temp:next_temp]), na.rm = T), 
+                                 times = length(temp_readings[[i]]))
+      }
     }
+    temp_data = matrix(unlist(temp_readings), ncol = 2, byrow = T)
   }
-  temp_data = matrix(unlist(temp_readings), ncol = 2, byrow = T)
-  
   # heart sensor data
-  heart_readings = lapply(seq_along(packet_t0), function(i) {
-    readings = readBin(heart_data_raw[[i]], "integer", size = 2, n = heart_count[i] * 3, endian = "little")
-    readings
-  })
-  if (length(corrupt_packets) > 0) {
-    for (i in corrupt_packets) {
-      heart_readings[[i]] = rep(NA, length(heart_readings[[i]]))
+  if (any(heart_count) > 0) { # heart rate has been activated
+    heart_readings = lapply(seq_along(packet_t0), function(i) {
+      readings = readBin(heart_data_raw[[i]], "integer", size = 2, n = heart_count[i] * 3, endian = "little")
+      readings
+    })
+    if (length(corrupt_packets) > 0) {
+      for (i in corrupt_packets) {
+        heart_readings[[i]] = rep(NA, length(heart_readings[[i]]))
+      }
     }
+    heart_data = matrix(unlist(heart_readings), ncol = 2, byrow = T)
   }
-  heart_data = matrix(unlist(heart_readings), ncol = 2, byrow = T)
-  
   # Resample data to defined sampling frequency
   required_timepoints = seq(from = acc_timestamps[1], to = acc_timestamps[length(acc_timestamps)], 
                             by = 1/sf)
   acc_resampled = resample(raw = acc_data, rawTime = acc_timestamps, 
                            time = required_timepoints, 
                            stop = nrow(acc_data), type = interpolationType)
-  gyro_resampled = resample(raw = gyro_data, rawTime = gyro_timestamps, 
-                            time = required_timepoints, 
-                            stop = nrow(gyro_data), type = interpolationType)
-  temp_resampled = resample(raw = temp_data, rawTime = temp_timestamps, 
-                            time = required_timepoints, 
-                            stop = nrow(temp_data), type = interpolationType)
-  heart_resampled = resample(raw = heart_data, rawTime = heart_timestamps, 
-                             time = required_timepoints, 
-                             stop = nrow(heart_data), type = interpolationType)
+  if (any(gyro_count) > 0) { # gyroscope has been activated
+    gyro_resampled = resample(raw = gyro_data, rawTime = gyro_timestamps, 
+                              time = required_timepoints, 
+                              stop = nrow(gyro_data), type = interpolationType)
+  }
+  if (any(temp_count) > 0) { # temperature has been activated
+    temp_resampled = resample(raw = temp_data, rawTime = temp_timestamps, 
+                              time = required_timepoints, 
+                              stop = nrow(temp_data), type = interpolationType)
+  }
+  if (any(heart_count) > 0) { # heart rate has been activated
+    heart_resampled = resample(raw = heart_data, rawTime = heart_timestamps, 
+                               time = required_timepoints, 
+                               stop = nrow(heart_data), type = interpolationType)
+  }
+  
+  # data
+  data = data.frame(time = required_timepoints)
+  
+  # add sensors if available
+  data[, c("acc_x", "acc_y", "acc_z")] = acc_resampled
+  if (any(gyro_count > 0)) data[, c("gyro_x", "gyro_y", "gyro_z")] = gyro_resampled
+  if (any(temp_count > 0)) data[, c("bodySurface_temp", "ambient_temp")] = temp_resampled
+  if (any(heart_count > 0)) data[, c("hr_raw", "hr")] = heart_resampled
+  # add remarks
+  data$remarks = remarks
   
   # Return full output
   return(list(
     QClog = QClog,
-    data = data.frame(
-      time = required_timepoints,
-      acc_x = acc_resampled[,1], acc_y = acc_resampled[,2], acc_z = acc_resampled[,3],
-      gyro_x = gyro_resampled[,1], gyro_y = gyro_resampled[,2], gyro_z = gyro_resampled[,3],
-      bodySurface_temp = temp_resampled[,1], ambient_temp = temp_resampled[,2], 
-      hr_raw = heart_resampled[,1], hr = heart_resampled[,2],
-      remarks = remarks
-    ),
+    data = data,
     sf = sf,
     acc_dynrange = acc_dynrange,
     starttime = starttime_posix,
