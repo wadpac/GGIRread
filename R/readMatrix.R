@@ -284,7 +284,7 @@ readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   # Return full output
   return(list(
     QClog = QClog,
-    output = data.frame(
+    data = data.frame(
       time = required_timepoints,
       acc_x = acc_resampled[,1], acc_y = acc_resampled[,2], acc_z = acc_resampled[,3],
       gyro_x = gyro_resampled[,1], gyro_y = gyro_resampled[,2], gyro_z = gyro_resampled[,3],
