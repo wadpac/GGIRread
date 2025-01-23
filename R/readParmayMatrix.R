@@ -1,4 +1,4 @@
-readMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
+readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
                       start = 1, end = NULL,
                       desiredtz = "", configtz = NULL,
                       interpolationType = 1) {
