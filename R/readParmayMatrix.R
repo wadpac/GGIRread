@@ -152,8 +152,9 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   # Process timestamps and calculate sampling frequency
   start_timestamps = apply(start_timestamp_raw, 1, function(x) readBin(x, "integer", size = 4, endian = "little"))
   end_timestamps = apply(end_timestamp_raw, 1, function(x) readBin(x, "integer", size = 4, endian = "little"))
-  sf_acc_observed = acc_count / (end_timestamps - start_timestamps)
-  sf_acc_p1 = sf_acc_observed[1]
+  packets_dur_s = end_timestamps - start_timestamps
+  sf_acc_observed = acc_count / packets_dur_s
+  sf_acc_p1 = sf_acc_observed[which(packets_dur_s >= 60)[1]]
   expected_sf = c(12.5, 25, 50, 100)
   sf = expected_sf[which.min(abs(expected_sf - sf_acc_p1[1]))]
   if (return == "sf") return(sf)
