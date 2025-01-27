@@ -154,7 +154,7 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   end_timestamps = apply(end_timestamp_raw, 1, function(x) readBin(x, "integer", size = 4, endian = "little"))
   packets_dur_s = end_timestamps - start_timestamps
   sf_acc_observed = acc_count / packets_dur_s
-  sf_acc_p1 = sf_acc_observed[which(packets_dur_s >= 60)[1]]
+  sf_acc_p1 = sf_acc_observed[which(packets_dur_s >= 10)[1]]
   expected_sf = c(12.5, 25, 50, 100)
   sf = expected_sf[which.min(abs(expected_sf - sf_acc_p1[1]))]
   if (return == "sf") return(sf)
@@ -167,20 +167,24 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   # acc
   acc_starts = packet_starti + 36; acc_stops = acc_starts + 6*acc_count - 1
   acc_data_raw = Map(function(start, stop) bin_data[start:stop], acc_starts, acc_stops)
+  prev_stops = acc_stops
   # gyro
   if (any(gyro_count) > 0) { # gyroscope has been activated
-    gyro_starts = acc_stops + 1; gyro_stops = gyro_starts + 6*gyro_count - 1
+    gyro_starts = prev_stops + 1; gyro_stops = gyro_starts + 6*gyro_count - 1
     gyro_data_raw = Map(function(start, stop) bin_data[start:stop], gyro_starts, gyro_stops)
+    prev_stops = gyro_stops
   }
   # temp
   if (any(temp_count) > 0) { # temperature has been activated
-    temp_starts = gyro_stops + 1; temp_stops = temp_starts + 4*temp_count - 1
+    temp_starts = prev_stops + 1; temp_stops = temp_starts + 4*temp_count - 1
     temp_data_raw = Map(function(start, stop) bin_data[start:stop], temp_starts, temp_stops)
+    prev_stops = temp_stops
   }
   # heart
   if (any(heart_count) > 0) { # heart rate has been activated
-    heart_starts = temp_stops + 1; heart_stops = heart_starts + 4*heart_count - 1
+    heart_starts = prev_stops + 1; heart_stops = heart_starts + 4*heart_count - 1
     heart_data_raw = Map(function(start, stop) bin_data[start:stop], heart_starts, heart_stops)
+    prev_stops = heart_stops
   }
   
   # Handle between-packets timestamp gaps and corrections
@@ -297,16 +301,40 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
                            time = required_timepoints, 
                            stop = nrow(acc_data), type = interpolationType)
   if (any(gyro_count) > 0) { # gyroscope has been activated
+    # make sure measurement covers full recording length:
+    if (min(gyro_timestamps) > min(required_timepoints)) {
+      gyro_timestamps = rbind(c(NA, NA), gyro_data)
+    }
+    if (max(gyro_timestamps) < max(required_timepoints)) {
+      gyro_timestamps = c(gyro_timestamps, max(required_timepoints))
+      gyro_data = rbind(gyro_data, c(NA, NA))
+    }
     gyro_resampled = resample(raw = gyro_data, rawTime = gyro_timestamps, 
-                              time = required_timepoints, 
-                              stop = nrow(gyro_data), type = interpolationType)
+                               time = required_timepoints, 
+                               stop = nrow(gyro_data), type = interpolationType)
   }
   if (any(temp_count) > 0) { # temperature has been activated
+    # make sure measurement covers full recording length:
+    if (min(temp_timestamps) > min(required_timepoints)) {
+      temp_timestamps = rbind(c(NA, NA), temp_data)
+    }
+    if (max(temp_timestamps) < max(required_timepoints)) {
+      temp_timestamps = c(temp_timestamps, max(required_timepoints))
+      temp_data = rbind(temp_data, c(NA, NA))
+    }
     temp_resampled = resample(raw = temp_data, rawTime = temp_timestamps, 
-                              time = required_timepoints, 
-                              stop = nrow(temp_data), type = interpolationType)
+                               time = required_timepoints, 
+                               stop = nrow(temp_data), type = interpolationType)
   }
   if (any(heart_count) > 0) { # heart rate has been activated
+    # make sure measurement covers full recording length:
+    if (min(heart_timestamps) > min(required_timepoints)) {
+      heart_timestamps = rbind(c(NA, NA), heart_data)
+    }
+    if (max(heart_timestamps) < max(required_timepoints)) {
+      heart_timestamps = c(heart_timestamps, max(required_timepoints))
+      heart_data = rbind(heart_data, c(NA, NA))
+    }
     heart_resampled = resample(raw = heart_data, rawTime = heart_timestamps, 
                                time = required_timepoints, 
                                stop = nrow(heart_data), type = interpolationType)
