@@ -1,3 +1,8 @@
+# Changes in version 1.0.3 (release date:X-X-2025)
+
+- Add functions for reading Parmay Tech Matrix sensor (bin files) with accelerometer, gyroscope, temperature, and heart rate #70.
+
+
 # Changes in version 1.0.2 (release date:25-10-2024)
 
 - Added a `NEWS.md` file to track changes to the package.
