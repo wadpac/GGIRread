@@ -69,9 +69,20 @@ readActiwatchCount = function(filename = NULL,
       }
     }
     D = data.table::fread(input = filename, header = FALSE, sep = ",",
-                          skip = index, quote = quote)
-    D = D[, 1:2]
+                          skip = index, quote = quote, data.table = FALSE)
     colnames(D)[1:2] = c("counts", "light")
+    lastCol = ncol(D)
+    if (inherits(x = D[,lastCol], what = "character")) {
+      indices_with_M = grep(pattern = "M", x = D[,lastCol])
+      D[indices_with_M, lastCol] = gsub(pattern = "M| ", replacement = "", x = D[indices_with_M, lastCol])
+      D[,lastCol] = as.numeric(D[ ,lastCol])
+      D = cbind(D, rep(0, nrow(D)))
+      D[indices_with_M,lastCol + 1] = 1
+      colnames(D)[lastCol + 1] = c("marker")
+      D = D[, c(1:2, lastCol + 1)]
+    } else {
+      D = D[, 1:2]
+    }
     header = data.table::fread(input = filename, header = FALSE, sep = ",", 
                                nrows =  7, quote = quote)
     # Get epoch size

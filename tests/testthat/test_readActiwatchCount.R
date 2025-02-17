@@ -19,9 +19,10 @@ test_that("Actiwatch awd is correctly read", {
   expect_equal(D$epochSize, 60)
   expect_equal(format(D$startTime), "2009-10-01 17:00:00")
   expect_equal(nrow(D$data), 329)
-  expect_equal(ncol(D$data), 2)
+  expect_equal(ncol(D$data), 3)
   expect_equal(sum(D$data[, "counts"], na.rm = TRUE), 108864)
   expect_equal(sum(D$data[, "light"], na.rm = TRUE), 0)
+  expect_equal(sum(D$data[, "marker"], na.rm = TRUE), 2)
 })
 
 test_that("Actiwatch awd error correctly", {

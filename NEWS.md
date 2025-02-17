@@ -1,3 +1,7 @@
+# Changes in version 1.0.? (release date:??-??-2025)
+
+- Extract marker button data from .AWD files #72
+
 # Changes in version 1.0.2 (release date:25-10-2024)
 
 - Added a `NEWS.md` file to track changes to the package.
