@@ -2,6 +2,8 @@
 
 - Extract marker button data from .AWD files #72
 
+- Actical csv data: Improved detection of time series start. #73
+
 # Changes in version 1.0.2 (release date:25-10-2024)
 
 - Added a `NEWS.md` file to track changes to the package.
