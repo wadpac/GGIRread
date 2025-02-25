@@ -7,7 +7,7 @@ test_that("Actiwatch csv is correctly read", {
   expect_equal(D$epochSize, 15)
   expect_equal(format(D$startTime), "2019-11-23 06:00:00")
   expect_equal(nrow(D$data), 860)
-  expect_equal(ncol(D$data), 3)
+  expect_equal(ncol(D$data), 4)
   expect_equal(sum(D$data[, "counts"], na.rm = TRUE), 4589)
   expect_equal(sum(D$data[, "sleep"], na.rm = TRUE), 55)
   expect_equal(sum(D$data[, "nonwear"], na.rm = TRUE), 797)

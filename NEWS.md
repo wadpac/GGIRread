@@ -1,6 +1,6 @@
 # Changes in version 1.0.? (release date:??-??-2025)
 
-- Extract marker button data from .AWD files #72
+- Actiwatch: Extract marker button data from .AWD and .CSV files #72
 
 - Actical csv data: Improved detection of time series start. #73
 

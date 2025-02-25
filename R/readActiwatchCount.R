@@ -30,13 +30,13 @@ readActiwatchCount = function(filename = NULL,
     D = D[, which(!is.na(colnames))]
     colnames(D) = tolower(as.character(colnames))
     # ! Assumptions about columns names
-    # browser()
     colnames(D)[grep(pattern = "datum|date", x = colnames(D))] = "date"
     colnames(D)[grep(pattern = "tijd|time", x = colnames(D))] = "time"
     colnames(D)[grep(pattern = "activiteit|activity", x = colnames(D))] = "counts"
     colnames(D)[grep(pattern = "slapen|sleep", x = colnames(D))] = "sleep"
     colnames(D)[grep(pattern = "niet-om|wear|worn", x = colnames(D))] = "nonwear"
-    D = D[, grep(pattern = "time|date|counts|sleep|nonwear", x = colnames(D))]
+    
+    D = D[, grep(pattern = "time|date|counts|sleep|nonwear|marker", x = colnames(D))]
     timestamp_POSIX = as.POSIXct(x = paste(D$date[1:4], D$time[1:4], sep = " "),
                                  format = timeformat,
                                  tz = configtz)
