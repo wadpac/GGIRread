@@ -1,3 +1,11 @@
+# Changes in version 1.0.3 (release date:??-02-2025)
+
+- Actiwatch: Extract marker button data from .AWD and .CSV files #72
+
+- Philips Health Band: Extract marker button data from .xlsx files #72
+
+- Actical csv data: Improved detection of time series start. #73
+
 # Changes in version 1.0.2 (release date:25-10-2024)
 
 - Added a `NEWS.md` file to track changes to the package.
