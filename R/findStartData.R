@@ -17,15 +17,19 @@ findStartData = function(filename, quote, startindex) {
   # ! Assumption that first column are the epoch numbers
   delta = 1 - testraw$V1[1]
   startindex = startindex + delta
-  startFound = FALSE
-  while (startFound == FALSE) {
-    Dtest = data.table::fread(input = filename, sep = ",", skip = startindex, quote = quote, nrows = 1)
-    if (Dtest$V1[1] == 1) {
-      startFound = TRUE
-    } else {
-      # This happens when file is has an empty row between each measurement point is stored
-      startindex = startindex - 1
-      if (startindex < 1) stop("Could not find start of recording", call. = FALSE)
+  if (startindex < 32) {
+    startindex = 32
+  } else {
+    startFound = FALSE
+    while (startFound == FALSE) {
+      Dtest = data.table::fread(input = filename, sep = ",", skip = startindex, quote = quote, nrows = 1)
+      if (Dtest$V1[1] == 1) {
+        startFound = TRUE
+      } else {
+        # This happens when file is has an empty row between each measurement point is stored
+        startindex = startindex - 1
+        if (startindex < 1) stop("Could not find start of recording", call. = FALSE)
+      }
     }
   }
   return(startindex)
