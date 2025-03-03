@@ -1,4 +1,4 @@
-readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
+readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
                       start = 1, end = NULL,
                       desiredtz = "", configtz = NULL,
                       interpolationType = 1) {
@@ -7,7 +7,7 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   
   # The header information contains:
   #  - remarks (empty in all files I have tested): bytes 1:512
-  #  - Count of the total number of packetss in file (bytes 513:516)
+  #  - Count of the total number of packets in file (bytes 513:516)
   #  - header string = "MDTC" (bytes 517:520, if not there -> file corrupt)
   #  - range of the acc (bytes 521:522) and the gyro sensors (bytes 523:524)
   
@@ -59,7 +59,7 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   
   # acc dynrange (bytes 521:522) and gyro_range (bytes 523:524)
   acc_dynrange = readBin(bin_data[521:522], "integer", size = 2, endian = "little")
-  if (return == "dynrange") return(acc_dynrange)
+  if (output == "dynrange") return(acc_dynrange)
   gyro_range = readBin(bin_data[523:524], "integer", size = 2, endian = "little")
   
   # -------------------------------------------------------------------------
@@ -157,7 +157,7 @@ readParmayMatrix = function(bin_file, return = c("all", "sf", "dynrange")[1],
   sf_acc_p1 = sf_acc_observed[which(packets_dur_s >= 10)[1]]
   expected_sf = c(12.5, 25, 50, 100)
   sf = expected_sf[which.min(abs(expected_sf - sf_acc_p1[1]))]
-  if (return == "sf") return(sf)
+  if (output == "sf") return(sf)
   
   # log set and observed sf in each packet
   QClog[, "frequency_set"] = sf

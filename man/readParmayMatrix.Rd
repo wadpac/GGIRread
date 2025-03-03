@@ -7,12 +7,12 @@ data, validates data integrity using CRC32 checksums, and outputs structured
 sensor data and quality check information.
 }
 \usage{
-readParmayMatrix(bin_file, return = c("all", "sf", "dynrange")[1], start = 1, end = NULL,
+readParmayMatrix(bin_file, output = c("all", "sf", "dynrange")[1], start = 1, end = NULL,
            desiredtz = "", configtz = NULL, interpolationType = 1)
 }
 \arguments{
   \item{bin_file}{Character. Path to the binary file to be read.}
-  \item{return}{Character. Specifies the type of output. Options include:
+  \item{output}{Character. Specifies the type of output. Options include:
     \describe{
       \item{"all"}{Returns the full processed data.}
       \item{"sf"}{Returns the sampling frequency of the accelerometer data.}
@@ -60,7 +60,7 @@ Each packet contains accelerometer, gyroscope, temperature, and heart rate data.
 }
 }
 \value{
-A list containing the following elements (when \code{return = "all"}):
+A list containing the following elements (when \code{output = "all"}):
 \itemize{
   \item \code{QClog}: A data frame with quality control information, including 
   checksum validation and data gaps.
@@ -79,9 +79,9 @@ A list containing the following elements (when \code{return = "all"}):
   \item \code{lastchunk}: Logical, indicating if the processed data includes the last packet in the file.
 }
 
-If \code{return = "sf"}, the function returns only the sampling frequency. 
+If \code{output = "sf"}, the function returns only the sampling frequency. 
 
-If \code{return = "dynrange"}, it returns the dynamic range of the accelerometer.
+If \code{output = "dynrange"}, it returns the dynamic range of the accelerometer.
 }
 \examples{
 \dontrun{
@@ -90,10 +90,10 @@ If \code{return = "dynrange"}, it returns the dynamic range of the accelerometer
 result <- readParmayMatrix("example_file.bin")
 
 # Get sampling frequency only
-sf <- readParmayMatrix("example_file.bin", return = "sf")
+sf <- readParmayMatrix("example_file.bin", output = "sf")
 
 # Get accelerometer dynamic range
-dynrange <- readParmayMatrix("example_file.bin", return = "dynrange")
+dynrange <- readParmayMatrix("example_file.bin", output = "dynrange")
 
 # Process a subset of packets
 result_subset <- readParmayMatrix("example_file.bin", start = 10, end = 20)
