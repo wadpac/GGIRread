@@ -1,4 +1,4 @@
-# Changes in version 1.0.3 (release date:??-02-2025)
+# Changes in version 1.0.3 (release date:07-03-2025)
 
 - Actiwatch: Extract marker button data from .AWD and .CSV files #72
 

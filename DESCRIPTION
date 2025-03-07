@@ -2,7 +2,7 @@ Package: GGIRread
 Type: Package
 Title: Wearable Accelerometer Data File Readers
 Version: 1.0.3
-Date: 2025-03-25
+Date: 2025-03-07
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
              person(given = "Patrick",family = "Bos",
