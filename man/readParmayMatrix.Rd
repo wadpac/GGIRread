@@ -8,7 +8,8 @@ sensor data and quality check information.
 }
 \usage{
 readParmayMatrix(bin_file, output = c("all", "sf", "dynrange")[1], start = 1, end = NULL,
-           desiredtz = "", configtz = NULL, interpolationType = 1)
+           desiredtz = "", configtz = NULL, interpolationType = 1,
+           read_acc = TRUE, read_gyro = FALSE, read_temp = TRUE, read_heart = FALSE)
 }
 \arguments{
   \item{bin_file}{Character. Path to the binary file to be read.}
@@ -26,6 +27,10 @@ readParmayMatrix(bin_file, output = c("all", "sf", "dynrange")[1], start = 1, en
   \item{interpolationType}{Integer. Specifies the type of interpolation 
   (see \code{\link{resample}}) to use when resampling data: 1 for Linear interpolation,
   2 for Nearest-neighbor interpolation.}
+  \item{read_acc}{Logical. Indicates whether accelerometer data should be read.}
+  \item{read_gyro}{Logical. Indicates whether gyroscope data should be read.}
+  \item{read_temp}{Logical. Indicates whether temperature data should be read.}
+  \item{read_heart}{Logical. Indicates whether heart rate data should be read.}
 }
 \details{
 Matrix devices store binary data in packets, with varying lengths depending on 
