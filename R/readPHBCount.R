@@ -17,16 +17,19 @@ readPHBCount = function(filename = NULL, timeformat = "%m/%d/%Y %H:%M:%S",
       deviceSN = unlist(strsplit(header[grep(pattern = "deviceSN", x = header)], " "))
       deviceSN = deviceSN[length(deviceSN)]
     }
-    colnames(data)[grep(pattern = "counts", x = colnames(data), ignore.case = TRUE)] = "counts"
-    colnames(data)[grep(pattern = "offWrist", x = colnames(data), ignore.case = TRUE)] = "nonwear"
-    for (varname in c("counts", "steps", "nonwear")) {
+    for (varname in c("activityCounts", "steps", "offWrist", "sleepEventMarker")) {
       if (varname %in% colnames(data) == FALSE) {
         stop(paste0("Expected column ", varname, " not found in file ", filename), call. = TRUE)
       }
     }
+    colnames(data)[grep(pattern = "activitycounts", x = colnames(data), ignore.case = TRUE)] = "counts"
+    colnames(data)[grep(pattern = "offWrist", x = colnames(data), ignore.case = TRUE)] = "nonwear"
+    colnames(data)[grep(pattern = "sleepEventMarker", x = colnames(data), ignore.case = TRUE)] = "marker"
+
     data$counts = as.numeric(data$counts)
     data$nonwear = as.numeric(data$counts)
     data$steps = as.numeric(data$steps)
+    data$marker = as.numeric(data$marker)
   } else {
     data = as.data.frame(readxl::read_excel(path = filename, col_types = "text", skip = 8), row.names = FALSE)
     colnames(data)[grep(pattern = "sleepWake", x = colnames(data), ignore.case = TRUE)] = "sleep"

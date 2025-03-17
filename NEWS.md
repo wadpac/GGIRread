@@ -1,7 +1,14 @@
-# Changes in version 1.0.3 (release date:X-X-2025)
+# Changes in version 1.0.4 (release date:X-X-2025)
 
 - Add functions for reading Parmay Tech Matrix sensor (BIN files) with accelerometer, gyroscope, temperature, and heart rate #70.
 
+# Changes in version 1.0.3 (release date:07-03-2025)
+
+- Actiwatch: Extract marker button data from .AWD and .CSV files #72
+
+- Philips Health Band: Extract marker button data from .xlsx files #72
+
+- Actical csv data: Improved detection of time series start. #73
 
 # Changes in version 1.0.2 (release date:25-10-2024)
 
