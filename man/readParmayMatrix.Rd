@@ -107,6 +107,8 @@ result_subset <- readParmayMatrix("example_file.bin", start = 10, end = 20)
 \references{
 For more details on Matrix devices', see: 
 \url{https://www.parmaytech.com/devices/en-matrix}
+For additional details on Matrix bin/BIN files structure, please contact manufacturer:
+\url{https://www.parmaytech.com/contact}
 }
 \seealso{
 \code{\link{resample}} for resampling sensor data.
