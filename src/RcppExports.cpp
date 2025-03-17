@@ -36,14 +36,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // find_matrix_packet_start
-IntegerVector find_matrix_packet_start(RawVector data, RawVector pattern);
-RcppExport SEXP _GGIRread_find_matrix_packet_start(SEXP dataSEXP, SEXP patternSEXP) {
+Rcpp::IntegerVector find_matrix_packet_start(std::string file_path, Rcpp::RawVector pattern, int chunk_size);
+RcppExport SEXP _GGIRread_find_matrix_packet_start(SEXP file_pathSEXP, SEXP patternSEXP, SEXP chunk_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< RawVector >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< RawVector >::type pattern(patternSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_matrix_packet_start(data, pattern));
+    Rcpp::traits::input_parameter< std::string >::type file_path(file_pathSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type pattern(patternSEXP);
+    Rcpp::traits::input_parameter< int >::type chunk_size(chunk_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_matrix_packet_start(file_path, pattern, chunk_size));
     return rcpp_result_gen;
 END_RCPP
 }
