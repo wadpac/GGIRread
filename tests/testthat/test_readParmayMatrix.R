@@ -19,9 +19,12 @@ test_that("File including accelerometer and heart rate data at 25Hz", {
   expect_equal(BIN$acc_dynrange, 8)
   expect_equal(as.numeric(BIN$starttime), BIN$data$time[1])
   expect_equal(nrow(BIN$data), 24525)
-  expect_equal(ncol(BIN$data), 7) # time, x, y, z, hr_raw, hr, remarks
+  expect_equal(ncol(BIN$data), 5) # time, x, y, z, remarks (no hr because deactivated by default)
   expect_equal(nrow(BIN$QClog), 4) # 4 packets in file
   expect_true(all(BIN$QClog$checksum_pass))
+  BIN = readParmayMatrix(bin_file = binfile, desiredtz = "Europe/Berlin", start = 1, end = NULL,
+                         read_heart = TRUE)
+  expect_equal(ncol(BIN$data), 7) # time, x, y, z, hr_raw, hr, remarks
 })
 
 test_that("File including accelerometer, heart rate, and temperature data at 100Hz", {
@@ -31,7 +34,10 @@ test_that("File including accelerometer, heart rate, and temperature data at 100
   expect_equal(BIN$acc_dynrange, 8)
   expect_equal(as.numeric(BIN$starttime), BIN$data$time[1])
   expect_equal(nrow(BIN$data), 39400)
-  expect_equal(ncol(BIN$data), 9) # time, x, y, z, boyd temp, ambient temp, hr_raw, hr, remarks
+  expect_equal(ncol(BIN$data), 7) # time, x, y, z, body temp, ambient temp,remarks
   expect_equal(nrow(BIN$QClog), 4) # 4 packets in file
   expect_true(all(BIN$QClog$checksum_pass))
+  BIN = readParmayMatrix(bin_file = binfile, desiredtz = "Europe/Berlin", start = 1, end = NULL,
+                         read_heart = TRUE)
+  expect_equal(ncol(BIN$data), 9) # time, x, y, z, body temp, ambient temp, hr_raw, hr, remarks
 })

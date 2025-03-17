@@ -279,7 +279,7 @@ readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
   }
   
   # lists to data frames
-  acc_data = do.call(rbind, acc_readings)
+  if (any(acc_count > 0) & read_acc) acc_data = do.call(rbind, acc_readings)
   if (any(gyro_count > 0) & read_gyro) gyro_data = do.call(rbind, gyro_readings)
   if (any(temp_count > 0) & read_temp) temp_data = do.call(rbind, temp_readings)
   if (any(heart_count > 0) & read_heart) {
@@ -387,7 +387,7 @@ readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
   data = data.frame(time = required_timepoints)
   
   # add sensors if available
-  if (any(gyro_count > 0) & read_acc) data[, c("acc_x", "acc_y", "acc_z")] = acc_resampled
+  if (any(acc_count > 0) & read_acc) data[, c("acc_x", "acc_y", "acc_z")] = acc_resampled
   if (any(gyro_count > 0) & read_gyro) data[, c("gyro_x", "gyro_y", "gyro_z")] = gyro_resampled
   if (any(temp_count > 0) & read_temp) data[, c("bodySurface_temp", "ambient_temp")] = temp_resampled
   if (any(heart_count > 0) & read_heart) data[, c("hr_raw", "hr")] = heart_resampled
