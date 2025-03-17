@@ -31,7 +31,7 @@ Rcpp::IntegerVector find_matrix_packet_start(std::string file_path, Rcpp::RawVec
         }
       }
       if (match) {
-        indices.push_back(static_cast<int>(position + static_cast<std::streamoff>(i) + 1));  // Convert to 1-based index
+        indices.push_back(static_cast<int>(static_cast<std::streamoff>(position) + i + 1)); // Convert to 1-based index
       }
     }
     
