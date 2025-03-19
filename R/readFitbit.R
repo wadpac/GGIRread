@@ -32,6 +32,7 @@ readFitbit = function(filename = NULL, desiredtz = "",
   if (dataType == "sleep") {
     epochSize = 30
     # Put all data in data.frame
+    first_block_found = FALSE
     for (i in 1:length(D)) {
       tmp = D[[i]][15]$levels
       data = as.data.frame(data.table::rbindlist(tmp$data, fill = TRUE))
@@ -44,8 +45,9 @@ readFitbit = function(filename = NULL, desiredtz = "",
       if ("shortData" %in% names(tmp)) {
         shortData = data.table::rbindlist(tmp$shortData, fill = TRUE)
         shortData$dateTime = as.POSIXct(shortData$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = configtz)
-        if (i == 1) {
+        if (first_block_found == FALSE) {
           all_shortData = shortData
+          first_block_found = TRUE
         } else {
           all_shortData = rbind(all_shortData, shortData)
         }
