@@ -29,7 +29,9 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   
   # Notes:
   #  - Packet lengths vary with the number of recordings in each packet, so dynamic definition of the length of each packet is needed
-  #  - Sampling frequency is not stable, similar to axivity, similar approach is followed (checksum and interpolation)
+  #  - Sampling frequency is not stable, with different number of sensor recordings across packets. 
+  #        - checksum is used to verify integrity of data in each packet 
+  #        - resampling is used with resample function to make the frequency stable
   #  - Gaps in data are not expected
   
   # -------------------------------------------------------------------------
