@@ -1,3 +1,7 @@
+# Changes in version 1.0.4 (release date:??-??-2025)
+
+- Fitbit: Fix bug preventing the loading of a sequence of json files. #76
+
 # Changes in version 1.0.3 (release date:07-03-2025)
 
 - Actiwatch: Extract marker button data from .AWD and .CSV files #72
