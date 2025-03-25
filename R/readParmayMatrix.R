@@ -23,9 +23,9 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   #  - 4-byte temperature recordings in packet (t)
   #  - 4-byte heart rate recordings in packet (h)
   #  - (6*a)-byte accelerometer recordings
-  #  - (6*a)-byte gyroscope recordings
-  #  - (4*a)-byte temperature recordings
-  #  - (4*a)-byte heart rate recordings
+  #  - (6*g)-byte gyroscope recordings
+  #  - (4*t)-byte temperature recordings
+  #  - (4*h)-byte heart rate recordings
   
   # Notes:
   #  - Packet lengths vary with the number of recordings in each packet, so dynamic definition of the length of each packet is needed
