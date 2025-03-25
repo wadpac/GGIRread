@@ -78,9 +78,12 @@
         \item{\code{hr_raw}, \code{hr}}{Resampled heart rate data.}
         \item{\code{remarks}}{Remarks extracted from the file header.}
       }
-    \item \code{sf}: Sampling frequency of the accelerometer data.
-    \item \code{acc_dynrange}: Dynamic range of the accelerometer.
-    \item \code{starttime}: Start time of the first packet in POSIXct format.
+    \item \code{header}: A list with the following elements:
+      \describe{
+        \item{\code{sf}}{Sampling frequency of the accelerometer data.}
+        \item{\code{acc_dynrange}}{Dynamic range of the accelerometer.}
+        \item{\code{starttime}}{Start time of the first packet in POSIXct format.}
+      }
     \item \code{lastchunk}: Logical, indicating if the processed data includes the last packet in the file.
   }
   

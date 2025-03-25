@@ -398,9 +398,9 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   return(list(
     QClog = QClog,
     data = data,
-    sf = sf,
-    acc_dynrange = acc_dynrange,
-    starttime = starttime_posix,
+    header = list(sf = sf,
+                  acc_dynrange = acc_dynrange,
+                  starttime = starttime_posix),
     lastchunk = lastchunk
   ))
 }
