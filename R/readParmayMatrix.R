@@ -59,9 +59,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     end = total_packets
     lastchunk = TRUE
   }
-  if (start < 1 || start > end) {
-    stop("Invalid start or end packet range.")
-  }
+  if (start < 1) start = 1
+  if (start > total_packets) return(NULL)
   
   # acc dynrange (bytes 521:522) and gyro_range (bytes 523:524)
   seek(con, where = 520, origin = "start")
