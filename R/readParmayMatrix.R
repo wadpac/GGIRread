@@ -1,4 +1,4 @@
-readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
+readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
                             start = 1, end = NULL,
                             desiredtz = "", configtz = NULL,
                             interpolationType = 1,
@@ -36,10 +36,9 @@ readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
   # 1 - read file and extract header information
 
   # open connection to read the binary file
-  con = file(bin_file, "rb")
+  con = file(filename, "rb")
   on.exit(close(con))
-  # bin_data = readBin(bin_file, "raw", file.info(bin_file)$size)
-  
+
   # Validate the header recognition string (bytes 513:516)
   seek(con, where = 512, origin = "start")
   header_bytes = readBin(con, "raw", n = 4)
@@ -78,8 +77,8 @@ readParmayMatrix = function(bin_file, output = c("all", "sf", "dynrange")[1],
   
   # find packets start
   packet_header_bytes = as.raw(c(0x4D, 0x44, 0x54, 0x43, 0x50, 0x41, 0x43, 0x4B))
-  packet_starti = find_matrix_packet_start(bin_file, packet_header_bytes)
-  packet_endi = c(packet_starti[-1] - 1, file.info(bin_file)$size)
+  packet_starti = find_matrix_packet_start(filename, packet_header_bytes)
+  packet_endi = c(packet_starti[-1] - 1, file.info(filename)$size)
   
   # validate packet headers (i.e., nr. of appearances of MDTCPACK in files)
   if (length(packet_starti) != total_packets) {

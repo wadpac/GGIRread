@@ -7,12 +7,12 @@
   sensor data and quality check information.
 }
 \usage{
-  readParmayMatrix(bin_file, output = c("all", "sf", "dynrange")[1], start = 1, end = NULL,
+  readParmayMatrix(filename, output = c("all", "sf", "dynrange")[1], start = 1, end = NULL,
              desiredtz = "", configtz = NULL, interpolationType = 1,
              read_acc = TRUE, read_gyro = FALSE, read_temp = TRUE, read_heart = FALSE)
 }
 \arguments{
-  \item{bin_file}{Character. Path to the binary file to be read.}
+  \item{filename}{Character. Path to the binary file to be read.}
   \item{output}{Character. Specifies the type of output. Options include:
     \describe{
       \item{"all"}{Returns the full processed data.}
