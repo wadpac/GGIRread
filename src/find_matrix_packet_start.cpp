@@ -5,7 +5,7 @@
 Rcpp::IntegerVector find_matrix_packet_start(std::string file_path, Rcpp::RawVector pattern, int chunk_size = 1048576) {
   std::ifstream file(file_path, std::ios::binary);
   if (!file) {
-    Rcpp::stop("Failed to open file.");
+    Rcpp::stop("Failed to open file: '%s'", file_path);
   }
   
   int pattern_len = pattern.size();
