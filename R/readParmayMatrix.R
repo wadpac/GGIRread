@@ -46,7 +46,7 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   header_bytes = readBin(con, "raw", n = 4)
   header_string = rawToChar(header_bytes[header_bytes != 0], multiple = FALSE)
   if (header_string != "MDTC") {
-    stop("Invalid header recognition string.")
+    stop(paste0(basename(filename), ": Invalid header recognition string."))
   }
   
   # Extract the total number of packets (bytes 517:520)
