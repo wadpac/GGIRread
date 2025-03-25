@@ -6,6 +6,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
                             read_temp = TRUE, read_heart = FALSE) {
   
   # Matrix devices binary files are organized in packets of data.
+  # https://www.parmaytech.com/devices/en-matrix
+  # https://drive.google.com/drive/folders/1WkeBUjcP52GFwaJPkTL9sQ1YcX-_P8pJ
   
   # The header information contains:
   #  - remarks (empty in all files I have tested): bytes 1:512
