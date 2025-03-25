@@ -1,5 +1,5 @@
 library(GGIRread)
-context("reading Parmay Matrix .bin data")
+context("reading Parmay Matrix .BIN data")
 test_that("File including only accelerometer data at 12.5Hz", {
   binfile  = system.file("testfiles/mtx_12.5Hz_acc.BIN", package = "GGIRread")[1]
   BIN = readParmayMatrix(bin_file = binfile, desiredtz = "Europe/Berlin", start = 1, end = NULL)
