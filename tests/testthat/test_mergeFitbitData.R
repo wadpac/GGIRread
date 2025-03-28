@@ -15,8 +15,10 @@ test_that("merging of PHB files goes correctly", {
   expect_equal(format(D$dateTime[1]), "1995-06-24 16:00:00")
   
   # apply function to merge the files
-  expect_warning(mergeFitbitData(filenames = c(file1, file2, file3),
-                      desiredtz =  "Europe/Amsterdam"),
-               regexp = "Time series*")
+  D2 = mergeFitbitData(filenames = c(file1, file2, file3),
+                      desiredtz =  "Europe/Amsterdam")
+  expect_true(all(colnames(D2) %in% c("dateTime", "steps", "calories", "sleeplevel")))
+  expect_equal(nrow(D2), 47874)
+  rm(D2, D)
 })
  
