@@ -9,6 +9,10 @@ GENEActivReader <- function(filename, start = 0L, end = 0L, progress_bar = FALSE
     .Call(`_GGIRread_GENEActivReader`, filename, start, end, progress_bar)
 }
 
+find_matrix_packet_start <- function(file_path, pattern, chunk_size = 1048576L) {
+    .Call(`_GGIRread_find_matrix_packet_start`, file_path, pattern, chunk_size)
+}
+
 resample <- function(raw, rawTime, time, stop, type = 1L) {
     .Call(`_GGIRread_resample`, raw, rawTime, time, stop, type)
 }
