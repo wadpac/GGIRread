@@ -4,12 +4,12 @@ test_that("Fitbit json is correctly read", {
   # Sleep
   file = system.file("testfiles/sleep-1995-06-23_Fitbit.json", package = "GGIRread")
   D = readFitbit(filename = file, desiredtz =  "Europe/Amsterdam")
-  expect_equal(nrow(D), 47059)
-  expect_equal(ncol(D), 3)
+  expect_equal(nrow(D), 695)
+  expect_equal(ncol(D), 2)
   expect_equal(format(D$dateTime[1]), "1995-06-24 22:47:30")
   TB = table(D$sleeplevel)
   expect_equal(names(TB), c("asleep", "awake", "deep", "light", "rem", "restless", "wake"))
-  expect_equal(as.numeric(TB), c(146, 2, 118, 287, 67, 10, 65))
+  expect_equal(as.numeric(TB), c(146, 2, 118, 285, 69, 10, 65))
   
   # Steps
   file = system.file("testfiles/steps-1995-06-23_Fitbit.json", package = "GGIRread")

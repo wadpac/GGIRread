@@ -8,18 +8,18 @@ mergeFitbitData = function(filenames = NULL, desiredtz = "", configtz = NULL) {
     if (cnt == 1) {
       data = D
     } else {
-      if (length(intersect(x = data$dateTime, D$dateTime)) == 0) {
-        warning(paste0("Time series do not intersect for files ",
-                       basename(filenames[cnt]), " and ", basename(filenames[cnt - 1])),
-                call. = FALSE)
-      }
       # double names is possible when recording is split across json files
       # in that case there may be multiple calories, steps and sleep files
       doubleNames = colnames(D)[colnames(D) %in% colnames(data)] 
       new_times = which(D$dateTime %in% data$dateTime == FALSE)
       double_times = which(D$dateTime %in% data$dateTime == TRUE)
       if (length(new_times) > 0) {
-        data = merge(data, D[new_times, ], by = doubleNames, all = TRUE)
+        if (all(colnames(data) %in% colnames(D))) {
+          data = rbind(data, D[new_times, ])
+          data = data[order(data$dateTime),]
+        } else {
+          data = merge(data, D[new_times, ], by = doubleNames, all = TRUE)
+        }
       }
       if (length(double_times) > 0) {
         by_names = colnames(D)[colnames(D) %in% c("dateTime", "seconds")]
@@ -33,13 +33,21 @@ mergeFitbitData = function(filenames = NULL, desiredtz = "", configtz = NULL) {
             # replace previously missing values by new values
             data2[replace_times, xcol] = data2[replace_times, ycol]
           }
+          colnames(data2)[xcol] = gsub(pattern = "[.]x", replacement = "", x = colnames(data2)[xcol])
+          data = data2[, -ycol]
+        } else {
+          data = data2
         }
-        colnames(data2)[xcol] = gsub(pattern = "[.]x", replacement = "", x = colnames(data2)[xcol])
-        data = data2[, -ycol]
       }
     }
     cnt = cnt + 1
   }
   data = data[order(data$dateTime),]
+  
+  # fill gaps
+  timeRange = range(data$dateTime)
+  epochSize = min(diff(as.numeric(data$dateTime[1:pmin(10, nrow(data))])))
+  timeFrame = data.frame(dateTime = seq( timeRange[1], timeRange[2], by = epochSize))
+  data = merge(data, timeFrame, by = c("dateTime"), all.y = TRUE)
   return(data)
 }

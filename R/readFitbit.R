@@ -56,19 +56,18 @@ readFitbit = function(filename = NULL, desiredtz = "",
     # Expand to full time series
     all_data = all_data[order(all_data$dateTime),]
     D = as.data.frame(lapply(all_data, rep, all_data$seconds/epochSize))
-    all_shortData = all_shortData[order(all_shortData$dateTime),]
+    D$index = unlist(mapply(seq, rep(0, nrow(all_data)), (all_data$seconds/epochSize) - 1))
+    D$dateTime = D$dateTime + D$index * epochSize
     S = as.data.frame(lapply(all_shortData, rep, all_shortData$seconds/epochSize))
+    S$index = unlist(mapply(seq, rep(0, nrow(all_shortData)), (all_shortData$seconds/epochSize) - 1))
+    S$dateTime = S$dateTime + S$index * epochSize
     D = rbind(D, S)
+    D = D[, -which(colnames(D) %in% c("seconds", "index"))]
     D = D[order(D$dateTime),]
-    D$seconds = epochSize    
-    dup_indices = which(duplicated(D$dateTime))
-    for (j in dup_indices) {
-      D$dateTime[j] = D$dateTime[j - 1] + epochSize
-    }
-    D = handleTimeGaps(D, epochSize) # Handle new time gaps, if any
-    # wake overrules other classifications
     dup_times = unique(D$dateTime[duplicated(D$dateTime)])
+    # wake overrules other classifications
     D = D[-which(D$dateTime %in% dup_times & D$level != "wake"), ]
+    D = D[!duplicated(D),]
     colnames(D)[2] = "sleeplevel"
   } else if (dataType == "steps" || dataType == "calories") {
     data = as.data.frame(data.table::rbindlist(D, fill = TRUE))
