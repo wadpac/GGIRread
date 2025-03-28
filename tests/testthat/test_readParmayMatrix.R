@@ -59,7 +59,7 @@ test_that("File including accelerometer and gyroscope", {
 })
 
 
-test_that("Identification of corrupt packets (1st packet is corrupted)", {
+test_that("Identification of corrupt files and foreseen errors", {
   binfile  = system.file("testfiles/mtx_corrupted.bin", package = "GGIRread")[1]
   BIN = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", start = 1, end = NULL)
   expect_equal(BIN$QClog$checksum_pass, c(F, T, T, T))
@@ -74,4 +74,15 @@ test_that("Identification of corrupt packets (1st packet is corrupted)", {
   expect_equal(BIN$data$acc_z[1], 1)
   expect_true(is.na(BIN$data$bodySurface_temp[1]))
   expect_true(is.na(BIN$data$ambient_temp[1]))
+  # also, identification of full corrupted file
+  binfile  = system.file("testfiles/mtx_corrupted_full.bin", package = "GGIRread")[1]
+  expect_error(readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", 
+                                start = 1, end = NULL), 
+               regexp = "Invalid header recognition string")
+  # wrong indexing
+  binfile  = system.file("testfiles/mtx_12.5Hz_acc_gyro.BIN", package = "GGIRread")[1]
+  BIN = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", start = -1, end = NULL)
+  expect_equal(nrow(BIN$QClog), 1) # 1 packet in file
+  BIN = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", start = 8, end = NULL)
+  expect_true(is.null(BIN$QClog)) # start is beyond total packets, meaning file was already fully read and this should be NULL
 })
