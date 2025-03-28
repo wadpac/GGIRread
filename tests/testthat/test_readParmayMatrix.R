@@ -60,7 +60,7 @@ test_that("File including accelerometer and gyroscope", {
 
 
 test_that("Identification of corrupt packets (1st packet is corrupted)", {
-  binfile  = system.file("testfiles/mtx_corrupted.BIN", package = "GGIRread")[1]
+  binfile  = system.file("testfiles/mtx_corrupted.bin", package = "GGIRread")[1]
   BIN = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", start = 1, end = NULL)
   expect_equal(BIN$QClog$checksum_pass, c(F, T, T, T))
   expect_equal(BIN$header$sf, 100)
