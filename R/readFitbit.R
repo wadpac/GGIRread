@@ -54,29 +54,21 @@ readFitbit = function(filename = NULL, desiredtz = "",
       }
     }
     # Expand to full time series
+    all_data = all_data[order(all_data$dateTime),]
     D = as.data.frame(lapply(all_data, rep, all_data$seconds/epochSize))
-    D$dateTime = seq(from = D$dateTime[1], length.out = nrow(D), by = epochSize) 
-    D$seconds = epochSize
-    D = handleTimeGaps(D, epochSize) # Handle time gaps, if any
-
-    S = as.data.frame(lapply(all_shortData, rep, all_shortData$seconds/30))
-    S$dateTime = seq(from = S$dateTime[1], length.out = nrow(S), by = 30) 
-    S$seconds = epochSize
-    
-    # merge in shortData (S)
-    matching_times = which(S$dateTime %in% D$dateTime ==  TRUE)
-    non_matching_times = which(S$dateTime %in% D$dateTime == FALSE)
-    if (length(matching_times) > 0) {
-      times_to_replace = S$dateTime[matching_times]
-      D[which(D$dateTime %in% times_to_replace), ] = S[matching_times,]
-    }
-    if (length(non_matching_times) > 0) {
-      D = rbind(D, S[non_matching_times,])
+    all_shortData = all_shortData[order(all_shortData$dateTime),]
+    S = as.data.frame(lapply(all_shortData, rep, all_shortData$seconds/epochSize))
+    D = rbind(D, S)
+    D = D[order(D$dateTime),]
+    D$seconds = epochSize    
+    dup_indices = which(duplicated(D$dateTime))
+    for (j in dup_indices) {
+      D$dateTime[j] = D$dateTime[j - 1] + epochSize
     }
     D = handleTimeGaps(D, epochSize) # Handle new time gaps, if any
-    
-    # Order time stamps
-    D = D[order(D$dateTime), ]
+    # wake overrules other classifications
+    dup_times = unique(D$dateTime[duplicated(D$dateTime)])
+    D = D[-which(D$dateTime %in% dup_times & D$level != "wake"), ]
     colnames(D)[2] = "sleeplevel"
   } else if (dataType == "steps" || dataType == "calories") {
     data = as.data.frame(data.table::rbindlist(D, fill = TRUE))
