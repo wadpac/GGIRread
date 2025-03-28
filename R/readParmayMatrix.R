@@ -20,10 +20,10 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   #  - 4-byte CRC32 indicator
   #  - 4-byte start timestamp of the packet
   #  - 4-byte end timestamp of the packet
-  #  - 4-byte accelerometer recordings in packet (a)
-  #  - 4-byte gyroscope recordings in packet (g)
-  #  - 4-byte temperature recordings in packet (t)
-  #  - 4-byte heart rate recordings in packet (h)
+  #  - 4-byte number of accelerometer recordings in packet (a)
+  #  - 4-byte number of gyroscope recordings in packet (g)
+  #  - 4-byte number of temperature recordings in packet (t)
+  #  - 4-byte number of heart rate recordings in packet (h)
   #  - (6*a)-byte accelerometer recordings
   #  - (6*g)-byte gyroscope recordings
   #  - (4*t)-byte temperature recordings
