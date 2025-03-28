@@ -3,7 +3,7 @@ export(readGenea, readAxivity, readGENEActiv,
        readActiGraphCount, readActiwatchCount,
        readActicalCount, readPHBCount,
        readFitbit, mergePHBdata,
-       mergeFitbitData)
+       mergeFitbitData, readParmayMatrix)
 useDynLib(GGIRread, .registration = TRUE)
 importFrom(Rcpp, sourceCpp)
 importFrom(data.table, fread)
