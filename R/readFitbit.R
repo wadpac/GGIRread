@@ -32,6 +32,7 @@ readFitbit = function(filename = NULL, desiredtz = "",
   if (dataType == "sleep") {
     epochSize = 30
     # Put all data in data.frame
+    first_block_found = FALSE
     for (i in 1:length(D)) {
       tmp = D[[i]][15]$levels
       data = as.data.frame(data.table::rbindlist(tmp$data, fill = TRUE))
@@ -44,37 +45,29 @@ readFitbit = function(filename = NULL, desiredtz = "",
       if ("shortData" %in% names(tmp)) {
         shortData = data.table::rbindlist(tmp$shortData, fill = TRUE)
         shortData$dateTime = as.POSIXct(shortData$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = configtz)
-        if (i == 1) {
+        if (first_block_found == FALSE) {
           all_shortData = shortData
+          first_block_found = TRUE
         } else {
           all_shortData = rbind(all_shortData, shortData)
         }
       }
     }
     # Expand to full time series
+    all_data = all_data[order(all_data$dateTime),]
     D = as.data.frame(lapply(all_data, rep, all_data$seconds/epochSize))
-    D$dateTime = seq(from = D$dateTime[1], length.out = nrow(D), by = epochSize) 
-    D$seconds = epochSize
-    D = handleTimeGaps(D, epochSize) # Handle time gaps, if any
-
-    S = as.data.frame(lapply(all_shortData, rep, all_shortData$seconds/30))
-    S$dateTime = seq(from = S$dateTime[1], length.out = nrow(S), by = 30) 
-    S$seconds = epochSize
-    
-    # merge in shortData (S)
-    matching_times = which(S$dateTime %in% D$dateTime ==  TRUE)
-    non_matching_times = which(S$dateTime %in% D$dateTime == FALSE)
-    if (length(matching_times) > 0) {
-      times_to_replace = S$dateTime[matching_times]
-      D[which(D$dateTime %in% times_to_replace), ] = S[matching_times,]
-    }
-    if (length(non_matching_times) > 0) {
-      D = rbind(D, S[non_matching_times,])
-    }
-    D = handleTimeGaps(D, epochSize) # Handle new time gaps, if any
-    
-    # Order time stamps
-    D = D[order(D$dateTime), ]
+    D$index = unlist(mapply(seq, rep(0, nrow(all_data)), (all_data$seconds/epochSize) - 1))
+    D$dateTime = D$dateTime + D$index * epochSize
+    S = as.data.frame(lapply(all_shortData, rep, all_shortData$seconds/epochSize))
+    S$index = unlist(mapply(seq, rep(0, nrow(all_shortData)), (all_shortData$seconds/epochSize) - 1))
+    S$dateTime = S$dateTime + S$index * epochSize
+    D = rbind(D, S)
+    D = D[, -which(colnames(D) %in% c("seconds", "index"))]
+    D = D[order(D$dateTime),]
+    dup_times = unique(D$dateTime[duplicated(D$dateTime)])
+    # wake overrules other classifications
+    D = D[-which(D$dateTime %in% dup_times & D$level != "wake"), ]
+    D = D[!duplicated(D),]
     colnames(D)[2] = "sleeplevel"
   } else if (dataType == "steps" || dataType == "calories") {
     data = as.data.frame(data.table::rbindlist(D, fill = TRUE))
