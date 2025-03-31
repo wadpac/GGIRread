@@ -1,4 +1,4 @@
-# Changes in version 1.0.4 (release date:X-X-2025)
+# Changes in version 1.0.4 (release date:31-03-2025)
 
 - Fitbit: Fix bug preventing the loading of a sequence of json files. #76
 
