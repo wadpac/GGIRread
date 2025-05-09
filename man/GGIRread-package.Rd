@@ -14,8 +14,8 @@
   \tabular{ll}{
   Package: \tab GGIRread\cr
   Type: \tab Package\cr
-  Version: \tab 1.0.4\cr
-  Date: \tab 2025-03-31\cr
+  Version: \tab 1.0.5\cr
+  Date: \tab 2025-05-09\cr
   License: \tab LGPL (>= 2.0, < 3)\cr
   }
 }

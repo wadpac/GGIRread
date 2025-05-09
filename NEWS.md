@@ -1,4 +1,4 @@
-# Changes in version 1.0.5 (release date:??-??-2025)
+# Changes in version 1.0.5 (release date:09-05-2025)
 
 - Fitbit: Now also loads heart rate data #78
 
