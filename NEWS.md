@@ -1,3 +1,9 @@
+# Changes in version 1.0.5 (release date:??-??-2025)
+
+- Fitbit: Now also loads heart rate data #78
+
+- ActiWatch: Enable recognition of file extension when filename has more than one dot.
+
 # Changes in version 1.0.4 (release date:31-03-2025)
 
 - Fitbit: Fix bug preventing the loading of a sequence of json files. #76

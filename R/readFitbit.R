@@ -77,6 +77,15 @@ readFitbit = function(filename = NULL, desiredtz = "",
     D = handleTimeGaps(data, epochSize = 30)
     D$value = as.numeric(D$value) / 2
     colnames(D)[2] = dataType
+  } else if (dataType == "heart_rate") {
+    collapseHR = function(x) {
+      y = data.frame(dateTime = x$dateTime, bpm = x$value$bpm, confidence = x$value$confidence)
+      return(y)
+    }
+    D = as.data.frame(data.table::rbindlist(lapply(D, collapseHR), fill = TRUE))
+    D = D[!duplicated(D),]
+    D$dateTime = as.POSIXct(D$dateTime, format = "%m/%d/%y %H:%M:%S", tz = configtz)
+    colnames(D)[2] = dataType
   } else {
     stop("File type not recognised")
   }
