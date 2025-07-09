@@ -11,8 +11,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   
   # The header information contains:
   #  - remarks (empty in all files I have tested): bytes 1:512
-  #  - Count of the total number of packets in file (bytes 513:516)
-  #  - header string = "MDTC" (bytes 517:520, if not there -> file corrupt)
+  #  - header string = "MDTC" (bytes 513:516, if not there -> file corrupt)
+  #  - Count of the total number of packets in file (bytes 517:520)
   #  - range of the acc (bytes 521:522) and the gyro sensors (bytes 523:524)
   
   # Each packet contains the following information:
@@ -202,7 +202,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     acc_readings = lapply(seq_along(acc_starts), function(i) {
       seek(con, acc_starts[i] - 1, "start")
       readings = readBin(con, what = "integer", size = 2, n = 3 * acc_count[i], endian = "little")
-      matrix(readings * (acc_dynrange / 32767), ncol = 3, byrow = T)
+      denominator = ifelse(readings >= 0, 32767, 32768)
+      matrix(readings * (acc_dynrange / denominator), ncol = 3, byrow = T)
     })
   }
   
@@ -214,7 +215,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
       gyro_readings = lapply(seq_along(gyro_starts), function(i) {
         seek(con, gyro_starts[i] - 1, "start")  
         readings = readBin(con, what = "integer", size = 2, n = 3 * gyro_count[i], endian = "little")
-        matrix(readings * (gyro_range / 32767), ncol = 3, byrow = T)
+        denominator = ifelse(readings >= 0, 32767, 32768)
+        matrix(readings * (gyro_range / denominator), ncol = 3, byrow = T)
       })
     }
     prev_stops = gyro_stops
