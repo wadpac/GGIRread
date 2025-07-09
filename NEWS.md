@@ -1,3 +1,9 @@
+# Changes in version 1.0.6 (release date:?-?-2025)
+
+- Parmay Matrix: 
+    -  Fixed minor bug in the conversion of accelerometer and gyroscope readings #82
+    -  Correct documentation for header structure of bin files in readParmayMatrix #82
+
 # Changes in version 1.0.5 (release date:09-05-2025)
 
 - Fitbit: Now also loads heart rate data #78
