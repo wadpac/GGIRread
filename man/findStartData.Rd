@@ -8,7 +8,7 @@
   Actiwatch and Actical data.
 }
 \usage{
-  findStartData(filename, quote, startindex)
+  findStartData(filename, quote, startindex, blockname = NULL)
 }
 \arguments{
   \item{filename}{
@@ -20,6 +20,10 @@
   \item{startindex}{
     Start index where to start searching. For Actical we start at 300 while
     for Actiwatch we start at 1000.
+  }
+  \item{blockname}{
+    Character with name of data block to search for.
+    For Actical we use "epoch-by-epoch".
   }
 }
 \value{
