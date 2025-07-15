@@ -361,7 +361,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     stop("At least file must be specified")
   }
   # Get file size in data blocks
-  numDBlocks = round(file.info(filename)$size / blockBytes) - 2
+  numDBlocks = round(file.size(filename) / blockBytes) - 2
   # Open file
   fid = file(filename,"rb")
   on.exit({
