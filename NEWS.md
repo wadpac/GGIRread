@@ -1,3 +1,7 @@
+# Changes in version 1.0.6 (release date:??-??-2025)
+
+- Actical: Improve detection of recording start #85
+
 # Changes in version 1.0.5 (release date:09-05-2025)
 
 - Fitbit: Now also loads heart rate data #78

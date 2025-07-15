@@ -1,6 +1,27 @@
-findStartData = function(filename, quote, startindex) {
+findStartData = function(filename, quote, startindex, blockname = NULL) {
   # Function used to find start of time series in Actiwatch and Actical data
-  # ! Assumptions that timeseries start before line 1000
+  # ! Assumption that time series start in first 3000 lines
+  # ! Assumption count data are preceded by a block header with name blockname
+  if (!is.null(blockname)) {
+    quote = detectQuote(filename = filename, skip = startindex)
+    testraw = data.table::fread(input = filename,
+                                header = FALSE, sep = ",",
+                                nrows = 3000, data.table = FALSE, 
+                                quote = quote, fill = TRUE)
+    
+    startindex_temp = grep(pattern = blockname, x = testraw[,1], ignore.case = TRUE)
+    if (length(startindex_temp) != 0) {
+      temp = testraw[(startindex_temp + 1):(startindex_temp + 20),1]
+      temp = unlist(lapply(temp, FUN = function(x) unlist(strsplit(x, ","))[1]))
+      epochnumbers = suppressWarnings(as.numeric(temp))
+      startindex_temp = startindex_temp + which(!is.na(epochnumbers))[1]
+    }
+    if (length(startindex_temp) != 0) return(startindex_temp)
+    startindex = startindex_temp
+  }
+  # Original approach:
+  # ! Assumption that timeseries start before line 1000
+  # ! Assumption that epoch column start with 1
   while (startindex > 0) {
     testraw = data.table::fread(input = filename,
                                 header = FALSE, sep = ",", skip = startindex,
