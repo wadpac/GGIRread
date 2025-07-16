@@ -1,4 +1,4 @@
-# Changes in version 1.0.6 (release date:16-07-2025)
+# Changes in version 1.0.6 (GitHub-only-release date:16-07-2025)
 
 - Actical: Improve detection of recording start #85
 
