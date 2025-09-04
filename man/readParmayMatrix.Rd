@@ -112,9 +112,9 @@
 }
 \references{
   For more details on Matrix devices', see: 
-  \url{https://www.parmaytech.com/devices/en-matrix}
+  \url{https://www.matrixwearable.net/}
   For additional details on Matrix bin/BIN files structure, please contact manufacturer:
-  \url{https://www.parmaytech.com/contact}
+  \url{https://www.matrixwearable.net/#!/contact}
 }
 \seealso{
   \code{\link{resample}} for resampling sensor data.
