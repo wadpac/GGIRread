@@ -8,7 +8,7 @@ readActicalCount = function(filename = NULL,
   # ! Assumptions that timeseries start before line 1000
   startindex = 300
   quote = detectQuote(filename = filename, skip = startindex)
-  startindex = findStartData(filename, quote, startindex)
+  startindex = findStartData(filename, quote, startindex, blockname = "epoch-by-epoch")
   # -1 because Actical starts at epoch 0 while function looks for epoch 1
   startindex = startindex - 1 
   D = data.table::fread(input = filename, sep = ",", skip = startindex,
@@ -29,7 +29,7 @@ readActicalCount = function(filename = NULL,
   colnames = data.table::fread(input = filename, data.table = FALSE,
                                header = FALSE, sep = ",",
                                skip = dashedLineIndex + 1,
-                               nrows = (startindex - dashedLineIndex) - 2, quote = quote)
+                               nrows = (startindex - dashedLineIndex) - 2, quote = quote, fill = TRUE)
   collapse = function(x) {
     return(paste0(x, collapse = "_"))
   }
