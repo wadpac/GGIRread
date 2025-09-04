@@ -2,7 +2,8 @@
 
 - Parmay Matrix: 
     -  Fixed minor bug in the conversion of accelerometer and gyroscope readings #82
-    -  Correct documentation for header structure of bin files in readParmayMatrix #82
+    -  Correct documentation for header structure of bin files in readParmayMatrix #83
+    -  Update Parmay matrix website in README and readParmayMatrix function documentation #87
 
 # Changes in version 1.0.5 (release date:09-05-2025)
 
