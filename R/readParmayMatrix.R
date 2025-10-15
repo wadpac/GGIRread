@@ -57,11 +57,9 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   total_packets = readBin(tPackets_bytes, "integer", size = 4, endian = "little")
   
   # Validate start and end packets
-  lastchunk = FALSE
   if (is.null(end)) end = total_packets
   if (end >= total_packets) {
     end = total_packets
-    lastchunk = TRUE
   }
   if (start < 1) start = 1
   if (start > total_packets) return(NULL)
@@ -83,10 +81,27 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   packet_starti = find_matrix_packet_start(filename, packet_header_bytes)
   packet_endi = c(packet_starti[-1] - 1, file.info(filename)$size)
   
+  # save number of packets declared and observed
+  n_declared = total_packets
+  n_observed_file = length(packet_starti)
+  
   # validate packet headers (i.e., nr. of appearances of MDTCPACK in files)
-  if (length(packet_starti) != total_packets) {
-    stop(paste0(basename(filename), ": Probably corrupted file"))
-  }
+  # in case that empty packets have been added at the end, only use valid packets
+  n_use = min(total_packets, length(packet_starti)) 
+  packet_starti = packet_starti[seq_len(n_use)]
+  packet_endi = packet_endi[seq_len(n_use)]
+  
+  # Apply chunking AFTER truncation
+  i_from = max(1, start)
+  i_to = if (is.null(end)) n_use else min(end, n_use)
+  idx = seq.int(i_from, i_to)
+  n_rows = length(idx)
+  
+  packet_starti = packet_starti[idx]
+  packet_endi   = packet_endi[idx]
+  
+  # lastchunk should reflect the truncated space
+  lastchunk = (i_to == n_use)
   
   # start time
   # starttime_indices = (packet_starti[1] + 12):(packet_starti[1] + 15)
@@ -99,10 +114,6 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     starttime_posix = as.POSIXct(starttime, origin = "1970-1-1", tz = configtz)
   }  
   
-  # Select chunk of interest
-  packet_starti = packet_starti[start:end]
-  packet_endi = packet_endi[start:end]
-  
   # -------------------------------------------------------------------------
   # 3 - Check packets integrity with CRC32 checksum
   
@@ -114,15 +125,15 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   crc32_stored = ifelse(crc32_stored_signed < 0, crc32_stored_signed + 2^32, crc32_stored_signed)
   
   # observed CRC32
-  crc32_observed <- vapply(seq_along(packet_starti), function(i) {
+  crc32_observed = vapply(seq_along(packet_starti), function(i) {
     seek(con, packet_starti[i] + 11, "start")  # Move to correct position
     
-    size <- packet_endi[i] - packet_starti[i] - 11  # Calculate the actual size
+    size = packet_endi[i] - packet_starti[i] - 11  # Calculate the actual size
     if (size <= 0) return(NA_real_)  # Handle edge cases where size is invalid
     
-    crc32_observed_raw <- readBin(con, what = "raw", n = size, endian = "little")
+    crc32_observed_raw = readBin(con, what = "raw", n = size, endian = "little")
     
-    crc32_hex <- digest::digest(crc32_observed_raw, algo = "crc32", serialize = FALSE)
+    crc32_hex = digest::digest(crc32_observed_raw, algo = "crc32", serialize = FALSE)
     as.numeric(paste0("0x", crc32_hex))
   }, numeric(1))
   
@@ -131,16 +142,18 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   
   # Initialize Quality-Check (QC) data frame
   QClog = data.frame(
-    checksum_pass = rep(TRUE, length(start:end)),
-    blockID = start:end,
-    start = integer(length(start:end)),
-    end = integer(length(start:end)),
-    blockLengthSeconds = numeric(length(start:end)),
-    frequency_set = numeric(length(start:end)),
-    frequency_observed = numeric(length(start:end)),
-    imputed = logical(length(start:end)),
-    gap_with_previous_block_secs = numeric(length(start:end)), 
-    start_time_adjustment_secs = numeric(length(start:end))
+    checksum_pass = rep(TRUE, n_rows),
+    blockID = idx,
+    start = integer(n_rows),
+    end = integer(n_rows),
+    blockLengthSeconds = numeric(n_rows),
+    frequency_set = numeric(n_rows),
+    frequency_observed = numeric(n_rows),
+    imputed = logical(n_rows),
+    gap_with_previous_block_secs = numeric(n_rows), 
+    start_time_adjustment_secs = numeric(n_rows),
+    declared_packets = rep(n_declared, n_rows),
+    observed_packets = rep(n_observed_file, n_rows)
   )
   
   # log corrupt packets
