@@ -279,11 +279,33 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
         x[corrupt_packets] = NA
         prev_index = ifelse(any(!is.na(x[1:(i - 1)])), 
                             max(x[1:(i - 1)], na.rm = T), NA)
-        prev_temp = temp_readings[[prev_index]][nrow(temp_readings[[prev_index]]), ]
+        if (temp_count[prev_index] > 0) {
+          prev_temp = temp_readings[[prev_index]][nrow(temp_readings[[prev_index]]), ]
+        } else {
+          prev_temp = NA
+        }
         next_index = ifelse(any(!is.na(x[(i + 1):length(x)])), 
                             min(x[(i + 1):length(x)], na.rm = T), NA)
-        next_temp = temp_readings[[next_index]][1, ]
-        mean_temp = (prev_temp + next_temp) / 2
+        if (!is.na(next_index)) {
+          if (temp_count[next_index] > 0) {
+            next_temp = temp_readings[[next_index]][1, ]
+          } else {
+            next_temp = NA
+          }
+          if (!is.na(prev_temp[1]) & !is.na(next_temp[1])) {
+            mean_temp = (prev_temp + next_temp) / 2
+          } else {
+            mean_temp = NA
+          } 
+        } else {
+          # if the last packet is corrupted, then impute by last temperature observed
+          if (!is.na(prev_temp[1])) {
+            mean_temp = prev_temp
+          } else {
+            mean_temp = NA
+          } 
+        }
+       
         temp_readings[[i]] = matrix(mean_temp, nrow = nrow(temp_readings[[i]]),
                                     ncol = 2, byrow = T)
       }
@@ -404,6 +426,7 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   data = data.frame(time = required_timepoints)
   
   # add sensors if available
+  browser()
   if (any(acc_count > 0) & read_acc) data[, c("acc_x", "acc_y", "acc_z")] = acc_resampled
   if (any(gyro_count > 0) & read_gyro) data[, c("gyro_x", "gyro_y", "gyro_z")] = gyro_resampled
   if (any(temp_count > 0) & read_temp) data[, c("bodySurface_temp", "ambient_temp")] = temp_resampled
