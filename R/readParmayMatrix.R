@@ -35,8 +35,112 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   #        - checksum is used to verify integrity of data in each packet 
   #        - resampling is used with resample function to make the frequency stable
   #  - Gaps in data are not expected
-  
   # -------------------------------------------------------------------------
+  # Helper function to resample matrix sensor signals onto a common time grid, 
+  # usually the accelerometer's reference timeline.
+  # data = matrix with the sensor data
+  # timestamps = numeric vector of timestamps corresponding to rows fo `data`
+  # grid = numeric vector of target timestamps (usually, accelerometer resampled timestamps)
+  # interpolationType = 
+  resample_to_grid = function(data, timestamps, grid, interpolationType = 1) {
+    
+    ## ---- 0. Coerce shapes early ----------------------------------------------
+    if (is.matrix(timestamps) || is.data.frame(timestamps)) {
+      timestamps = timestamps[, 1]
+    }
+    timestamps = as.vector(timestamps)
+    data = as.matrix(data)
+    
+    common_len = min(NROW(data), length(timestamps))
+    if (common_len == 0L) {
+      out = matrix(NA_real_, nrow = length(grid), ncol = NCOL(data))
+      colnames(out) = colnames(data)
+      return(out)
+    }
+    data = data[seq_len(common_len), , drop = FALSE]
+    timestamps = timestamps[seq_len(common_len)]
+    
+    ## ---- 1. Normalize input types ------------------------------------------
+    # Convert POSIXct timestamps to numeric (seconds since epoch) if necessary
+    is_posix = inherits(timestamps, "POSIXct")
+    tz = if (is_posix) attr(timestamps, "tzone") else NULL
+    ts_num = if (is_posix) as.numeric(timestamps) else as.numeric(timestamps)
+    grid_num = if (inherits(grid, "POSIXct")) as.numeric(grid) else as.numeric(grid)
+    
+    data = as.matrix(data)
+    
+    ## ---- 2. Clean and sort input data --------------------------------------
+    # Remove rows with NA timestamps or NA values in any data column
+    ok = is.finite(ts_num) & rowSums(!is.finite(data)) == 0
+    ts_num = ts_num[ok]
+    data = data[ok, , drop = FALSE]
+    
+    # Ensure strictly increasing timestamps
+    ord = order(ts_num)
+    ts_num = ts_num[ord]
+    data = data[ord, , drop = FALSE]
+    
+    ## ---- 3. Remove duplicate timestamps ------------------------------------
+    # Duplicate timestamps cause division-by-zero errors in interpolation.
+    # Combine duplicates by taking the column-wise mean.
+    if (any(duplicated(ts_num))) {
+      split_ix = split(seq_along(ts_num), ts_num)
+      ts_unique = as.numeric(names(split_ix))
+      data_unique = do.call(rbind, lapply(split_ix, function(ix) {
+        colMeans(data[ix, , drop = FALSE])
+      }))
+      ord2 = order(ts_unique)
+      ts_num = ts_unique[ord2]
+      data = data_unique[ord2, , drop = FALSE]
+    }
+    
+    ## ---- 4. Ensure matching length and valid range -------------------------
+    # The C++ function assumes length(rawTime) == nrow(raw)
+    n_raw = min(length(ts_num), nrow(data))
+    if (n_raw < 2L) {
+      # Not enough data to interpolate → return all NA
+      out = matrix(NA_real_, nrow = length(grid_num), ncol = ncol(data))
+      colnames(out) = colnames(data)
+      return(out)
+    }
+    
+    ts_num = ts_num[seq_len(n_raw)]
+    data = data[seq_len(n_raw), , drop = FALSE]
+    t0 = ts_num[1]
+    t1 = ts_num[n_raw]
+    
+    ## ---- 5. Clip the grid to the sensor’s valid range ----------------------
+    # Only pass grid points within [t0, t1] to C++ for interpolation.
+    # The rest will be filled with NA later.
+    inside = (grid_num >= t0) & (grid_num <= t1)
+    grid_in = grid_num[inside]
+    
+    ## ---- 6. Interpolate within valid range ---------------------------------
+    res_in = matrix(NA_real_, nrow = sum(inside), ncol = ncol(data))
+    if (length(grid_in) > 0L) {
+      res_in = resample(
+        raw     = data,
+        rawTime = ts_num,
+        time    = grid_in,
+        stop    = nrow(data),
+        type    = interpolationType
+      )
+    }
+    
+    ## ---- 7. Pad output to full grid length ---------------------------------
+    # Build output with same number of rows as the target grid.
+    # Fill with NA outside sensor coverage, and insert resampled data inside.
+    out = matrix(NA_real_, nrow = length(grid_num), ncol = ncol(data))
+    if (length(grid_in) > 0L) {
+      out[inside, ] = res_in
+    }
+    
+    # Preserve column names for clarity in downstream use
+    colnames(out) = colnames(data)
+    out
+  }
+  # -------------------------------------------------------------------------
+  # Main code
   # 1 - read file and extract header information
 
   # open connection to read the binary file
@@ -215,6 +319,10 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     acc_readings = lapply(seq_along(acc_starts), function(i) {
       seek(con, acc_starts[i] - 1, "start")
       readings = readBin(con, what = "integer", size = 2, n = 3 * acc_count[i], endian = "little")
+      # make sure number of readings is multiple of 3 (might not be in corrupted packets)
+      n_triplets = length(readings) %/% 3
+      readings_ok = 3 * n_triplets
+      readings = readings[1:readings_ok]
       denominator = ifelse(readings >= 0, 32767, 32768)
       matrix(readings * (acc_dynrange / denominator), ncol = 3, byrow = T)
     })
@@ -228,6 +336,10 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
       gyro_readings = lapply(seq_along(gyro_starts), function(i) {
         seek(con, gyro_starts[i] - 1, "start")  
         readings = readBin(con, what = "integer", size = 2, n = 3 * gyro_count[i], endian = "little")
+        # make sure number of readings is multiple of 3 (might not be in corrupted packets)
+        n_triplets = length(readings) %/% 3
+        readings_ok = 3 * n_triplets
+        readings = readings[1:readings_ok]
         denominator = ifelse(readings >= 0, 32767, 32768)
         matrix(readings * (gyro_range / denominator), ncol = 3, byrow = T)
       })
@@ -241,6 +353,10 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
       temp_readings = lapply(seq_along(temp_starts), function(i) {
         seek(con, temp_starts[i] - 1, "start")
         readings = readBin(con, what = "integer", size = 2, n = 2 * temp_count[i], endian = "little")
+        # make sure number of readings is multiple of 2 (might not be in corrupted packets)
+        n_triplets = length(readings) %/% 2
+        readings_ok = 2 * n_triplets
+        readings = readings[1:readings_ok]
         matrix(readings / 10, ncol = 2, byrow = T)
       })
     }
@@ -253,6 +369,10 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
       heart_readings = lapply(seq_along(heart_starts), function(i) {
         seek(con, heart_starts[i] - 1, "start")
         readings = readBin(con, what = "integer", size = 2, n = 2 * heart_count[i], endian = "little")
+        # make sure number of readings is multiple of 3 (might not be in corrupted packets)
+        n_triplets = length(readings) %/% 2
+        readings_ok = 2 * n_triplets
+        readings = readings[1:readings_ok]
         matrix(readings, ncol = 2, byrow = T)
       })
     }
@@ -279,11 +399,18 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
         x[corrupt_packets] = NA
         prev_index = ifelse(any(!is.na(x[1:(i - 1)])), 
                             max(x[1:(i - 1)], na.rm = T), NA)
-        if (temp_count[prev_index] > 0) {
-          prev_temp = temp_readings[[prev_index]][nrow(temp_readings[[prev_index]]), ]
+        if (!is.na(prev_index)) {
+          if (temp_count[prev_index] > 0) {
+            prev_temp = temp_readings[[prev_index]][nrow(temp_readings[[prev_index]]), ]
+          } else {
+            prev_temp = NA
+          }
         } else {
-          prev_temp = NA
+          # if the first packet is corrupted, then impute by first non-corrupted temperature observed
+          first_valid_temp = which(!1:length(temp_count) %in% corrupt_packets)[1]
+          prev_temp = temp_readings[[first_valid_temp]][1,]
         }
+        # next index
         next_index = ifelse(any(!is.na(x[(i + 1):length(x)])), 
                             min(x[(i + 1):length(x)], na.rm = T), NA)
         if (!is.na(next_index)) {
@@ -292,19 +419,18 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
           } else {
             next_temp = NA
           }
-          if (!is.na(prev_temp[1]) & !is.na(next_temp[1])) {
-            mean_temp = (prev_temp + next_temp) / 2
-          } else {
-            mean_temp = NA
-          } 
         } else {
-          # if the last packet is corrupted, then impute by last temperature observed
-          if (!is.na(prev_temp[1])) {
-            mean_temp = prev_temp
-          } else {
-            mean_temp = NA
-          } 
+          next_temp = NA
         }
+        
+        if (!is.na(prev_temp[1]) & !is.na(next_temp[1])) {
+          mean_temp = (prev_temp + next_temp) / 2
+        } else if (is.na(prev_temp[1])) {
+          mean_temp = next_temp
+        } else if (is.na(next_temp[1])) {
+          # if the last packet is corrupted, then impute by last temperature observed
+          mean_temp = prev_temp
+        } 
        
         temp_readings[[i]] = matrix(mean_temp, nrow = nrow(temp_readings[[i]]),
                                     ncol = 2, byrow = T)
@@ -376,57 +502,44 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   
   # Resample data to defined sampling frequency
   if (any(acc_count > 0) & read_acc) { # accelerometer has been activated
-    required_timepoints = seq(from = acc_timestamps[1], to = acc_timestamps[length(acc_timestamps)], 
-                              by = 1/sf)
+    t_start = acc_timestamps[1]
+    t_end = acc_timestamps[nrow(acc_data)]
+    n_required_timepoints = floor((t_end - t_start) * sf) + 1L
+    required_timepoints = seq(from = acc_timestamps[1], by = 1/sf, 
+                              length.out = n_required_timepoints)
     acc_resampled = resample(raw = acc_data, rawTime = acc_timestamps, 
                              time = required_timepoints, 
                              stop = nrow(acc_data), type = interpolationType)
   }
   if (any(gyro_count > 0) & read_gyro) { # gyroscope has been activated
-    # make sure measurement covers full recording length:
-    if (min(gyro_timestamps) > min(required_timepoints)) {
-      gyro_timestamps = rbind(c(NA, NA), gyro_data)
-    }
-    if (max(gyro_timestamps) < max(required_timepoints)) {
-      gyro_timestamps = c(gyro_timestamps, max(required_timepoints))
-      gyro_data = rbind(gyro_data, c(NA, NA))
-    }
-    gyro_resampled = resample(raw = gyro_data, rawTime = gyro_timestamps, 
-                              time = required_timepoints, 
-                              stop = nrow(gyro_data), type = interpolationType)
+    gyro_resampled = resample_to_grid(
+      data = gyro_data,
+      timestamps = gyro_timestamps,
+      grid = required_timepoints,
+      interpolationType = interpolationType
+    )
   }
-  if (any(temp_count > 0) & read_temp) { # temperature has been activated
-    # make sure measurement covers full recording length:
-    if (min(temp_timestamps) > min(required_timepoints)) {
-      temp_timestamps = rbind(c(NA, NA), temp_data)
-    }
-    if (max(temp_timestamps) < max(required_timepoints)) {
-      temp_timestamps = c(temp_timestamps, max(required_timepoints))
-      temp_data = rbind(temp_data, c(NA, NA))
-    }
-    temp_resampled = resample(raw = temp_data, rawTime = temp_timestamps, 
-                              time = required_timepoints, 
-                              stop = nrow(temp_data), type = interpolationType)
+  if (any(temp_count > 0) & read_temp) {
+    temp_resampled = resample_to_grid(
+      data = temp_data,
+      timestamps = temp_timestamps,
+      grid = required_timepoints,
+      interpolationType = interpolationType
+    )
   }
-  if (any(heart_count > 0) & read_heart) { # heart rate has been activated
-    # make sure measurement covers full recording length:
-    if (min(heart_timestamps) > min(required_timepoints)) {
-      heart_timestamps = rbind(c(NA, NA), heart_data)
-    }
-    if (max(heart_timestamps) < max(required_timepoints)) {
-      heart_timestamps = c(heart_timestamps, max(required_timepoints))
-      heart_data = rbind(heart_data, c(NA, NA))
-    }
-    heart_resampled = resample(raw = heart_data, rawTime = heart_timestamps, 
-                               time = required_timepoints, 
-                               stop = nrow(heart_data), type = interpolationType)
+  if (any(heart_count > 0) & read_heart) {
+    heart_resampled = resample_to_grid(
+      data = heart_data,
+      timestamps = heart_timestamps,
+      grid = required_timepoints,
+      interpolationType = interpolationType
+    )
   }
   
   # build output data -----------
   data = data.frame(time = required_timepoints)
   
   # add sensors if available
-  browser()
   if (any(acc_count > 0) & read_acc) data[, c("acc_x", "acc_y", "acc_z")] = acc_resampled
   if (any(gyro_count > 0) & read_gyro) data[, c("gyro_x", "gyro_y", "gyro_z")] = gyro_resampled
   if (any(temp_count > 0) & read_temp) data[, c("bodySurface_temp", "ambient_temp")] = temp_resampled
