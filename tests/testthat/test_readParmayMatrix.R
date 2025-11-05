@@ -72,8 +72,8 @@ test_that("Identification of corrupt files and foreseen errors", {
   expect_equal(BIN$data$acc_x[1], 0)
   expect_equal(BIN$data$acc_y[1], 0)
   expect_equal(BIN$data$acc_z[1], 1)
-  expect_true(is.na(BIN$data$bodySurface_temp[1]))
-  expect_true(is.na(BIN$data$ambient_temp[1]))
+  expect_false(is.na(BIN$data$bodySurface_temp[1]))
+  expect_false(is.na(BIN$data$ambient_temp[1]))
   # also, identification of full corrupted file
   binfile  = system.file("testfiles/mtx_corrupted_full.bin", package = "GGIRread")[1]
   expect_error(readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", 

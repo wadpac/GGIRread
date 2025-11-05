@@ -189,15 +189,14 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   n_declared = total_packets
   n_observed_file = length(packet_starti)
   
-  # validate packet headers (i.e., nr. of appearances of MDTCPACK in files)
-  # in case that empty packets have been added at the end, only use valid packets
-  n_use = min(total_packets, length(packet_starti)) 
+  # Use all packets available in the file (even if empty packets have been added at the end)
+  n_use = n_observed_file
   packet_starti = packet_starti[seq_len(n_use)]
   packet_endi = packet_endi[seq_len(n_use)]
   
   # Apply chunking AFTER truncation
   i_from = max(1, start)
-  i_to = if (is.null(end)) n_use else min(end, n_use)
+  i_to = n_use
   idx = seq.int(i_from, i_to)
   n_rows = length(idx)
   
@@ -257,7 +256,8 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     gap_with_previous_block_secs = numeric(n_rows), 
     start_time_adjustment_secs = numeric(n_rows),
     declared_packets = rep(n_declared, n_rows),
-    observed_packets = rep(n_observed_file, n_rows)
+    observed_packets = rep(n_observed_file, n_rows),
+    acc_recorded = TRUE
   )
   
   # log corrupt packets
@@ -299,7 +299,6 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     seek(con, packet_starti[i] + 31, "start")  # Move to correct position
     readBin(con, what = "integer", size = 4, endian = "little")
   }, numeric(1))
-  
   # Process timestamps and calculate sampling frequency
   packets_dur_s = packets_t1 - packets_t0
   sf_acc_observed = acc_count / packets_dur_s
@@ -311,6 +310,20 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
   # log set and observed sf in each packet
   QClog[, "frequency_set"] = sf
   QClog[, "frequency_observed"] = sf_acc_observed
+  
+  # At the moment the function requires that accelerometer data has been
+  # recorded to work, as accelerometer timestamps are used as reference time
+  if (sum(acc_count) == 0) {
+    QClog[, "acc_recording"] = FALSE
+    return(list(
+      QClog = QClog,
+      data = matrix(nrow = 0, ncol = 3),
+      header = list(sf = sf,
+                    acc_dynrange = acc_dynrange,
+                    starttime = starttime_posix),
+      lastchunk = TRUE
+    ))
+  }
   
   # build data structure lists
   # acc
@@ -408,7 +421,11 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
         } else {
           # if the first packet is corrupted, then impute by first non-corrupted temperature observed
           first_valid_temp = which(!1:length(temp_count) %in% corrupt_packets)[1]
-          prev_temp = temp_readings[[first_valid_temp]][1,]
+          if (is.na(first_valid_temp)) {
+            prev_temp = NA
+          } else {
+            prev_temp = temp_readings[[first_valid_temp]][1,]  
+          }
         }
         # next index
         next_index = ifelse(any(!is.na(x[(i + 1):length(x)])), 
@@ -422,15 +439,17 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
         } else {
           next_temp = NA
         }
-        
         if (!is.na(prev_temp[1]) & !is.na(next_temp[1])) {
           mean_temp = (prev_temp + next_temp) / 2
-        } else if (is.na(prev_temp[1])) {
+        } else if (is.na(prev_temp[1]) & !is.na(next_temp[1])) {
           mean_temp = next_temp
-        } else if (is.na(next_temp[1])) {
+        } else if (!is.na(prev_temp[1]) & is.na(next_temp[1])) {
           # if the last packet is corrupted, then impute by last temperature observed
           mean_temp = prev_temp
-        } 
+        } else {
+          # safe conduct, if both are NA, then leave it without imputation
+          mean_temp = temp_readings[[i]]
+        }
        
         temp_readings[[i]] = matrix(mean_temp, nrow = nrow(temp_readings[[i]]),
                                     ncol = 2, byrow = T)
