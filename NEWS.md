@@ -1,3 +1,13 @@
+# Changes in version 1.0.7 (release date:?-?-2025)
+
+- Parmay Matrix: 
+    -  Fixed minor bug in the conversion of accelerometer and gyroscope readings #82
+    -  Correct documentation for header structure of bin files in readParmayMatrix #83
+    -  Update Parmay matrix website in README and readParmayMatrix function documentation #87
+    -  Enhanced robustness when reading partially corrupted files, valid data packets are now processed, while only corrupted sections are skipped #88
+
+- Workflows: Updated to the latest r-lib/actions examples and fixed r-cmd-check-basic to pass
+
 # Changes in version 1.0.6 (GitHub-only-release date:16-07-2025)
 
 - Actical: Improve detection of recording start #85

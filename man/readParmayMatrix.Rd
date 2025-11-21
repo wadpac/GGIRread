@@ -44,8 +44,8 @@
   \strong{Header Information:}
   \itemize{
     \item Remarks: Bytes 1-512.
-    \item Total packets: Bytes 513-516.
-    \item Header string: Bytes 517-520. If not "MDTC", the file is considered corrupt.
+    \item Header string: Bytes 513-516. If not "MDTC", the file is considered corrupt.
+    \item Total packets: Bytes 517-520.
     \item Accelerometer dynamic range: Bytes 521-522.
     \item Gyroscope range: Bytes 523-524.
   }
@@ -112,9 +112,9 @@
 }
 \references{
   For more details on Matrix devices', see: 
-  \url{https://www.parmaytech.com/devices/en-matrix}
+  \url{https://www.matrixwearable.net/}
   For additional details on Matrix bin/BIN files structure, please contact manufacturer:
-  \url{https://www.parmaytech.com/contact}
+  \url{https://www.matrixwearable.net/#!/contact}
 }
 \seealso{
   \code{\link{resample}} for resampling sensor data.
