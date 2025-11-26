@@ -1,4 +1,4 @@
-# Changes in version 1.0.7 (release date:?-?-2025)
+# Changes in version 1.0.7 (release date:26-11-2025)
 
 - Parmay Matrix: 
     -  Fixed minor bug in the conversion of accelerometer and gyroscope readings #82
