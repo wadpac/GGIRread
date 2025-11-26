@@ -98,7 +98,7 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     # The C++ function assumes length(rawTime) == nrow(raw)
     n_raw = min(length(ts_num), nrow(data))
     if (n_raw < 2L) {
-      # Not enough data to interpolate → return all NA
+      # Not enough data to interpolate -> return all NA
       out = matrix(NA_real_, nrow = length(grid_num), ncol = ncol(data))
       colnames(out) = colnames(data)
       return(out)
@@ -109,7 +109,7 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     t0 = ts_num[1]
     t1 = ts_num[n_raw]
     
-    ## ---- 5. Clip the grid to the sensor’s valid range ----------------------
+    ## ---- 5. Clip the grid to the sensor s valid range ----------------------
     # Only pass grid points within [t0, t1] to C++ for interpolation.
     # The rest will be filled with NA later.
     inside = (grid_num >= t0) & (grid_num <= t1)
