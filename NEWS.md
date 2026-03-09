@@ -1,3 +1,7 @@
+# Changes in version 1.0.? (release date:??-??-2026)
+
+-  Update readActiwatchCount to handle behaviour upcoming data.table package release. #89
+
 # Changes in version 1.0.7 (release date:26-11-2025)
 
 - Parmay Matrix: 

@@ -68,7 +68,7 @@ readActiwatchCount = function(filename = NULL,
         index = index + 1
       }
     }
-    D = data.table::fread(input = filename, header = FALSE, sep = ",",
+    D = data.table::fread(input = filename, sep = ",",
                           skip = index, quote = quote, data.table = FALSE)
     colnames(D)[1:2] = c("counts", "light")
     lastCol = ncol(D)
