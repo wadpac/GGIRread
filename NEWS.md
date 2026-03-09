@@ -6,7 +6,7 @@
 
 - Parmay Matrix: 
     -  Fixed minor bug in the conversion of accelerometer and gyroscope readings #82
-    -  Correct documentation for header structure of bin files in readParmayMatrix #83
+    -  Correct documentation for header structure of binary files in readParmayMatrix #83
     -  Update Parmay matrix website in README and readParmayMatrix function documentation #87
     -  Enhanced robustness when reading partially corrupted files, valid data packets are now processed, while only corrupted sections are skipped #88
 
@@ -26,7 +26,7 @@
 
 - Fitbit: Fix bug preventing the loading of a sequence of json files. #76
 
-- Add functions for reading Parmay Tech Matrix sensor (bin/BIN files) with accelerometer, gyroscope, temperature, and heart rate #70.
+- Add functions for reading Parmay Tech Matrix sensor (BIN files) with accelerometer, gyroscope, temperature, and heart rate #70.
 
 # Changes in version 1.0.3 (release date:07-03-2025)
 
