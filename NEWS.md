@@ -1,3 +1,7 @@
+# Changes in version 1.0.9 (release date:15-07-2026)
+
+-  Fix bug in readActiwatchCount. #92
+
 # Changes in version 1.0.8 (release date:11-03-2026)
 
 -  Update readActiwatchCount to handle behaviour upcoming data.table package release. #89

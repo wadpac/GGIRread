@@ -54,10 +54,9 @@ readActiwatchCount = function(filename = NULL,
     #=========================================================
     # ! Assumption that first data row equals the first row with 3 columns
     index = 0
-    
     quote = detectQuote(filename = filename, skip = 50)
-    NC = 1
-    while (NC >= 3) {
+    NC = 0
+    while (NC < 3) {
       testraw = data.table::fread(input = filename,
                                   header = FALSE, sep = ",", skip = index,
                                   nrows = 1, data.table = TRUE, quote = quote)
@@ -67,6 +66,7 @@ readActiwatchCount = function(filename = NULL,
       } else {
         index = index + 1
       }
+      if (nrow(testraw) == 0) stop("No data in file")
     }
     D = data.table::fread(input = filename, sep = ",",
                           skip = index, quote = quote, data.table = FALSE)
