@@ -111,10 +111,9 @@
   }
 }
 \references{
-  For more details on Matrix devices', see: 
-  \url{https://www.matrixwearable.net/}
+  For more details on Matrix devices', see: https://www.matrixwearable.net/
   For additional details on Matrix BIN files structure, please contact manufacturer:
-  \url{https://www.matrixwearable.net/#!/contact}
+  https://www.matrixwearable.net/#!/contact
 }
 \seealso{
   \code{\link{resample}} for resampling sensor data.
