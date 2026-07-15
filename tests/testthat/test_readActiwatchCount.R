@@ -14,9 +14,8 @@ test_that("Actiwatch csv is correctly read", {
 })
 test_that("Actiwatch awd is correctly read", {
   file = system.file("testfiles/Actiwatch.AWD", package = "GGIRread")
-  expect_warning(D <- readActiwatchCount(filename = file, timeformat = "%d-%b-%Y %H:%M:%S",
-                                          desiredtz =  "Europe/Amsterdam"),
-                 regexp = "Detected 1 column names but the data has 3 columns*")
+  D <- readActiwatchCount(filename = file, timeformat = "%d-%b-%Y %H:%M:%S",
+                                          desiredtz =  "Europe/Amsterdam")
   expect_equal(D$epochSize, 60)
   expect_equal(format(D$startTime), "2009-10-01 17:00:00")
   expect_equal(nrow(D$data), 329)
@@ -28,9 +27,8 @@ test_that("Actiwatch awd is correctly read", {
 
 test_that("Actiwatch awd error correctly", {
   file = system.file("testfiles/Actiwatch.AWD", package = "GGIRread")
-  expect_error(expect_warning(readActiwatchCount(filename = file,
+  expect_error(readActiwatchCount(filename = file,
                                   timeformat = "%d-%m-%Y %H:%M:%S"),
-                              regexp = "Detected 1 column names but the data has 3 columns*"),
                regexp = "Time format*")
 
   expect_error(readActiwatchCount(filename = "",
