@@ -14,6 +14,7 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
              person("Evgeny","Mirkes",role="ctb"),
              person("Dan","Jackson",role="ctb"),
              person("Jairo H","Migueles",role="ctb"),
+             person("John","Muschelli",role="ctb"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
 Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
