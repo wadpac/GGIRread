@@ -211,7 +211,7 @@ Rcpp::List GENEActivReader(std::string filename, std::size_t start = 0, std::siz
 
             if (progress_bar) {
                 if ((blockCount % 10000 == 0) || (blockCount == numBlocksTotal)) {
-                    Rcpp::Rcout << "Reading file... %lu%%\r" << (blockCount * 100 / numBlocksTotal);
+                    Rcpp::Rcout << "Reading file... " << (blockCount * 100 / numBlocksTotal) << "%\r";
                 }
             }
 
