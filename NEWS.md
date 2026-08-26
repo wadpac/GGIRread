@@ -1,3 +1,7 @@
+# Changes in version 1.0.10 (release date:15-07-2026)
+
+-  Fix bug in readGENEActiv with `path.expand`. #94 @muschellij2
+
 # Changes in version 1.0.9 (release date:15-07-2026)
 
 -  Fix bug in readActiwatchCount. #92
