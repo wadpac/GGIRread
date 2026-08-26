@@ -1,6 +1,7 @@
-# Changes in version 1.0.10 (release date:15-07-2026)
+# Changes in version 1.0.10 (release date:26-08-2026)
 
--  Fix bug in readGENEActiv with `path.expand`. #94 @muschellij2
+- Fix bug in readGENEActiv with `path.expand`. #94 @muschellij2
+- Add StartTime header field to GENEActiv output. Note: we already had the StarTime field but this comes with a typo which can be confusing. #96 @muschellij2
 
 # Changes in version 1.0.9 (release date:15-07-2026)
 
