@@ -1,3 +1,7 @@
+# Changes in version 1.0.11 (release date:07-09-2026)
+
+- Updated GENEActiv light calibration to account for differences between device models.
+
 # Changes in version 1.0.10 (release date:26-08-2026)
 
 - Fix bug in readGENEActiv with `path.expand`. #94 @muschellij2

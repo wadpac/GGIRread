@@ -1,8 +1,8 @@
 Package: GGIRread
 Type: Package
 Title: Wearable Accelerometer Data File Readers
-Version: 1.0.10
-Date: 2026-08-26
+Version: 1.0.11
+Date: 2026-09-07
 Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
                   email="v.vanhees@accelting.com"),
              person(given = "Patrick",family = "Bos",
@@ -15,6 +15,7 @@ Authors@R: c(person("Vincent T","van Hees",role=c("aut","cre"),
              person("Dan","Jackson",role="ctb"),
              person("Jairo H","Migueles",role="ctb"),
              person("John","Muschelli",role="ctb"),
+             person("Jia Ying","Chua",role="ctb"),
              person("Medical Research Council UK",  role = c("cph", "fnd")),
              person("Accelting",  role = c("cph", "fnd")))
 Maintainer: Vincent T van Hees <v.vanhees@accelting.com>
