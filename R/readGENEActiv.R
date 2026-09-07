@@ -80,12 +80,33 @@ readGENEActiv = function(filename, start = 0, end = 0, progress_bar = FALSE,
   }
   starttime_num = as.numeric(starttime_posix) + page_offset
   rawdata$time = rawdata$time + abs(rawdata$time[1]) + starttime_num
+
+  # Apply device-specific light calibration
+  light <- rawdata$lux
+
+  if (grepl("1\\.1$", DeviceModel)) {
+    light <- light * (Lux / Volts)
+  } else {
+    light <- ifelse(light < 256, light,
+                    ifelse(light < 512, (light - 128) * 2,
+                           ifelse(light < 768, (light - 320) * 4,
+                                  ifelse(light < 1024, (light - 656) * 16,
+                                         5888
+                                  )
+                           )
+                    )
+    )
+    light <- light * (Lux / Volts)
+  }
+
   return(invisible(list(
     header = header,
-    data.out = data.frame(time = rawdata$time,
-                      x = rawdata$x, y = rawdata$y, z = rawdata$z,
-                      light = rawdata$lux * (Lux/Volts),
-                      temperature = rawdata$temperature,
-                      stringsAsFactors = TRUE)
+    data.out = data.frame(
+      time = rawdata$time,
+      x = rawdata$x, y = rawdata$y, z = rawdata$z,
+      light = light,
+      temperature = rawdata$temperature,
+      stringsAsFactors = TRUE
+    )
   )))
 }
