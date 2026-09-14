@@ -35,12 +35,20 @@
 }
 \details{
   If only \code{start} page is defined then all data is read beyond
-  \code{start} until the end of the file is reached
+  \code{start} until the end of the file is reached.
+
+  GENEActiv light measurements are calibrated according to the device model.
+  For GENEActiv 1.1, the existing light calibration is applied.
+  For GENEActiv 1.2 and above, an additional correction is applied to account for
+  the light sensor's non-linear scaling with graded resolution. This provides
+  greater accuracy at low light levels while supporting a higher range.
+  This correction was provided by ActivInsights Ltd, the manufacturer
+  of GENEActiv devices.
 }
 \value{
-  
+
   header:
-  
+
   \item{serial_number}{Device serial number as extracted from file header}
   \item{firmware}{Firmware version}
   \item{tzone}{Time zone as extracted from file header}
@@ -49,9 +57,9 @@
   \item{ReadErrors}{matrix with battery voltage and corresponding timestamps}
   \item{numBlocksTotal}{matrix with battery voltage and corresponding timestamps}
   \item{StartTime}{Start time as extracted from file header}
-  
+
   data.out:
-  
+
   \item{time}{Unix time in seconds with decimal places for miliseconds}
   \item{x}{see \link{GENEActivReader}}
   \item{y}{see \link{GENEActivReader}}
