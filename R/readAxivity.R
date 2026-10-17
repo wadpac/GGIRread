@@ -526,7 +526,15 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # Process the last block in the file, if necessary
 
       # Calculate pseudo time for the "next" block
-      newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
+      if (rawPos == 1) {
+        # Only the final block was requested, so there is no preceding block
+        # from which to estimate its sample spacing. Use its recorded frequency.
+        prevStart = prevRaw$start
+        newTimes = prevStart + prevRaw$length / prevRaw$frequency
+        raw = prevRaw
+      } else {
+        newTimes = (prevRaw$start - prevStart) / prevLength * prevRaw$length + prevRaw$start
+      }
       prevLength = prevRaw$length
 
       # fill vector rawTime and matrix rawAccel for resampling
@@ -574,15 +582,19 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       # fill vector rawTime and matrix rawAccel for resampling
       rawLast = prevLength + 1
       rawTime[2:(rawLast+1)] = seq(prevStart, raw$start, length.out = rawLast) # rawTime[rawLast+1] will be ignored by resampling alg
+    }
 
-      if (rawPos == 1) {
-        rawAccel[1,] = (prevRaw$data[1,])
-        rawTime[1] = prevStart - 0.00001
-        rawPos = 2
-      }
+    if (rawPos == 1) {
+      rawAccel[1,] = prevRaw$data[1,]
+      rawTime[1] = prevStart - 0.00001
+      rawPos = 2
     }
 
     frequency_observed = rawLast / (rawTime[rawLast] - rawTime[1])
+    if (ii == numDBlocks && start == numDBlocks - 1) {
+      # No inter-block timing observation is available for this fallback.
+      frequency_observed = prevRaw$frequency
+    }
     #------------------------------------------------------------
     # Check block integrity:
     # The following code checks whether any of the following conditions are met:

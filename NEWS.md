@@ -1,3 +1,7 @@
+# Development version
+
+- Fix `readAxivity()` failing when a requested chunk contains only the final data block. Use the block's recorded sampling frequency when no preceding block is available to estimate timing.
+
 # Changes in version 1.0.11 (release date:18-09-2026)
 
 - Added GENEActiv light calibration needed for device model GENEActiv 1.2 and above. Contributed by ActivInsights Ltd, the manufacturer of GENEActiv devices. 

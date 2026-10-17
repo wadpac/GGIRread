@@ -1,5 +1,53 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
+
+test_that("readAxivity returns the final block when it is the only requested block", {
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),
+                          package = "GGIRread")
+    n = (file.size(cwafile) - 1024) / 512
+    header = readAxivity(cwafile, desiredtz = "UTC")$header
+    for (interpolationType in c(1, 2)) {
+      result = readAxivity(cwafile, start = n - 1, end = n,
+                           desiredtz = "UTC", header = header,
+                           interpolationType = interpolationType,
+                           loadbattery = TRUE, frequency_tol = 0)
+      expect_equal(nrow(result$data), header$blockLength)
+      expect_equal(ncol(result$data), if (device == "ax3") 7L else 10L)
+      expect_equal(diff(result$data$time),
+                   rep(1 / header$frequency, header$blockLength - 1),
+                   tolerance = 1e-6)
+      expect_true(all(result$data$battery > 0))
+      expect_null(result$QClog)
+      # First and last accelerometer samples from the fixture's final packet.
+      expected = if (device == "ax3") {
+        rbind(c(0.59375, 0.328125, 0.59375), c(-0.0625, -0.84375, 0.265625))
+      } else {
+        rbind(c(104, 2007, 15), c(98, 2010, 23)) / 2048
+      }
+      expect_equal(unname(as.matrix(result$data[c(1, header$blockLength),
+                                               c("x", "y", "z")])), expected,
+                   tolerance = 1e-6)
+    }
+
+    # The same path is reached when a corrupt start packet is skipped,
+    # leaving just the final valid packet in the requested chunk.
+    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
+    offset = 1024 + (n - 2) * 512 + 1
+    bytes[offset] = as.raw(bitwXor(as.integer(bytes[offset]), 1L))
+    corruptfile = tempfile(fileext = ".cwa")
+    writeBin(bytes, corruptfile)
+    expect_warning(result <- readAxivity(corruptfile, start = n - 2, end = n,
+                                         desiredtz = "UTC"),
+                   "Skipping corrupt start block")
+    reference = readAxivity(cwafile, start = n - 1, end = n, desiredtz = "UTC")
+    expect_equal(result$data, reference$data)
+    expect_equal(nrow(result$QClog), 1L)
+    expect_false(result$QClog$checksum_pass)
+    unlink(corruptfile)
+  }
+})
+
 test_that("readAxivity reads data from AX3 file correctly", {
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
