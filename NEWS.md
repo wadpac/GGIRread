@@ -1,8 +1,8 @@
-# Development version
+# Changes in version 1.0.12 (release date:??-??-2026)
 
 - Speed up `readAxivity()` with C++ packet decoding and a buffered native processing loop for timestamp caching, integrity checks, imputation and resampling. Retain the R interface and timezone conversion.
 
-- Fix `readAxivity()` failing when a requested chunk contains only the final data block. Use the block's recorded sampling frequency when no preceding block is available to estimate timing.
+- Fix `readAxivity()` failing when a requested chunk contains only the final data block. Use the block's recorded sampling frequency when no preceding block is available to estimate timing. #98
 
 # Changes in version 1.0.11 (release date:18-09-2026)
 
