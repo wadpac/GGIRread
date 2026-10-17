@@ -35,6 +35,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// decodeAxivityBlock
+Rcpp::List decodeAxivityBlock(Rcpp::RawVector block, bool complete, Rcpp::Nullable<Rcpp::List> parameters, bool loadbattery);
+RcppExport SEXP _GGIRread_decodeAxivityBlock(SEXP blockSEXP, SEXP completeSEXP, SEXP parametersSEXP, SEXP loadbatterySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< bool >::type complete(completeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type parameters(parametersSEXP);
+    Rcpp::traits::input_parameter< bool >::type loadbattery(loadbatterySEXP);
+    rcpp_result_gen = Rcpp::wrap(decodeAxivityBlock(block, complete, parameters, loadbattery));
+    return rcpp_result_gen;
+END_RCPP
+}
 // find_matrix_packet_start
 Rcpp::IntegerVector find_matrix_packet_start(std::string file_path, Rcpp::RawVector pattern, int chunk_size);
 RcppExport SEXP _GGIRread_find_matrix_packet_start(SEXP file_pathSEXP, SEXP patternSEXP, SEXP chunk_sizeSEXP) {
@@ -45,6 +59,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::RawVector >::type pattern(patternSEXP);
     Rcpp::traits::input_parameter< int >::type chunk_size(chunk_sizeSEXP);
     rcpp_result_gen = Rcpp::wrap(find_matrix_packet_start(file_path, pattern, chunk_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// processAxivityBlocks
+Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calendar, Rcpp::Nullable<Rcpp::Function> progress, Rcpp::List first, Rcpp::NumericVector time, double start, double end, double numDBlocks, double frequency_tol, int maxAllowedCorruptBlocks, bool loadbattery, int interpolationType);
+RcppExport SEXP _GGIRread_processAxivityBlocks(SEXP readBlocksSEXP, SEXP calendarSEXP, SEXP progressSEXP, SEXP firstSEXP, SEXP timeSEXP, SEXP startSEXP, SEXP endSEXP, SEXP numDBlocksSEXP, SEXP frequency_tolSEXP, SEXP maxAllowedCorruptBlocksSEXP, SEXP loadbatterySEXP, SEXP interpolationTypeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::Function >::type readBlocks(readBlocksSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type calendar(calendarSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::Function> >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type first(firstSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< double >::type start(startSEXP);
+    Rcpp::traits::input_parameter< double >::type end(endSEXP);
+    Rcpp::traits::input_parameter< double >::type numDBlocks(numDBlocksSEXP);
+    Rcpp::traits::input_parameter< double >::type frequency_tol(frequency_tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxAllowedCorruptBlocks(maxAllowedCorruptBlocksSEXP);
+    Rcpp::traits::input_parameter< bool >::type loadbattery(loadbatterySEXP);
+    Rcpp::traits::input_parameter< int >::type interpolationType(interpolationTypeSEXP);
+    rcpp_result_gen = Rcpp::wrap(processAxivityBlocks(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType));
     return rcpp_result_gen;
 END_RCPP
 }
