@@ -17,7 +17,7 @@ struct Block {
     temperature(Rcpp::as<double>(x["temperature"])),
     battery(Rcpp::as<double>(x["battery"])), light(Rcpp::as<double>(x["light"])),
     length(Rcpp::as<int>(x["length"])), id(Rcpp::as<int>(x["blockID"])),
-    data(x["data"]) {}
+    data(Rcpp::as<Rcpp::NumericMatrix>(x["data"])) {}
 };
 
 struct QC {
@@ -44,7 +44,8 @@ SEXP qualityLog(const std::vector<QC>& rows) {
   // The R checksum-failure rows use ii + 1 (a double) for blockID_next;
   // otherwise both IDs come directly from integer packet headers.
   Rcpp::RObject nextIDs = hasCorrupt ?
-    Rcpp::RObject(Rcpp::as<Rcpp::NumericVector>(next)) : Rcpp::RObject(next);
+    Rcpp::RObject(Rcpp::wrap(Rcpp::as<Rcpp::NumericVector>(next))) :
+    Rcpp::RObject(Rcpp::wrap(next));
   return Rcpp::DataFrame::create(
     Rcpp::_["checksum_pass"] = checksum,
     Rcpp::_["blockID_current"] = current, Rcpp::_["blockID_next"] = nextIDs,
@@ -98,14 +99,15 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     Block current = previous;
     double nextTime;
     if (ii == numDBlocks) {
-      // Preserve the established final-packet extrapolation, including the
-      // nominal-frequency fallback for a chunk containing only that packet.
+      // Estimate the final packet's duration from the preceding packet, or
+      // use its nominal frequency when it is the only requested packet.
       if (firstIteration) {
         prevStart = previous.start;
         nextTime = prevStart + previous.length / previous.frequency;
       } else {
         nextTime = (previous.start - prevStart) / prevLength * previous.length + previous.start;
       }
+      prevStart = previous.start;
       prevLength = previous.length;
     } else {
       if (offset + 512 > buffer.size()) {

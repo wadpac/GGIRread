@@ -4,6 +4,10 @@
 
 - Fix `readAxivity()` failing when a requested chunk contains only the final data block. Use the block's recorded sampling frequency when no preceding block is available to estimate timing. #98
 
+- Fix the final block's time axis in `readAxivity()` reads containing multiple blocks up to the end of a file. This corrects an existing timing error and can change the final samples and output row count.
+
+- Keep the native Axivity processing loop compatible with C++11 and C++14, and release its full output buffers before assembling trimmed results to reduce memory retention.
+
 # Changes in version 1.0.11 (release date:18-09-2026)
 
 - Added GENEActiv light calibration needed for device model GENEActiv 1.2 and above. Contributed by ActivInsights Ltd, the manufacturer of GENEActiv devices. 

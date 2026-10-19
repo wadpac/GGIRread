@@ -337,6 +337,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   light = result$light
   last = result$last
   QClog = rbind(QClog, result$QClog)
+  # Release the references to the full native buffers before trimming them.
+  # Otherwise result keeps those buffers alive while the output is assembled.
+  rm(result)
   #===============================================================================
   # If the user asked for more data than the length of the recording,
   # there will be 0s at the end of the result lists; get rid of them.

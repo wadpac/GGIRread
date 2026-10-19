@@ -52,9 +52,10 @@ benchmark_readAxivity = function(reference_file, blocks = c(1000L, 10000L), repe
     for (n in blocks) {
       filename = make_axivity_benchmark_file(device, n)
       tryCatch({
-        # Warm up both paths, and compare the entire output before timing.
+        # Compare away from EOF: older readers place the final packet on an
+        # incorrect time axis. Full-file timings below include the fixed tail.
         outputs = lapply(readers, function(reader) {
-          reader(filename, start = 0, end = n, configtz = "UTC")
+          reader(filename, start = 0, end = n - 1, configtz = "UTC")
         })
         stopifnot(all(vapply(outputs, identical, logical(1), outputs$native)))
         rm(outputs)

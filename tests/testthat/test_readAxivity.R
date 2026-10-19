@@ -48,6 +48,35 @@ test_that("readAxivity returns the final block when it is the only requested blo
   }
 })
 
+test_that("multi-block reads place the final packet on its own time axis", {
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),
+                          package = "GGIRread")
+    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
+    n = (length(bytes) - 1024) / 512
+    packet = bytes[1024 + (n - 1) * 512 + seq_len(512)]
+    decoded = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
+    single = readAxivity(cwafile, start = n - 1, end = n, desiredtz = "UTC")
+    preceding = readAxivity(cwafile, start = n - 2, end = n - 1, desiredtz = "UTC")
+    finalStart = single$data$time[1]
+    # Multi-block reads estimate spacing from the preceding packet, whereas
+    # the single-block path must use the nominal frequency.
+    spacing = (finalStart - preceding$data$time[1]) / preceding$header$blockLength
+    rawTime = finalStart + (seq_len(decoded$length) - 1) * spacing
+    axes = colnames(decoded$data)
+    for (start in c(0, n - 2)) {
+      result = readAxivity(cwafile, start = start, end = n, desiredtz = "UTC")
+      tail = result$data[result$data$time >= finalStart,]
+      expect_gt(nrow(tail), decoded$length / 2)
+      expect_lte(max(tail$time), max(rawTime) + 1e-6)
+      for (axis in axes) {
+        expected = approx(rawTime, decoded$data[,axis], xout = tail$time)$y
+        expect_equal(tail[[axis]], expected, tolerance = 1e-6, scale = 1)
+      }
+    }
+  }
+})
+
 test_that("readAxivity reads data from AX3 file correctly", {
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
@@ -64,11 +93,11 @@ test_that("readAxivity reads data from AX3 file correctly", {
   # ask for more data then there is in the file
   AX3b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX3b$header$device, "Axivity")
-  expect_equal(nrow(AX3b$data), 17599)
+  expect_equal(nrow(AX3b$data), 17600)
   expect_equal(ncol(AX3b$data), 7)
   expect_equal(AX3b$data$time[5], 1551174906.040, tolerance = .001, scale = 1)
   expect_equal(AX3b$data$temp[3], 25.5859, tolerance = 0.0001, scale = 1)
-  expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 25367)
+  expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 25405)
 
 })
 
@@ -329,11 +358,11 @@ test_that("readAxivity reads data from AX6 file correctly", {
   # ask for more data then there is in the file
   AX6b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX6b$header$device, "Axivity")
-  expect_equal(nrow(AX6b$data), 11428)
+  expect_equal(nrow(AX6b$data), 11429)
   expect_equal(ncol(AX6b$data), 10)
   expect_equal(AX6b$data$time[5], 1577131446.740, tolerance = .001, scale = 1)
   expect_equal(AX6b$data$temp[3], 27.34375, tolerance = 0.0001)
-  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960046)
+  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960062)
   expect_true(is.null(AX6b$QClog))
 
 })
