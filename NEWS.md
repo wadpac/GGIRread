@@ -8,6 +8,8 @@
 
 - Keep the native Axivity processing loop compatible with C++11 and C++14, and release its full output buffers before assembling trimmed results to reduce memory retention.
 
+- Preserve R's timestamp rounding in the native Axivity loop on platforms using fused multiply-add, fixing small interpolation differences on macOS ARM.
+
 # Changes in version 1.0.11 (release date:18-09-2026)
 
 - Added GENEActiv light calibration needed for device model GENEActiv 1.2 and above. Contributed by ActivInsights Ltd, the manufacturer of GENEActiv devices. 

@@ -105,7 +105,9 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
         prevStart = previous.start;
         nextTime = prevStart + previous.length / previous.frequency;
       } else {
-        nextTime = (previous.start - prevStart) / prevLength * previous.length + previous.start;
+        // As in R, round the duration before adding the epoch timestamp.
+        volatile double duration = (previous.start - prevStart) / prevLength * previous.length;
+        nextTime = duration + previous.start;
       }
       prevStart = previous.start;
       prevLength = previous.length;
@@ -158,7 +160,13 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     rawTime.resize(length + 2);
     const double spacing = (nextTime - prevStart) / length;
     rawTime[1] = prevStart;
-    for (int i = 1; i < length; ++i) rawTime[i + 1] = prevStart + i * spacing;
+    for (int i = 1; i < length; ++i) {
+      // R's seq() rounds the multiplication before adding the epoch timestamp.
+      // Prevent fused multiply-add (notably on ARM) from moving a time anchor
+      // by one ULP, which is amplified by interpolation between nearby samples.
+      volatile double elapsed = i * spacing;
+      rawTime[i + 1] = prevStart + elapsed;
+    }
     rawTime[length + 1] = nextTime;
     if (firstIteration) {
       for (int axis = 0; axis < axes; ++axis) anchor[axis] = previous.data(0, axis);
