@@ -1,5 +1,7 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
+- Fix interpolation between valid Axivity packets to use the preceding raw sample and timestamp instead of the last resampled output, for both linear and nearest-neighbour interpolation.
+
 - Fix a floating-point timing error that could drop the final sample when reading a single final Axivity block at a fractional sampling rate.
 
 - Fix `readAxivity()` handling of truncated final packets: count only complete data blocks and warn about ignored trailing bytes. Report an explicit error when no complete data blocks remain.

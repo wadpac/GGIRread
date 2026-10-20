@@ -451,7 +451,8 @@ test_that("readAxivity reads data from AX6 file correctly", {
   expect_equal(ncol(AX6b$data), 10)
   expect_equal(AX6b$data$time[5], 1577131446.740, tolerance = .001, scale = 1)
   expect_equal(AX6b$data$temp[3], 27.34375, tolerance = 0.0001)
-  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960062)
+  # Includes interpolation through raw samples at packet boundaries.
+  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960636)
   expect_true(is.null(AX6b$QClog))
 
 })

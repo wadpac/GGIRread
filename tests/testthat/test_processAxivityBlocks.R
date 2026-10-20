@@ -1,5 +1,65 @@
 library(GGIRread)
 
+test_that("packet boundaries interpolate through raw samples on every axis", {
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  origin = as.numeric(as.POSIXct("2020-01-01", tz = "UTC"))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = 1536)
+    axes = if (device == "ax3") 3L else 6L
+    count = 32L
+    packets = list()
+    values = list()
+    for (block in 0:3) {
+      packet = bytes[1025:1536]
+      elapsed = block * 0.375
+      fraction = elapsed %% 1
+      packet[5:6] = writeBin(as.integer(0x8000 + fraction * 32768), raw(),
+                              size = 2, endian = "little")
+      packet[11:14] = writeBin(block, raw(), size = 4, endian = "little")
+      packet[15:18] = writeBin(as.integer(20 * 2^26 + 2^22 + 2^17 + floor(elapsed)),
+                                 raw(), size = 4, endian = "little")
+      packet[25] = as.raw(10) # Nominal output rate: 100 Hz.
+      packet[26] = as.raw(axes * 16 + 2) # Unpacked signed 16-bit samples.
+      packet[27:28] = writeBin(as.integer(-floor(fraction * 100)), raw(),
+                                size = 2, endian = "little")
+      packet[29:30] = writeBin(count, raw(), size = 2, endian = "little")
+      samples = matrix((seq_len(count * axes) * 137 + block * 997) %% 4000 - 2000,
+                         ncol = axes)
+      packet[30 + seq_len(count * axes * 2)] = writeBin(
+        as.integer(t(samples)), raw(), size = 2, endian = "little")
+      packet[511:512] = as.raw(0)
+      checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                               signed = FALSE, endian = "little"))) %% 65536
+      packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2,
+                                 endian = "little")
+      packets[[block + 1]] = packet
+      values[[block + 1]] = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)$data
+    }
+    bytes[37] = as.raw(10)
+    writeBin(c(bytes[1:1024], unlist(packets)), filename)
+    rawTime = origin + rep((0:2) * 0.375, each = count) +
+      rep((0:(count - 1)) * (0.375 / count), 3)
+    rawValues = do.call(rbind, values[1:3])
+    for (interpolation in 1:2) {
+      result = readAxivity(filename, start = 0, end = 3, configtz = "UTC",
+                             interpolationType = interpolation, frequency_tol = 0.5)
+      expect_false(any(result$QClog$imputed))
+      for (axis in colnames(rawValues)) {
+        if (interpolation == 1) {
+          expected = approx(rawTime, rawValues[,axis], xout = result$data$time)$y
+        } else {
+          nearest = vapply(result$data$time, function(t) which.min(abs(rawTime - t)), 1L)
+          expected = rawValues[nearest, axis]
+        }
+        expect_equal(result$data[[axis]], expected, tolerance = 1e-9)
+      }
+    }
+  }
+})
+
 test_that("single final packets retain their last sample despite epoch rounding", {
   for (length in c(40L, 120L)) {
     rate = 1.5625

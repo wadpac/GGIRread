@@ -89,8 +89,10 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
   Function sum = Environment::base_env()["sum"];
   Function power = Environment::base_env()["^"];
   Function squareRoot = Environment::base_env()["sqrt"];
-  std::vector<double> anchor(axes, 0.0), rawTime;
-  double anchorTime = 0, prevStart = 0;
+  // Keep the output anchor for quality checks and imputation, independently
+  // of the raw-sample anchor used for interpolation between valid packets.
+  std::vector<double> anchor(axes, 0.0), interpolationAnchor(axes, 0.0), rawTime;
+  double anchorTime = 0, interpolationTime = 0, prevStart = 0;
   int prevLength = 0, position = 0, consecutiveCorrupt = 0;
   bool firstIteration = true;
   RawVector buffer(0), packet(512);
@@ -178,10 +180,12 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     if (firstIteration) {
       for (int axis = 0; axis < axes; ++axis) anchor[axis] = previous.data(0, axis);
       anchorTime = prevStart - 0.00001;
+      interpolationAnchor = anchor;
+      interpolationTime = anchorTime;
       firstIteration = false;
     }
-    rawTime[0] = anchorTime;
     double observed = (length + 1.0) / (rawTime[length] - anchorTime);
+    rawTime[0] = interpolationTime;
     if (ii == numDBlocks && start == numDBlocks - 1) observed = previous.frequency;
     const double bias = std::abs(observed - previous.frequency) / previous.frequency;
     const bool impute = (ii < numDBlocks && current.id != 0 &&
@@ -226,7 +230,7 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
         const double weight = (time[position] - rawTime[source - 1]) /
           (rawTime[source] - rawTime[source - 1]);
         for (int axis = 0; axis < axes; ++axis) {
-          const double left = source == 1 ? anchor[axis] : previous.data(source - 2, axis);
+          const double left = source == 1 ? interpolationAnchor[axis] : previous.data(source - 2, axis);
           const double right = previous.data(source - 1, axis);
           if (interpolationType == 1) accel(position, axis) = weight * (right - left) + left;
           else if (interpolationType == 2) accel(position, axis) = std::ceil(weight - 0.5) * (right - left) + left;
@@ -240,6 +244,17 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     if (position == 0) stop("No samples could be resampled from the Axivity block.");
     anchorTime = time[position - 1];
     for (int axis = 0; axis < axes; ++axis) anchor[axis] = accel(position - 1, axis);
+    if (impute) {
+      // Continue from the imputed output after a rejected interval; do not
+      // reintroduce its raw samples at the boundary after a gap.
+      interpolationTime = anchorTime;
+      interpolationAnchor = anchor;
+    } else {
+      interpolationTime = rawTime[length];
+      for (int axis = 0; axis < axes; ++axis) {
+        interpolationAnchor[axis] = previous.data(length - 1, axis);
+      }
+    }
     previous = current;
     if (progress.isNotNull()) Function(progress.get())(position + 1);
   }
