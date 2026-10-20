@@ -267,6 +267,10 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       }
       stop("Error reading file. The last ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
     }
+    # Treat the last valid packet as the physical end for native processing.
+    # Otherwise the loop expects a lookahead packet and never resamples it.
+    # The header retains the original file's block count.
+    numDBlocks = end
     # the end timestamp should fall right after the actual very last timestamp of the file
     endTimestamp = as.numeric(lastBlock$start) + blockLength * step
     # now pad it generously in case there are gaps in the last block

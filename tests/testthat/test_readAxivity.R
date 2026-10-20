@@ -297,10 +297,14 @@ test_that("readAxivity handles failed checksums correctly", {
                  "All requested blocks are corrupt"),
   "Skipping corrupt end block")
 
-  # If there are corrupt blocks at the very end of the file, then the last non-corrupt block is
-  # treated as the end block and no imputation is done.
-  # So in our case, since the end blocks 142-144 are corrupt, they are ignored and the file is
-  # treated as if it had only 142 blocks (0-141)
+  # Ignore the corrupt tail and include the final valid block, just as if
+  # the file ended after block 141.
+  trimmed = tempfile(fileext = ".cwa")
+  on.exit(unlink(trimmed))
+  writeBin(readBin(cwafile, "raw", n = 1024 + 142 * 512), trimmed)
+  expect_warning(expectedTail <- readAxivity(trimmed, desiredtz = "Europe/Berlin",
+                                               start = 140, end = 142),
+                 "Skipping corrupt block #0")
   expect_warning(AX3_140_141 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 141),
                  "Skipping corrupt block #0")
   expect_warning(AX3_140_142 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 142),
@@ -312,17 +316,11 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_warning(AX3_140_145 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 145),
                  "Skipping corrupt end block")
 
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_142$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_142$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_143$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_143$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_144$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_144$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_145$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_145$data[,2:4]))))
+  expect_gt(nrow(expectedTail$data), nrow(AX3_140_141$data))
+  for (actual in list(AX3_140_142, AX3_140_143, AX3_140_144, AX3_140_145)) {
+    expect_identical(actual$data, expectedTail$data)
+    expect_identical(actual$QClog, expectedTail$QClog)
+  }
 
   # If the file has more consecutive corrupt blocks than allowed by maxAllowedCorruptBlocks,
   # we should get an error.

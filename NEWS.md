@@ -1,5 +1,7 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
+- Fix `readAxivity()` dropping the last valid data block before a corrupt file tail, including reads that request only that valid block and the corrupt tail.
+
 - Fix AX6 gap imputation in `readAxivity()` to use the accelerometer channels for the normalised 1 g orientation or fallback, and fill gyroscope channels with zero.
 
 - Speed up `readAxivity()` with C++ packet decoding and a buffered native processing loop for timestamp caching, integrity checks, imputation and resampling. Retain the R interface and timezone conversion.

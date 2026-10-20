@@ -126,15 +126,40 @@ test_that("AX6 gaps impute acceleration orientation and zero angular velocity", 
   }
 })
 
-test_that("a corrupt tail without a usable endpoint fails explicitly", {
-  filename = system.file("testfiles/ax3_testfile_corrupt_blocks_0_13_14_142_143_144.cwa",
-                          package = "GGIRread")
-  # The former R loop left 'last' undefined after skipping every lookahead
-  # packet. Do not return a successful but empty data frame in this case.
-  expect_warning(expect_error(readAxivity(filename, start = 141, end = 145,
-                                           configtz = "UTC"),
-                               "No samples could be resampled from the Axivity chunk"),
-                   "Skipping corrupt")
+test_that("corrupt tails retain the last valid packet as an effective final packet", {
+  filename = tempfile(fileext = ".cwa")
+  trimmed = tempfile(fileext = ".cwa")
+  on.exit(unlink(c(filename, trimmed)))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = file.size(fixture))
+    blocks = (length(bytes) - 1024) / 512
+    validBlocks = blocks - 3
+    writeBin(bytes[seq_len(1024 + validBlocks * 512)], trimmed)
+    for (block in validBlocks:(blocks - 1)) {
+      bytes[1024 + block * 512 + 1] = as.raw(0)
+    }
+    writeBin(bytes, filename)
+    for (interpolation in 1:2) {
+      # Cover whole-file reads, two valid packets and a single valid packet.
+      for (start in c(0, validBlocks - 2, validBlocks - 1)) {
+        expected = readAxivity(trimmed, start = start, end = validBlocks,
+                                configtz = "UTC", interpolationType = interpolation)
+        expect_gt(nrow(expected$data), 0)
+        # Include requests whose endpoint search reaches the corrupt tail.
+        for (end in validBlocks:blocks) {
+          expect_warning(actual <- readAxivity(filename, start = start, end = end,
+                                                 configtz = "UTC",
+                                                 interpolationType = interpolation),
+                         "Skipping corrupt end block")
+          expect_identical(actual$data, expected$data)
+          expect_identical(actual$QClog, expected$QClog)
+          expect_equal(actual$header$blocks, blocks)
+        }
+      }
+    }
+  }
 })
 
 test_that("a device sequence reset refreshes the native timestamp cache", {
