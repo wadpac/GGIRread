@@ -75,6 +75,8 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
   Block previous(first, as<double>(first["start"]));
   List parameters = first["parameters"];
   const int axes = as<int>(parameters["Naxes"]);
+  // Acceleration follows the gyroscope channels in six-axis packets.
+  const int accelOffset = axes == 6 ? 3 : 0;
   List state = first["struc"];
   double timestamp = as<double>(state[0]);
   int oldSeconds = as<int>(state[1]);
@@ -200,18 +202,20 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
       // rare callback avoids changing repeated normalisation by one ULP.
       NumericVector orientation(3);
       for (int axis = 0; axis < 3; ++axis) {
-        orientation[axis] = anchor[axis];
+        orientation[axis] = anchor[accelOffset + axis];
       }
       const double norm = as<double>(squareRoot(sum(power(orientation, 2.0))));
       if (norm > 0.8 && norm < 1.2) {
-        for (int axis = 0; axis < 3; ++axis) imputed[axis] = anchor[axis] / norm;
+        for (int axis = 0; axis < 3; ++axis) imputed[axis] = anchor[accelOffset + axis] / norm;
       }
     }
     int source = 1;
     while (position <= last && (impute ? time[position] < rawTime[length] :
                                time[position] <= rawTime[length])) {
       if (impute) {
-        for (int axis = 0; axis < axes; ++axis) accel(position, axis) = axis < 3 ? imputed[axis] : 0;
+        for (int axis = 0; axis < axes; ++axis) {
+          accel(position, axis) = axis < accelOffset ? 0 : imputed[axis - accelOffset];
+        }
       } else {
         while (source < length && rawTime[source] < time[position]) ++source;
         const double weight = (time[position] - rawTime[source - 1]) /

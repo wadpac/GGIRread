@@ -76,6 +76,56 @@ test_that("repeated imputation retains the R normalisation arithmetic", {
   }
 })
 
+test_that("AX6 gaps impute acceleration orientation and zero angular velocity", {
+  fixture = system.file("testfiles/ax6_testfile.cwa", package = "GGIRread")
+  original = readBin(fixture, "raw", n = 1024 + 6 * 512)
+  first = GGIRread:::decodeAxivityBlock(original[1025:1536], TRUE, NULL, FALSE)
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+
+  # Exercise both normalisation of a plausible orientation and the 1 g fallback.
+  # Non-zero gyro values must never be used as the acceleration orientation.
+  for (orientation in list(c(0.6, 0.8, 0.2), c(2, 0, 0))) {
+    bytes = original
+    rawAccel = round(orientation / first$parameters$accelScale)
+    acceleration = rawAccel * first$parameters$accelScale
+    norm = sqrt(sum(acceleration^2))
+    expected = if (norm > 0.8 && norm < 1.2) acceleration / norm else c(0, 0, 1)
+    for (block in 0:5) {
+      positions = 1024 + block * 512 + seq_len(512)
+      packet = bytes[positions]
+      count = readBin(packet[29:30], integer(), size = 2, signed = FALSE,
+                      endian = "little")
+      packet[30 + seq_len(count * 12)] = writeBin(
+        as.integer(rep(c(1000, 2000, 3000, rawAccel), count)), raw(),
+        size = 2, endian = "little")
+      packet[511:512] = as.raw(0)
+      checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                               signed = FALSE, endian = "little"))) %% 65536
+      packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2,
+                                 endian = "little")
+      bytes[positions] = packet
+    }
+    # Corrupt block 2, leaving recorded data on both sides of the gap.
+    bytes[1024 + 2 * 512 + 1] = as.raw(0)
+    writeBin(bytes, filename)
+    for (interpolation in 1:2) {
+      expect_warning(result <- readAxivity(filename, start = 0, end = 5,
+                                            configtz = "UTC",
+                                            interpolationType = interpolation),
+                     "Skipping corrupt block #2")
+      gap = result$QClog[result$QClog$imputed, ]
+      expect_equal(nrow(gap), 1)
+      # Stay inside the imputed span, away from interpolation at its boundary.
+      rows = result$data$time >= gap$start & result$data$time < gap$end - 0.1
+      expect_true(any(rows))
+      expect_true(all(as.matrix(result$data[rows, c("gx", "gy", "gz")]) == 0))
+      expect_equal(unname(as.matrix(result$data[rows, c("x", "y", "z")])),
+                   matrix(rep(expected, each = sum(rows)), ncol = 3))
+    }
+  }
+})
+
 test_that("a corrupt tail without a usable endpoint fails explicitly", {
   filename = system.file("testfiles/ax3_testfile_corrupt_blocks_0_13_14_142_143_144.cwa",
                           package = "GGIRread")
