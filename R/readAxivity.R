@@ -181,13 +181,25 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   if (nargin < 1) {
     stop("At least file must be specified")
   }
-  # Get file size in data blocks
-  numDBlocks = round(file.size(filename) / blockBytes) - 2
+  # Only complete packets can be decoded; a partial final packet is excluded.
+  fileBytes = file.size(filename)
+  numDBlocks = floor(fileBytes / blockBytes) - 2
   # Open file
   fid = file(filename,"rb")
   on.exit({
     close(fid)
   })
+
+  if (fileBytes >= headerBytes) {
+    trailingBytes = (fileBytes - headerBytes) %% blockBytes
+    if (trailingBytes > 0) {
+      warning("Ignoring ", trailingBytes,
+              " trailing bytes from an incomplete Axivity data block.")
+    }
+    if (numDBlocks == 0) {
+      stop("Error reading file. No complete Axivity data blocks.")
+    }
+  }
 
   QClog = NULL # Initialise log of data quality issues
 

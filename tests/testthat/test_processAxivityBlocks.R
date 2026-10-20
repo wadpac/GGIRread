@@ -1,5 +1,25 @@
 library(GGIRread)
 
+test_that("single final packets retain their last sample despite epoch rounding", {
+  for (length in c(40L, 120L)) {
+    rate = 1.5625
+    start = 1577836800.5 + 5 / rate
+    data = cbind(x = seq_len(length), y = 0, z = 0)
+    first = list(start = start, frequency = rate, temperature = 20, battery = 0,
+                 light = 0, length = length, blockID = 0L, data = data,
+                 parameters = list(Naxes = 3L), struc = list(0, 0L, 0))
+    time = start + (seq_len(length) - 1) * (1 / rate)
+    for (interpolation in 1:2) {
+      result = GGIRread:::processAxivityBlocks(
+        function() stop("No lookahead is needed"), function(x) 0, NULL,
+        first, time, 0, 1, 1, 0.1, 20L, FALSE, interpolation)
+      expect_equal(result$last, length)
+      expect_equal(unname(result$accel), unname(data))
+      expect_null(result$QClog)
+    }
+  }
+})
+
 test_that("native loop crosses input buffers and calendar days at a low sample rate", {
   # Two days at 0.78125 Hz exercise date changes without allocating a multi-day
   # 100 Hz output. Payloads are constant; timestamps and checksums are genuine.

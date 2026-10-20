@@ -1,5 +1,9 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
+- Fix a floating-point timing error that could drop the final sample when reading a single final Axivity block at a fractional sampling rate.
+
+- Fix `readAxivity()` handling of truncated final packets: count only complete data blocks and warn about ignored trailing bytes. Report an explicit error when no complete data blocks remain.
+
 - Preserve fractional Axivity sampling rates (such as 12.5, 6.25 and 3.125 Hz) in header and packet decoding, timestamp corrections and the resampling grid instead of rounding them to integers.
 
 - Fix `readAxivity()` dropping the last valid data block before a corrupt file tail, including reads that request only that valid block and the corrupt tail.

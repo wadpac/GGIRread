@@ -1,6 +1,58 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
 
+test_that("incomplete final packets are reported and excluded consistently", {
+  filename = tempfile(fileext = ".cwa")
+  complete = tempfile(fileext = ".cwa")
+  on.exit(unlink(c(filename, complete)))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = file.size(fixture))
+    # The reference ends immediately before the packet that will be truncated.
+    writeBin(head(bytes, -512), complete)
+    for (interpolation in 1:2) {
+      expected = readAxivity(complete, start = 0, end = Inf, configtz = "UTC",
+                               interpolationType = interpolation)
+      # Cover both sides of the former rounding boundary, including the tie.
+      for (remaining in c(1, 255, 256, 257, 511)) {
+        writeBin(head(bytes, -(512 - remaining)), filename)
+        message = paste0("Ignoring ", remaining,
+                           " trailing bytes from an incomplete Axivity data block")
+        expect_warning(actual <- readAxivity(filename, start = 0, end = Inf,
+                                               configtz = "UTC",
+                                               interpolationType = interpolation),
+                       message)
+        expect_identical(actual, expected)
+        # Also cover cached-header reads requesting only the final complete packet.
+        start = expected$header$blocks - 1
+        reference = readAxivity(complete, start = start, end = Inf,
+                                  configtz = "UTC", header = expected$header,
+                                  interpolationType = interpolation)
+        expect_warning(actual <- readAxivity(filename, start = start, end = Inf,
+                                               configtz = "UTC", header = expected$header,
+                                               interpolationType = interpolation),
+                       message)
+        expect_identical(actual, reference)
+      }
+    }
+  }
+})
+
+test_that("a truncated first data packet gives an explicit error", {
+  fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
+  bytes = readBin(fixture, "raw", n = 1536)
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (remaining in c(1, 255, 256, 257, 511)) {
+    writeBin(bytes[seq_len(1024 + remaining)], filename)
+    expect_warning(
+      expect_error(readAxivity(filename, start = 0, end = Inf, configtz = "UTC"),
+                   "No complete Axivity data blocks"),
+      paste0("Ignoring ", remaining, " trailing bytes"))
+  }
+})
+
 test_that("fractional sampling rates are preserved in headers and output grids", {
   filename = tempfile(fileext = ".cwa")
   on.exit(unlink(filename))

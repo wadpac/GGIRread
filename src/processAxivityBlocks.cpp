@@ -100,6 +100,7 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     if (static_cast<R_xlen_t>(ii - start) % 128 == 0) checkUserInterrupt();
     Block current = previous;
     double nextTime;
+    const bool nominalFinal = ii == numDBlocks && firstIteration;
     if (ii == numDBlocks) {
       // Estimate the final packet's duration from the preceding packet, or
       // use its nominal frequency when it is the only requested packet.
@@ -160,7 +161,11 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
     if (!std::isfinite(nextTime)) stop("'to' must be a finite number");
     const int length = prevLength;
     rawTime.resize(length + 2);
-    const double spacing = (nextTime - prevStart) / length;
+    // A single final packet has a known nominal spacing. Subtracting rounded
+    // epoch timestamps to recover it can move its last sample one ULP before
+    // the output grid and incorrectly exclude that sample.
+    const double spacing = nominalFinal ? 1.0 / previous.frequency :
+      (nextTime - prevStart) / length;
     rawTime[1] = prevStart;
     for (int i = 1; i < length; ++i) {
       // R's seq() rounds the multiplication before adding the epoch timestamp.
