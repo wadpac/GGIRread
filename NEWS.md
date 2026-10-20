@@ -1,5 +1,7 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
+- Preserve fractional Axivity sampling rates (such as 12.5, 6.25 and 3.125 Hz) in header and packet decoding, timestamp corrections and the resampling grid instead of rounding them to integers.
+
 - Fix `readAxivity()` dropping the last valid data block before a corrupt file tail, including reads that request only that valid block and the corrupt tail.
 
 - Fix AX6 gap imputation in `readAxivity()` to use the accelerometer channels for the normalised 1 g orientation or fallback, and fill gyroscope channels with zero.

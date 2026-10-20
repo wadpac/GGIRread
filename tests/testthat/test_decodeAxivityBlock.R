@@ -109,6 +109,28 @@ test_that("native decoding preserves timestamp offsets and parameter reuse", {
   expect_equal(GGIRread:::decodeAxivityBlock(packet, FALSE, decoded$parameters, FALSE)$frequency, 200)
 })
 
+test_that("native decoding preserves fractional rates in timestamp corrections", {
+  for (code in 0:15) {
+    rate = 3200 / 2^(15 - code)
+    for (fractional in c(FALSE, TRUE)) {
+      packet = axivity_packet()
+      # Keep the rate byte nonzero even for code 0 (zero denotes legacy format).
+      packet[25] = as.raw(0x40 + code)
+      packet[5:6] = writeBin(if (fractional) 0xc000L else 0L, raw(),
+                              size = 2, endian = "little")
+      packet[27:28] = writeBin(-5L, raw(), size = 2, endian = "little")
+      packet = axivity_checksum(packet)
+      decoded = GGIRread:::decodeAxivityBlock(packet, FALSE, NULL, FALSE)
+      expect_equal(decoded$frequency, rate)
+      expect_equal(decoded$parameters$frequency_data, rate)
+      expect_equal(decoded$fractional, if (fractional) 32768 else 0)
+      expect_equal(decoded$shift, (5 - if (fractional) floor(rate / 2) else 0) / rate)
+      expect_identical(GGIRread:::decodeAxivityBlock(packet, FALSE,
+                                                     decoded$parameters, FALSE), decoded)
+    }
+  }
+})
+
 test_that("native decoding applies all accelerometer and gyroscope scale codes", {
   for (device in c("ax3", "ax6")) {
     original = axivity_packet(device)

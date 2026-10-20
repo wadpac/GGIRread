@@ -69,9 +69,8 @@ Rcpp::List decodeAxivityBlock(Rcpp::RawVector block, bool complete,
     axes = axesPacking >> 4;
     scaleCode = lightScale >> 13;
     accelScale = 1.0 / std::pow(2.0, 8 + scaleCode);
-    // nearbyint, like R's round(), rounds ties to even.
     frequency = samplerate == 0 ? offset26 :
-      std::nearbyint(3200.0 / (1U << (15 - (samplerate & 15))));
+      3200.0 / (1U << (15 - (samplerate & 15)));
     format = samplerate == 0 ? 0 : ((tsOffset & 0x8000U) != 0 ? 1 : 2);
     params = List::create(_["accelScaleCode"] = scaleCode,
                           _["accelScale"] = accelScale,

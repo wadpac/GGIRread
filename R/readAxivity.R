@@ -127,7 +127,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     uniqueSerialCode = bitwOr(bitwShiftL(upperDeviceId, 16), lowerDeviceId)
     # sample rate and dynamic range accelerometer
     samplerate_dynrange = readBin(block[37], integer(), size = 1, signed = FALSE) #offset 36
-    frequency_header = round( 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15)))
+    frequency_header = 3200 / bitwShiftL(1, 15 - bitwAnd(samplerate_dynrange, 15))
     accrange = bitwShiftR(16, (bitwShiftR(samplerate_dynrange, 6)))
     version = readBin(block[42], integer(), size = 1, signed = FALSE) #offset 41
 

@@ -1,6 +1,45 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
 
+test_that("fractional sampling rates are preserved in headers and output grids", {
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    original = readBin(fixture, "raw", n = 1536)
+    for (code in 0:7) {
+      rate = 3200 / 2^(15 - code)
+      bytes = original
+      bytes[37] = as.raw(0x40 + code)
+      packet = bytes[1025:1536]
+      packet[25] = as.raw(0x40 + code)
+      packet[5:6] = writeBin(0xc000L, raw(), size = 2, endian = "little")
+      packet[15:18] = writeBin(as.integer(20 * 2^26 + 2^22 + 2^17), raw(),
+                                size = 4, endian = "little") # 2020-01-01 UTC
+      packet[27:28] = writeBin(-5L, raw(), size = 2, endian = "little")
+      packet[511:512] = as.raw(0)
+      checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                               signed = FALSE, endian = "little"))) %% 65536
+      packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2,
+                                 endian = "little")
+      bytes[1025:1536] = packet
+      writeBin(bytes, filename)
+      result = readAxivity(filename, start = 0, end = 1, configtz = "UTC")
+      expectedStart = as.numeric(as.POSIXct("2020-01-01", tz = "UTC")) +
+        0.5 + (5 - floor(rate / 2)) / rate
+      expect_equal(result$header$frequency, rate)
+      expect_equal(as.numeric(result$header$start), expectedStart, tolerance = 1e-6,
+                   scale = 1)
+      expect_equal(nrow(result$data), result$header$blockLength)
+      expect_equal(result$data$time,
+                   expectedStart + (seq_len(result$header$blockLength) - 1) / rate,
+                   tolerance = 1e-6, scale = 1)
+      expect_null(result$QClog)
+    }
+  }
+})
+
 test_that("readAxivity returns the final block when it is the only requested block", {
   for (device in c("ax3", "ax6")) {
     cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),

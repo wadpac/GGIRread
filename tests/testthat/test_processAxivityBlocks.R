@@ -1,21 +1,25 @@
 library(GGIRread)
 
 test_that("native loop crosses input buffers and calendar days at a low sample rate", {
-  # Two days at 1 Hz exercise date changes without allocating a multi-day
+  # Two days at 0.78125 Hz exercise date changes without allocating a multi-day
   # 100 Hz output. Payloads are constant; timestamps and checksums are genuine.
   fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
   bytes = readBin(fixture, "raw", n = 1536)
   packet = bytes[1025:1536]
-  packet[25] = as.raw(3) # round(3200 / 2^(15 - 3)) = 1 Hz
+  packet[25] = as.raw(3) # 3200 / 2^(15 - 3) = 0.78125 Hz
+  rate = 0.78125
+  count = 100L # 128 seconds per packet, keeping calendar timestamps integral.
+  packet[29:30] = writeBin(count, raw(), size = 2, endian = "little")
   packet[5:6] = as.raw(0)
   packet[27:28] = as.raw(0)
   packet[31:510] = rep(writeBin(256L, raw(), size = 4, endian = "little"), 120)
   blocks = 1442L
   origin = as.POSIXct("2020-01-01", tz = "UTC")
-  times = as.POSIXlt(origin + (seq_len(blocks) - 1) * 120, tz = "UTC")
+  times = as.POSIXlt(origin + (seq_len(blocks) - 1) * count / rate, tz = "UTC")
   coded = bitwShiftL(as.integer(times$year - 100), 26) +
     bitwShiftL(as.integer(times$mon + 1), 22) + bitwShiftL(as.integer(times$mday), 17) +
-    bitwShiftL(as.integer(times$hour), 12) + bitwShiftL(as.integer(times$min), 6)
+    bitwShiftL(as.integer(times$hour), 12) + bitwShiftL(as.integer(times$min), 6) +
+    as.integer(times$sec)
   packets = matrix(rep(packet, blocks), nrow = 512)
   packets[11:14,] = writeBin(seq_len(blocks) - 1L, raw(), size = 4, endian = "little")
   packets[15:18,] = writeBin(as.integer(coded), raw(), size = 4, endian = "little")
@@ -30,9 +34,9 @@ test_that("native loop crosses input buffers and calendar days at a low sample r
   on.exit(unlink(filename))
   writeBin(c(bytes[1:1024], as.vector(packets)), filename)
   result = readAxivity(filename, start = 0, end = blocks - 1, configtz = "UTC")
-  samples = (blocks - 1) * 120
+  samples = (blocks - 1) * count
   expect_equal(nrow(result$data), samples)
-  expect_identical(result$data$time, as.numeric(origin) + seq_len(samples) - 1)
+  expect_identical(result$data$time, as.numeric(origin) + (seq_len(samples) - 1) / rate)
   scale = 1 / 2^(8 + bitwShiftR(as.integer(packet[20]), 5))
   expect_true(all(result$data$x == 256 * scale))
   expect_true(all(result$data$y == 0))
