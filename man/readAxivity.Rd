@@ -16,12 +16,14 @@
     filename (required) is name of cwa file to read
   }
   \item{start}{
-    non-negative integer which is a cwa file block number.
+    Zero-based, non-negative integer index of the first data block to read.
+    The metadata header is not counted as a data block.
   }
   \item{end}{
-    non-negative integer which is a cwa file block number.
-    End must be not be less than start.
-    If end is less or equal to start, then there is no data read.
+    Exclusive data block index. Use \code{Inf} to read through the last complete
+    data block. Values beyond the file's block count are limited to that count.
+    If \code{end <= start}, only the header is returned, with \code{data = NULL}.
+    The default \code{start = end = 0} therefore reads only the header.
   }
   \item{progressBar}{
     Is trigger to switch on/off the text progress bar. If progressBar
@@ -43,7 +45,9 @@
     Boolean to indicate whether battery voltage should be loaded
   }
   \item{header}{
-    Header to be reused if it was extracted earlier
+    Header returned by an earlier call for the same file, to avoid reading it
+    again when processing chunks. Use the same timezone settings as in that call.
+    Warnings about incomplete trailing bytes are issued only when \code{header = NULL}.
   }
   \item{frequency_tol}{
     Numeric value representing the tolerance for frequency bias expressed
@@ -65,41 +69,64 @@
   \item \code{data} dataframe with data from start inclusive till end exclusive.
     If start == end then data section of final structure is empty.
     \itemize{
-      \item timestamp in numeric format
-      \item gx gyroscope x-axis (only available in AX6)
-      \item gy gyroscope y-axis (only available in AX6)
-      \item gz gyroscope z-axis (only available in AX6)
-      \item x accelerometer x-axis
-      \item y accelerometer y-axis
-      \item z accelerometer z-axis
-      \item temperature in Celsius (only recorded once per block)
-      \item battery one value per block (only recorded once per block)
-      \item light in LUX on (only recorded once per block)
+      \item time numeric timestamp in seconds since the Unix epoch
+      \item gx gyroscope x-axis in degrees per second (AX6 with gyroscope enabled)
+      \item gy gyroscope y-axis in degrees per second (AX6 with gyroscope enabled)
+      \item gz gyroscope z-axis in degrees per second (AX6 with gyroscope enabled)
+      \item x accelerometer x-axis in g
+      \item y accelerometer y-axis in g
+      \item z accelerometer z-axis in g
+      \item temp temperature in Celsius (recorded once per block)
+      \item battery voltage in volts (recorded once per block), or zero when \code{loadbattery = FALSE}
+      \item light raw light sensor value (recorded once per block), without conversion to lux
       }
   \item \code{header} file header. list of header information:
     \itemize{
-    \item uniqueSerialCode is unque serial code of used device
-    \item frequency is measurement frequency. All data will be resampled for this 
-    frequency
-    \item start is timestamp in numeric form. To get text representation it is
-    enough to use as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
+    \item uniqueSerialCode is the device serial code
+    \item frequency is the nominal measurement frequency in Hz, including
+    fractional rates such as 12.5 Hz. All data are resampled at this frequency
+    \item start is a \code{POSIXct} timestamp for the first valid data block,
+    displayed in \code{desiredtz}
     \item device is "Axivity"
     \item firmwareVersion
-    \item blocks is number of datablocks with 80 or 120 raw observations in each.
+    \item blocks is the number of complete data blocks, including corrupt blocks
+    \item accrange is the accelerometer range in g (for example, 8 denotes +/-8 g)
+    \item hardwareType is \code{"AX3"} or \code{"AX6"}
+    \item blockLength is the sample count of the first valid data block,
+    typically 40, 80 or 120 depending on the sensor configuration
     }
-  \item \code{QClog} dataframe with log of integrity checks on each block including:
+  \item \code{QClog} dataframe logging failed checksums, imputed intervals and
+    frequency deviations above 5\%; \code{NULL} when there are no such events.
+    It is omitted for header-only reads. Columns are:
     \itemize{
       \item checksum_pass Boolean to indicate whether checksum was zero.
-      \item blockID_previous ID for previous block
-      \item blockID_current ID for current block
-      \item start_previous numeric start time of previous block
-      \item start_current numeric start time of current block
-      \item blockLengthSeconds length of previous block
+      \item blockID_current ID of the block whose interval is being checked
+      \item blockID_next ID of the following block
+      \item start numeric start time of the checked interval, in seconds since the Unix epoch
+      \item end numeric end time of the checked interval, in seconds since the Unix epoch
+      \item blockLengthSeconds duration of the interval in seconds
       \item frequency_blockheader frequency derived from block header
       \item frequency_observed frequency as observed
-      \item imputed Boolean to indicate whether this block was inputed
+      \item imputed Boolean indicating whether the interval was imputed
     }
   }
+}
+\details{
+  Only complete 512-byte data packets are decoded. An incomplete final packet
+  is excluded with a warning when reading the header. An error is raised when
+  no complete data packets remain. Corrupt packets at the start or end of a
+  requested interval are skipped up to \code{maxAllowedCorruptBlocks}; internal
+  corruption can cause the intervening interval to be imputed.
+
+  Acceleration is interpolated using the selected method. Rejected intervals
+  are filled with the preceding acceleration orientation normalised to 1 g
+  when its magnitude lies between 0.8 and 1.2 g, otherwise with \code{c(0, 0, 1)}.
+  Gyroscope channels are filled with zero during imputation.
+
+  For failed-checksum rows in \code{QClog}, the packet's contents cannot be
+  trusted: block IDs are inferred from file positions and timing and frequency
+  fields are zero. Such rows have \code{imputed = FALSE}; a separate row records
+  any imputation between the surrounding valid packets.
 }
 \examples{
   \donttest{
