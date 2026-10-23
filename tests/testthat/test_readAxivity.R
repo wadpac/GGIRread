@@ -1,6 +1,56 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
 
+test_that("one-sample recordings retain sensor columns and one output row", {
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = 1536)
+    packet = bytes[1025:1536]
+    packet[29:30] = writeBin(1L, raw(), size = 2, endian = "little")
+    packet[511:512] = as.raw(0)
+    checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                             signed = FALSE, endian = "little"))) %% 65536
+    packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2, endian = "little")
+    writeBin(c(bytes[1:1024], packet), filename)
+    expected = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, TRUE)
+    axes = colnames(expected$data)
+    for (interpolation in 1:2) {
+      result = readAxivity(filename, start = 0, end = Inf, configtz = "UTC",
+                             loadbattery = TRUE, interpolationType = interpolation)
+      expect_equal(nrow(result$data), 1L)
+      expect_identical(names(result$data), c("time", axes, "temp", "battery", "light"))
+      expect_equal(unname(as.matrix(result$data[, axes])), unname(expected$data))
+      expect_equal(result$data$temp, expected$temperature)
+      expect_equal(result$data$battery, expected$battery)
+      expect_equal(result$data$light, expected$light)
+    }
+  }
+})
+
+test_that("corrupt lookahead packets respect the consecutive-block limit", {
+  fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
+  bytes = readBin(fixture, "raw", n = file.size(fixture))
+  for (block in 5:6) bytes[1024 + block * 512 + 1] = as.raw(0)
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  writeBin(bytes, filename)
+  expect_warning(
+    expect_error(readAxivity(filename, start = 0, end = 5, configtz = "UTC",
+                              maxAllowedCorruptBlocks = 1),
+                 "2 consecutive blocks are corrupt", fixed = TRUE),
+    "Skipping corrupt end block #5", fixed = TRUE)
+  expect_warning(actual <- readAxivity(filename, start = 0, end = 5, configtz = "UTC",
+                                         maxAllowedCorruptBlocks = 2),
+                   "Skipping corrupt end block #5", fixed = TRUE)
+  expect_warning(expected <- readAxivity(filename, start = 0, end = 7, configtz = "UTC",
+                                           maxAllowedCorruptBlocks = 2),
+                   "Skipping corrupt block #5", fixed = TRUE)
+  expect_identical(actual, expected)
+})
+
 test_that("incomplete final packets are reported and excluded consistently", {
   filename = tempfile(fileext = ".cwa")
   complete = tempfile(fileext = ".cwa")

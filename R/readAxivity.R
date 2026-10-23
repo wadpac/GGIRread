@@ -96,7 +96,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
     #           as.POSIXct(start, origin = "1970-01-01", tz=desiredtz)
     #   device is "Axivity"
     #   firmwareVersion is version of firmware
-    #   blocks is number of datablocks with 80 or 120 observations in each
+    #   blocks is the number of complete data blocks (typically 40, 80 or 120 samples)
     #       Unfortunately frequency of measurement is varied in this device.
     #
 
@@ -246,8 +246,9 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
       warning("Skipping corrupt end block #", ii)
       end = end + 1
     }
-    if (is_corrupt && ii == end+maxAllowedCorruptBlocks) {
-      stop("Error reading file. The last ", maxAllowedCorruptBlocks+1, " blocks are corrupt.")
+    if (is_corrupt && end < numDBlocks) {
+      stop("Error reading file. ", maxAllowedCorruptBlocks+1,
+           " consecutive blocks are corrupt.")
     }
     endTimestamp = as.numeric(endBlock$start)
   }
@@ -255,11 +256,11 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   if (end == numDBlocks) {
     # end == numDBlocks, meaning we'll be reading all the remaining blocks.
     # There is no block #numDBlocks, so we can't get the ending timestamp from the start of that block.
-    # Instead read the very last block of the file (if the last block is corrupt, fing the last non-corrupt one),
+    # Instead read the very last block of the file (if corrupt, find the last non-corrupt one),
     # then project what the ending timestamp should be.
 
     # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
-    # SInce we are at the last block, we have to go backwards.
+    # Since we are at the last block, we have to go backwards.
     is_corrupt = TRUE
     for (ii in (end-1) : max(start, end-maxAllowedCorruptBlocks-1)) {
       seek(fid, headerBytes + blockBytes * ii, origin = 'start')
@@ -292,7 +293,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # Read the start block.
   # Reinitiate file and skip header as well as the initial start-1 blocks
   seek(fid, headerBytes + blockBytes * start, origin = 'start')
-  pos = 1 # position of the first element to complete in data
 
   # Skip any corrupt blocks, up to maxAllowedCorruptBlocks in number.
   is_corrupt = TRUE
@@ -326,7 +326,6 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   if (is.null(prevRaw)) {
     return(invisible(list(header = header, data = NULL)))
   }
-  struc = prevRaw$struc
   startTimestamp = as.numeric(prevRaw$start)
 
   # allocate memory for results
@@ -360,8 +359,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # If the user asked for more data than the length of the recording,
   # there will be 0s at the end of the result lists; get rid of them.
   if (last < nrow(accelRes)) {
-    cut = c(last+1:nrow(accelRes))
-    accelRes = accelRes[-cut,]
+    cut = seq.int(last + 1L, nrow(accelRes))
+    accelRes = accelRes[-cut, , drop = FALSE]
     battery = battery[-cut]
     light = light[-cut]
     temp = temp[-cut]

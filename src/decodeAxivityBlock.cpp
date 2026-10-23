@@ -51,7 +51,9 @@ Rcpp::List decodeAxivityBlock(Rcpp::RawVector block, bool complete,
   const unsigned int tsOffset = u16(block, 4);
   const unsigned int lightScale = u16(block, 18);
   const int axesPacking = block[25];
-  const bool packed = (axesPacking & 15) == 0;
+  const int packing = axesPacking & 15;
+  if (packing != 0 && packing != 2) stop("Unsupported Axivity sample packing format.");
+  const bool packed = packing == 0;
   const int offset26 = s16(block, 26);
   const int count = u16(block, 28);
   const bool reuse = parameters.isNotNull();

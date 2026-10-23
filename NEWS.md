@@ -1,6 +1,10 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
-- Release native Axivity output buffers when a corrupt-block warning exits through a warning handler or `options(warn = 2)`. Require Rcpp >= 1.0.10 for unwind protection.
+- Preserve sensor columns for Axivity reads returning a single sample, and report an explicit error when a chunk's endpoint search exceeds the consecutive corrupt-block limit.
+
+- Reject unsupported Axivity sample packing formats rather than interpreting them as 16-bit samples. Update the reader documentation to describe chunk indices, output units, header fields and quality logs.
+
+- Release native Axivity output buffers when a corrupt-block warning exits through a warning handler or `options(warn = 2)`. Require Rcpp >= 1.0.10 for unwind protection, and use a named warning callback for compatibility with Clang on macOS.
 
 - Fix interpolation between valid Axivity packets to use the preceding raw sample and timestamp instead of the last resampled output, for both linear and nearest-neighbour interpolation.
 

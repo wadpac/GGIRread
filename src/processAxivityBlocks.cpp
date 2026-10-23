@@ -133,8 +133,8 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
         // Rcpp::warning() can longjmp past C++ destructors when a handler
         // exits or warn = 2. Function calls use Rcpp's unwind protection so
         // the preserved output buffers are released on those paths too.
-        Function(Environment::base_env()["warning"])(
-          tfm::format("Skipping corrupt block #%.0f", ii), _["call."] = false);
+        Function warn = Environment::base_env()["warning"];
+        warn(tfm::format("Skipping corrupt block #%.0f", ii), _["call."] = false);
         if (++consecutiveCorrupt > maxAllowedCorruptBlocks) {
           stop("Error reading file. %d consecutive blocks are corrupt.", maxAllowedCorruptBlocks + 1);
         }

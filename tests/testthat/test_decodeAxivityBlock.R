@@ -179,6 +179,11 @@ test_that("the fractional timestamp shim uses the firmware's integer frequency",
 test_that("native decoder validates packets before accessing sample payloads", {
   packet = axivity_packet()
   expect_error(GGIRread:::decodeAxivityBlock(packet[-1], TRUE, NULL, FALSE), "512 bytes")
+  packet[26] = as.raw(0x31) # Unknown packing must not be treated as signed 16-bit data.
+  packet[29:30] = writeBin(1L, raw(), size = 2, endian = "little")
+  expect_error(GGIRread:::decodeAxivityBlock(axivity_checksum(packet), TRUE, NULL, FALSE),
+               "Unsupported Axivity sample packing format", fixed = TRUE)
+  packet = axivity_packet()
   packet[1] = as.raw(0)
   expect_identical(GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE),
                    list(checksum_pass = FALSE))
