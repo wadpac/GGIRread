@@ -130,7 +130,11 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
       if (!as<bool>(decoded["checksum_pass"])) {
         qc.push_back(QC{false, false, static_cast<int>(ii), static_cast<int>(ii + 1),
                         0, 0, 0, 0, 0});
-        warning("Skipping corrupt block #%.0f", ii);
+        // Rcpp::warning() can longjmp past C++ destructors when a handler
+        // exits or warn = 2. Function calls use Rcpp's unwind protection so
+        // the preserved output buffers are released on those paths too.
+        Function(Environment::base_env()["warning"])(
+          tfm::format("Skipping corrupt block #%.0f", ii), _["call."] = false);
         if (++consecutiveCorrupt > maxAllowedCorruptBlocks) {
           stop("Error reading file. %d consecutive blocks are corrupt.", maxAllowedCorruptBlocks + 1);
         }

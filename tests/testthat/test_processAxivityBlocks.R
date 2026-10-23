@@ -1,5 +1,46 @@
 library(GGIRread)
 
+test_that("exiting warning handlers release native output buffers", {
+  fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
+  packet = readBin(fixture, "raw", n = 1536)[1025:1536]
+  first = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
+  first$start = 0
+  first$struc = list(0, 0L, 0)
+  packet[1] = as.raw(0) # A failed checksum triggers the native warning path.
+  samples = 100000L
+  time = (seq_len(samples) - 1) / first$frequency
+  read = function() GGIRread:::processAxivityBlocks(
+    function() packet, function(x) 0, NULL, first, time,
+    0, 2, 2, 0.1, 20L, FALSE, 1L)
+  old = options(warn = 1)
+  on.exit(options(old))
+
+  condition = tryCatch(read(), warning = identity)
+  expect_s3_class(condition, "warning")
+  expect_identical(conditionMessage(condition), "Skipping corrupt block #1")
+  expect_null(conditionCall(condition))
+  options(warn = 2)
+  expect_error(read(), "(converted from warning) Skipping corrupt block #1", fixed = TRUE)
+
+  for (warn in c(1, 2)) {
+    options(warn = warn)
+    # Warm up condition handling before measuring live R vector cells. RSS
+    # need not fall after gc(), because the allocator can retain freed pages.
+    interrupt = if (warn == 1) {
+      function() tryCatch(read(), warning = function(w) NULL)
+    } else {
+      function() tryCatch(read(), error = function(e) NULL)
+    }
+    expect_null(interrupt())
+    before = gc()["Vcells", "used"]
+    for (i in 1:3) expect_null(interrupt())
+    retained = gc()["Vcells", "used"] - before
+    # Allow a whole output allocation of headroom; three leaked allocations
+    # retain at least 18 vector cells per sample (six numeric columns each).
+    expect_lt(retained, samples * 6)
+  }
+})
+
 test_that("packet boundaries interpolate through raw samples on every axis", {
   filename = tempfile(fileext = ".cwa")
   on.exit(unlink(filename))

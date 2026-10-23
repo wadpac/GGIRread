@@ -1,5 +1,7 @@
 # Changes in version 1.0.12 (release date:??-??-2026)
 
+- Release native Axivity output buffers when a corrupt-block warning exits through a warning handler or `options(warn = 2)`. Require Rcpp >= 1.0.10 for unwind protection.
+
 - Fix interpolation between valid Axivity packets to use the preceding raw sample and timestamp instead of the last resampled output, for both linear and nearest-neighbour interpolation.
 
 - Fix a floating-point timing error that could drop the final sample when reading a single final Axivity block at a fractional sampling rate.
