@@ -118,6 +118,10 @@ Rcpp::List decodeAxivityBlock(Rcpp::RawVector block, bool complete,
     _["shift"] = -shift / frequency);
   if (complete) {
     NumericMatrix data(count, axes);
+    // Per Daniel Jackson's AX6 clarification, public firmware uses gyro codes
+    // 2-6 (2000-125 dps); code 0 means disabled gyro in three-axis packets.
+    // Keep the formula for unused codes as an extension of the range pattern.
+    // omconvert's code-0 fallback to 2000 dps concerns pre-release prototypes.
     const double gyroRange = 8000.0 / (1U << ((lightScale >> 10) & 7U));
     for (int row = 0; row < count; ++row) {
       if (packed) {
