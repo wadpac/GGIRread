@@ -192,7 +192,7 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
 
   if (fileBytes >= headerBytes) {
     trailingBytes = (fileBytes - headerBytes) %% blockBytes
-    if (trailingBytes > 0) {
+    if (trailingBytes > 0 && is.null(header)) {
       warning("Ignoring ", trailingBytes,
               " trailing bytes from an incomplete Axivity data block.")
     }

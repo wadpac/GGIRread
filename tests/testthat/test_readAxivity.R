@@ -29,10 +29,10 @@ test_that("incomplete final packets are reported and excluded consistently", {
         reference = readAxivity(complete, start = start, end = Inf,
                                   configtz = "UTC", header = expected$header,
                                   interpolationType = interpolation)
-        expect_warning(actual <- readAxivity(filename, start = start, end = Inf,
+        # Warn only when reading the header, not on subsequent cached-header chunks.
+        expect_no_warning(actual <- readAxivity(filename, start = start, end = Inf,
                                                configtz = "UTC", header = expected$header,
-                                               interpolationType = interpolation),
-                       message)
+                                               interpolationType = interpolation))
         expect_identical(actual, reference)
       }
     }

@@ -158,6 +158,24 @@ test_that("native decoding applies all accelerometer and gyroscope scale codes",
   }
 })
 
+test_that("the fractional timestamp shim uses the firmware's integer frequency", {
+  for (code in 5:7) {
+    packet = axivity_packet()
+    rate = 3200 / 2^(15 - code) # 3.125, 6.25 and 12.5 Hz.
+    packet[25] = as.raw(0x40 + code)
+    # Fraction 0.96875 s: at 12.5 Hz the firmware shifts 11 samples,
+    # whereas using the exact rate would incorrectly shift 12 samples.
+    packet[5:6] = writeBin(0xfc00L, raw(), size = 2, endian = "little")
+    packet[27:28] = writeBin(-5L, raw(), size = 2, endian = "little")
+    packet = axivity_checksum(packet)
+    decoded = GGIRread:::decodeAxivityBlock(packet, FALSE, NULL, FALSE)
+    expect_equal(decoded$frequency, rate)
+    expect_equal(decoded$shift, -(-5 + floor(0.96875 * floor(rate))) / rate)
+    expect_identical(GGIRread:::decodeAxivityBlock(packet, FALSE,
+                                                   decoded$parameters, FALSE), decoded)
+  }
+})
+
 test_that("native decoder validates packets before accessing sample payloads", {
   packet = axivity_packet()
   expect_error(GGIRread:::decodeAxivityBlock(packet[-1], TRUE, NULL, FALSE), "512 bytes")

@@ -94,8 +94,10 @@ Rcpp::List decodeAxivityBlock(Rcpp::RawVector block, bool complete,
     if (format == 1) {
       // Undo the firmware's backwards-compatible timestamp shim: the lower
       // 15 bits hold a fraction of a second, and offset26 includes its samples.
+      // The firmware truncates the frequency to an integer here (e.g. 12 for
+      // 12.5 Hz), so undo the shim with the same truncated value.
       fractional = (tsOffset & 0x7fffU) << 1;
-      shift += std::floor(fractional * frequency / 65536.0);
+      shift += std::floor(fractional * std::floor(frequency) / 65536.0);
     }
   }
   // Temperature uses the low ten ADC bits. Battery stores only the middle
