@@ -9,7 +9,7 @@ All changes below concern `readAxivity()`.
 
 ## Timing and resampling
 
-- Preserve fractional sampling rates (e.g. 12.5, 6.25 and 3.125 Hz) throughout decoding, timestamp correction and resampling. Reverse the firmware's fractional timestamp shim using its truncated integer rate while retaining the exact rate for sample timing.
+- Preserve fractional sampling rates (e.g. 12.5) throughout decoding, timestamp correction and resampling. Reverse the firmware's fractional timestamp shim using its truncated integer rate while retaining the exact rate for sample timing.
 - Correct the final block's time axis, including chunks containing only that block (#98), and prevent floating-point timing errors from dropping the final sample at fractional rates. These fixes can change the final samples and output row count.
 - Use the preceding raw sample and timestamp for linear and nearest-neighbour interpolation between valid packets. Preserve R's timestamp rounding on platforms using fused multiply-add, fixing small interpolation differences on macOS ARM.
 
