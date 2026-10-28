@@ -4,3 +4,4 @@
 prepareNewRelease.R
 LICENSE
 codecov.yml
+^tools/benchmark-readAxivity\.R$

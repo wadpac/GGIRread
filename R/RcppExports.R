@@ -9,8 +9,16 @@ GENEActivReader <- function(filename, start = 0L, end = 0L, progress_bar = FALSE
     .Call(`_GGIRread_GENEActivReader`, filename, start, end, progress_bar)
 }
 
+decodeAxivityBlock <- function(block, complete, parameters, loadbattery) {
+    .Call(`_GGIRread_decodeAxivityBlock`, block, complete, parameters, loadbattery)
+}
+
 find_matrix_packet_start <- function(file_path, pattern, chunk_size = 1048576L) {
     .Call(`_GGIRread_find_matrix_packet_start`, file_path, pattern, chunk_size)
+}
+
+processAxivityBlocks <- function(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType) {
+    .Call(`_GGIRread_processAxivityBlocks`, readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType)
 }
 
 resample <- function(raw, rawTime, time, stop, type = 1L) {

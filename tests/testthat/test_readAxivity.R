@@ -1,5 +1,223 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
+
+test_that("one-sample recordings retain sensor columns and one output row", {
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = 1536)
+    packet = bytes[1025:1536]
+    packet[29:30] = writeBin(1L, raw(), size = 2, endian = "little")
+    packet[511:512] = as.raw(0)
+    checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                             signed = FALSE, endian = "little"))) %% 65536
+    packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2, endian = "little")
+    writeBin(c(bytes[1:1024], packet), filename)
+    expected = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, TRUE)
+    axes = colnames(expected$data)
+    for (interpolation in 1:2) {
+      result = readAxivity(filename, start = 0, end = Inf, configtz = "UTC",
+                             loadbattery = TRUE, interpolationType = interpolation)
+      expect_equal(nrow(result$data), 1L)
+      expect_identical(names(result$data), c("time", axes, "temp", "battery", "light"))
+      expect_equal(unname(as.matrix(result$data[, axes])), unname(expected$data))
+      expect_equal(result$data$temp, expected$temperature)
+      expect_equal(result$data$battery, expected$battery)
+      expect_equal(result$data$light, expected$light)
+    }
+  }
+})
+
+test_that("corrupt lookahead packets respect the consecutive-block limit", {
+  fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
+  bytes = readBin(fixture, "raw", n = file.size(fixture))
+  for (block in 5:6) bytes[1024 + block * 512 + 1] = as.raw(0)
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  writeBin(bytes, filename)
+  expect_warning(
+    expect_error(readAxivity(filename, start = 0, end = 5, configtz = "UTC",
+                              maxAllowedCorruptBlocks = 1),
+                 "2 consecutive blocks are corrupt", fixed = TRUE),
+    "Skipping corrupt end block #5", fixed = TRUE)
+  expect_warning(actual <- readAxivity(filename, start = 0, end = 5, configtz = "UTC",
+                                         maxAllowedCorruptBlocks = 2),
+                   "Skipping corrupt end block #5", fixed = TRUE)
+  expect_warning(expected <- readAxivity(filename, start = 0, end = 7, configtz = "UTC",
+                                           maxAllowedCorruptBlocks = 2),
+                   "Skipping corrupt block #5", fixed = TRUE)
+  expect_identical(actual, expected)
+})
+
+test_that("incomplete final packets are reported and excluded consistently", {
+  filename = tempfile(fileext = ".cwa")
+  complete = tempfile(fileext = ".cwa")
+  on.exit(unlink(c(filename, complete)))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    bytes = readBin(fixture, "raw", n = file.size(fixture))
+    # The reference ends immediately before the packet that will be truncated.
+    writeBin(head(bytes, -512), complete)
+    for (interpolation in 1:2) {
+      expected = readAxivity(complete, start = 0, end = Inf, configtz = "UTC",
+                               interpolationType = interpolation)
+      # Cover both sides of the former rounding boundary, including the tie.
+      for (remaining in c(1, 255, 256, 257, 511)) {
+        writeBin(head(bytes, -(512 - remaining)), filename)
+        message = paste0("Ignoring ", remaining,
+                           " trailing bytes from an incomplete Axivity data block")
+        expect_warning(actual <- readAxivity(filename, start = 0, end = Inf,
+                                               configtz = "UTC",
+                                               interpolationType = interpolation),
+                       message)
+        expect_identical(actual, expected)
+        # Also cover cached-header reads requesting only the final complete packet.
+        start = expected$header$blocks - 1
+        reference = readAxivity(complete, start = start, end = Inf,
+                                  configtz = "UTC", header = expected$header,
+                                  interpolationType = interpolation)
+        # Warn only when reading the header, not on subsequent cached-header chunks.
+        expect_no_warning(actual <- readAxivity(filename, start = start, end = Inf,
+                                               configtz = "UTC", header = expected$header,
+                                               interpolationType = interpolation))
+        expect_identical(actual, reference)
+      }
+    }
+  }
+})
+
+test_that("a truncated first data packet gives an explicit error", {
+  fixture = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")
+  bytes = readBin(fixture, "raw", n = 1536)
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (remaining in c(1, 255, 256, 257, 511)) {
+    writeBin(bytes[seq_len(1024 + remaining)], filename)
+    expect_warning(
+      expect_error(readAxivity(filename, start = 0, end = Inf, configtz = "UTC"),
+                   "No complete Axivity data blocks"),
+      paste0("Ignoring ", remaining, " trailing bytes"))
+  }
+})
+
+test_that("fractional sampling rates are preserved in headers and output grids", {
+  filename = tempfile(fileext = ".cwa")
+  on.exit(unlink(filename))
+  for (device in c("ax3", "ax6")) {
+    fixture = system.file("testfiles", paste0(device, "_testfile.cwa"),
+                           package = "GGIRread")
+    original = readBin(fixture, "raw", n = 1536)
+    for (code in 0:7) {
+      rate = 3200 / 2^(15 - code)
+      bytes = original
+      bytes[37] = as.raw(0x40 + code)
+      packet = bytes[1025:1536]
+      packet[25] = as.raw(0x40 + code)
+      packet[5:6] = writeBin(0xc000L, raw(), size = 2, endian = "little")
+      packet[15:18] = writeBin(as.integer(20 * 2^26 + 2^22 + 2^17), raw(),
+                                size = 4, endian = "little") # 2020-01-01 UTC
+      packet[27:28] = writeBin(-5L, raw(), size = 2, endian = "little")
+      packet[511:512] = as.raw(0)
+      checksum = (-sum(readBin(packet, integer(), n = 256, size = 2,
+                               signed = FALSE, endian = "little"))) %% 65536
+      packet[511:512] = writeBin(as.integer(checksum), raw(), size = 2,
+                                 endian = "little")
+      bytes[1025:1536] = packet
+      writeBin(bytes, filename)
+      result = readAxivity(filename, start = 0, end = 1, configtz = "UTC")
+      expectedStart = as.numeric(as.POSIXct("2020-01-01", tz = "UTC")) +
+        0.5 + (5 - floor(rate / 2)) / rate
+      expect_equal(result$header$frequency, rate)
+      expect_equal(as.numeric(result$header$start), expectedStart, tolerance = 1e-6,
+                   scale = 1)
+      expect_equal(nrow(result$data), result$header$blockLength)
+      expect_equal(result$data$time,
+                   expectedStart + (seq_len(result$header$blockLength) - 1) / rate,
+                   tolerance = 1e-6, scale = 1)
+      expect_null(result$QClog)
+    }
+  }
+})
+
+test_that("readAxivity returns the final block when it is the only requested block", {
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),
+                          package = "GGIRread")
+    n = (file.size(cwafile) - 1024) / 512
+    header = readAxivity(cwafile, desiredtz = "UTC")$header
+    for (interpolationType in c(1, 2)) {
+      result = readAxivity(cwafile, start = n - 1, end = n,
+                           desiredtz = "UTC", header = header,
+                           interpolationType = interpolationType,
+                           loadbattery = TRUE, frequency_tol = 0)
+      expect_equal(nrow(result$data), header$blockLength)
+      expect_equal(ncol(result$data), if (device == "ax3") 7L else 10L)
+      expect_equal(diff(result$data$time),
+                   rep(1 / header$frequency, header$blockLength - 1),
+                   tolerance = 1e-6)
+      expect_true(all(result$data$battery > 0))
+      expect_null(result$QClog)
+      # First and last accelerometer samples from the fixture's final packet.
+      expected = if (device == "ax3") {
+        rbind(c(0.59375, 0.328125, 0.59375), c(-0.0625, -0.84375, 0.265625))
+      } else {
+        rbind(c(104, 2007, 15), c(98, 2010, 23)) / 2048
+      }
+      expect_equal(unname(as.matrix(result$data[c(1, header$blockLength),
+                                               c("x", "y", "z")])), expected,
+                   tolerance = 1e-6)
+    }
+
+    # The same path is reached when a corrupt start packet is skipped,
+    # leaving just the final valid packet in the requested chunk.
+    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
+    offset = 1024 + (n - 2) * 512 + 1
+    bytes[offset] = as.raw(bitwXor(as.integer(bytes[offset]), 1L))
+    corruptfile = tempfile(fileext = ".cwa")
+    writeBin(bytes, corruptfile)
+    expect_warning(result <- readAxivity(corruptfile, start = n - 2, end = n,
+                                         desiredtz = "UTC"),
+                   "Skipping corrupt start block")
+    reference = readAxivity(cwafile, start = n - 1, end = n, desiredtz = "UTC")
+    expect_equal(result$data, reference$data)
+    expect_equal(nrow(result$QClog), 1L)
+    expect_false(result$QClog$checksum_pass)
+    unlink(corruptfile)
+  }
+})
+
+test_that("multi-block reads place the final packet on its own time axis", {
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),
+                          package = "GGIRread")
+    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
+    n = (length(bytes) - 1024) / 512
+    packet = bytes[1024 + (n - 1) * 512 + seq_len(512)]
+    decoded = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
+    single = readAxivity(cwafile, start = n - 1, end = n, desiredtz = "UTC")
+    preceding = readAxivity(cwafile, start = n - 2, end = n - 1, desiredtz = "UTC")
+    finalStart = single$data$time[1]
+    # Multi-block reads estimate spacing from the preceding packet, whereas
+    # the single-block path must use the nominal frequency.
+    spacing = (finalStart - preceding$data$time[1]) / preceding$header$blockLength
+    rawTime = finalStart + (seq_len(decoded$length) - 1) * spacing
+    axes = colnames(decoded$data)
+    for (start in c(0, n - 2)) {
+      result = readAxivity(cwafile, start = start, end = n, desiredtz = "UTC")
+      tail = result$data[result$data$time >= finalStart,]
+      expect_gt(nrow(tail), decoded$length / 2)
+      expect_lte(max(tail$time), max(rawTime) + 1e-6)
+      for (axis in axes) {
+        expected = approx(rawTime, decoded$data[,axis], xout = tail$time)$y
+        expect_equal(tail[[axis]], expected, tolerance = 1e-6, scale = 1)
+      }
+    }
+  }
+})
+
 test_that("readAxivity reads data from AX3 file correctly", {
   cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
   AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 4)
@@ -16,11 +234,11 @@ test_that("readAxivity reads data from AX3 file correctly", {
   # ask for more data then there is in the file
   AX3b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX3b$header$device, "Axivity")
-  expect_equal(nrow(AX3b$data), 17599)
+  expect_equal(nrow(AX3b$data), 17600)
   expect_equal(ncol(AX3b$data), 7)
   expect_equal(AX3b$data$time[5], 1551174906.040, tolerance = .001, scale = 1)
   expect_equal(AX3b$data$temp[3], 25.5859, tolerance = 0.0001, scale = 1)
-  expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 25367)
+  expect_equal(floor(sum(abs(AX3b$data[,2:4]))), 25405)
 
 })
 
@@ -220,10 +438,14 @@ test_that("readAxivity handles failed checksums correctly", {
                  "All requested blocks are corrupt"),
   "Skipping corrupt end block")
 
-  # If there are corrupt blocks at the very end of the file, then the last non-corrupt block is
-  # treated as the end block and no imputation is done.
-  # So in our case, since the end blocks 142-144 are corrupt, they are ignored and the file is
-  # treated as if it had only 142 blocks (0-141)
+  # Ignore the corrupt tail and include the final valid block, just as if
+  # the file ended after block 141.
+  trimmed = tempfile(fileext = ".cwa")
+  on.exit(unlink(trimmed))
+  writeBin(readBin(cwafile, "raw", n = 1024 + 142 * 512), trimmed)
+  expect_warning(expectedTail <- readAxivity(trimmed, desiredtz = "Europe/Berlin",
+                                               start = 140, end = 142),
+                 "Skipping corrupt block #0")
   expect_warning(AX3_140_141 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 141),
                  "Skipping corrupt block #0")
   expect_warning(AX3_140_142 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 142),
@@ -235,17 +457,11 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_warning(AX3_140_145 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 140, end = 145),
                  "Skipping corrupt end block")
 
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_142$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_142$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_143$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_143$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_144$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_144$data[,2:4]))))
-
-  expect_equal(nrow(AX3_140_141$data), nrow(AX3_140_145$data))
-  expect_equal(floor(sum(abs(AX3_140_141$data[,2:4]))), floor(sum(abs(AX3_140_145$data[,2:4]))))
+  expect_gt(nrow(expectedTail$data), nrow(AX3_140_141$data))
+  for (actual in list(AX3_140_142, AX3_140_143, AX3_140_144, AX3_140_145)) {
+    expect_identical(actual$data, expectedTail$data)
+    expect_identical(actual$QClog, expectedTail$QClog)
+  }
 
   # If the file has more consecutive corrupt blocks than allowed by maxAllowedCorruptBlocks,
   # we should get an error.
@@ -281,11 +497,12 @@ test_that("readAxivity reads data from AX6 file correctly", {
   # ask for more data then there is in the file
   AX6b = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 1000)
   expect_equal(AX6b$header$device, "Axivity")
-  expect_equal(nrow(AX6b$data), 11428)
+  expect_equal(nrow(AX6b$data), 11429)
   expect_equal(ncol(AX6b$data), 10)
   expect_equal(AX6b$data$time[5], 1577131446.740, tolerance = .001, scale = 1)
   expect_equal(AX6b$data$temp[3], 27.34375, tolerance = 0.0001)
-  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960046)
+  # Includes interpolation through raw samples at packet boundaries.
+  expect_equal(floor(sum(abs(AX6b$data[,2:4]))), 960636)
   expect_true(is.null(AX6b$QClog))
 
 })

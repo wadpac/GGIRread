@@ -1,3 +1,35 @@
+# Changes in version 1.0.12 (release date:??-??-2026)
+
+- Preserve sensor columns for Axivity reads returning a single sample, and report an explicit error when a chunk's endpoint search exceeds the consecutive corrupt-block limit.
+
+- Reject unsupported Axivity sample packing formats rather than interpreting them as 16-bit samples. Update the reader documentation to describe chunk indices, output units, header fields and quality logs.
+
+- Release native Axivity output buffers when a corrupt-block warning exits through a warning handler or `options(warn = 2)`. Require Rcpp >= 1.0.10 for unwind protection, and use a named warning callback for compatibility with Clang on macOS.
+
+- Fix interpolation between valid Axivity packets to use the preceding raw sample and timestamp instead of the last resampled output, for both linear and nearest-neighbour interpolation.
+
+- Fix a floating-point timing error that could drop the final sample when reading a single final Axivity block at a fractional sampling rate.
+
+- Fix `readAxivity()` handling of truncated final packets: count only complete data blocks and warn about ignored trailing bytes only when reading the header, avoiding repeated warnings for subsequent chunks. Report an explicit error when no complete data blocks remain.
+
+- Preserve fractional Axivity sampling rates (such as 12.5, 6.25 and 3.125 Hz) in header and packet decoding, timestamp corrections and the resampling grid instead of rounding them to integers.
+
+- Undo the Axivity firmware's fractional timestamp shim using its truncated integer sampling frequency while retaining the exact nominal rate for sample timing.
+
+- Fix `readAxivity()` dropping the last valid data block before a corrupt file tail, including reads that request only that valid block and the corrupt tail.
+
+- Fix AX6 gap imputation in `readAxivity()` to use the accelerometer channels for the normalised 1 g orientation or fallback, and fill gyroscope channels with zero.
+
+- Speed up `readAxivity()` with C++ packet decoding and a buffered native processing loop for timestamp caching, integrity checks, imputation and resampling. Retain the R interface and timezone conversion.
+
+- Fix `readAxivity()` failing when a requested chunk contains only the final data block. Use the block's recorded sampling frequency when no preceding block is available to estimate timing. #98
+
+- Fix the final block's time axis in `readAxivity()` reads containing multiple blocks up to the end of a file. This corrects an existing timing error and can change the final samples and output row count.
+
+- Keep the native Axivity processing loop compatible with C++11 and C++14, and release its full output buffers before assembling trimmed results to reduce memory retention.
+
+- Preserve R's timestamp rounding in the native Axivity loop on platforms using fused multiply-add, fixing small interpolation differences on macOS ARM.
+
 # Changes in version 1.0.11 (release date:18-09-2026)
 
 - Added GENEActiv light calibration needed for device model GENEActiv 1.2 and above. Contributed by ActivInsights Ltd, the manufacturer of GENEActiv devices. 
