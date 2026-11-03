@@ -17,8 +17,8 @@ find_matrix_packet_start <- function(file_path, pattern, chunk_size = 1048576L) 
     .Call(`_GGIRread_find_matrix_packet_start`, file_path, pattern, chunk_size)
 }
 
-processAxivityBlocks <- function(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType) {
-    .Call(`_GGIRread_processAxivityBlocks`, readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType)
+processAxivityBlocks <- function(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType, fillToNext = FALSE, gridTolerance = 0) {
+    .Call(`_GGIRread_processAxivityBlocks`, readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType, fillToNext, gridTolerance)
 }
 
 resample <- function(raw, rawTime, time, stop, type = 1L) {

@@ -63,8 +63,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // processAxivityBlocks
-Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calendar, Rcpp::Nullable<Rcpp::Function> progress, Rcpp::List first, Rcpp::NumericVector time, double start, double end, double numDBlocks, double frequency_tol, int maxAllowedCorruptBlocks, bool loadbattery, int interpolationType);
-RcppExport SEXP _GGIRread_processAxivityBlocks(SEXP readBlocksSEXP, SEXP calendarSEXP, SEXP progressSEXP, SEXP firstSEXP, SEXP timeSEXP, SEXP startSEXP, SEXP endSEXP, SEXP numDBlocksSEXP, SEXP frequency_tolSEXP, SEXP maxAllowedCorruptBlocksSEXP, SEXP loadbatterySEXP, SEXP interpolationTypeSEXP) {
+Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calendar, Rcpp::Nullable<Rcpp::Function> progress, Rcpp::List first, Rcpp::NumericVector time, double start, double end, double numDBlocks, double frequency_tol, int maxAllowedCorruptBlocks, bool loadbattery, int interpolationType, bool fillToNext, double gridTolerance);
+RcppExport SEXP _GGIRread_processAxivityBlocks(SEXP readBlocksSEXP, SEXP calendarSEXP, SEXP progressSEXP, SEXP firstSEXP, SEXP timeSEXP, SEXP startSEXP, SEXP endSEXP, SEXP numDBlocksSEXP, SEXP frequency_tolSEXP, SEXP maxAllowedCorruptBlocksSEXP, SEXP loadbatterySEXP, SEXP interpolationTypeSEXP, SEXP fillToNextSEXP, SEXP gridToleranceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -80,7 +80,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type maxAllowedCorruptBlocks(maxAllowedCorruptBlocksSEXP);
     Rcpp::traits::input_parameter< bool >::type loadbattery(loadbatterySEXP);
     Rcpp::traits::input_parameter< int >::type interpolationType(interpolationTypeSEXP);
-    rcpp_result_gen = Rcpp::wrap(processAxivityBlocks(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType));
+    Rcpp::traits::input_parameter< bool >::type fillToNext(fillToNextSEXP);
+    Rcpp::traits::input_parameter< double >::type gridTolerance(gridToleranceSEXP);
+    rcpp_result_gen = Rcpp::wrap(processAxivityBlocks(readBlocks, calendar, progress, first, time, start, end, numDBlocks, frequency_tol, maxAllowedCorruptBlocks, loadbattery, interpolationType, fillToNext, gridTolerance));
     return rcpp_result_gen;
 END_RCPP
 }

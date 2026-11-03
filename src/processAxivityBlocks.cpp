@@ -66,7 +66,8 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
                                Rcpp::List first, Rcpp::NumericVector time,
                                double start, double end, double numDBlocks,
                                double frequency_tol, int maxAllowedCorruptBlocks,
-                               bool loadbattery, int interpolationType) {
+                               bool loadbattery, int interpolationType,
+                               bool fillToNext = false, double gridTolerance = 0) {
   using namespace Rcpp;
   if (time.size() == 0 || time.size() > std::numeric_limits<int>::max()) {
     stop("Invalid number of samples in Axivity chunk.");
@@ -257,6 +258,29 @@ Rcpp::List processAxivityBlocks(Rcpp::Function readBlocks, Rcpp::Function calend
       interpolationTime = rawTime[length];
       for (int axis = 0; axis < axes; ++axis) {
         interpolationAnchor[axis] = previous.data(length - 1, axis);
+      }
+    }
+    if (fillToNext && ii == end && ii < numDBlocks) {
+      // Last iteration of a chunk that ends before the end of the file. The
+      // lookahead packet (current) is not part of the output, but the grid
+      // points before its start belong to this chunk. Fill them as the next
+      // iteration would when the whole file is read: interpolate between the
+      // interpolation anchor and the first sample of the lookahead packet,
+      // with the auxiliary values of that packet. The next chunk then starts
+      // at the first grid point at or after current.start.
+      while (position < nr && time[position] < current.start - gridTolerance) {
+        const double weight = (time[position] - interpolationTime) /
+          (current.start - interpolationTime);
+        for (int axis = 0; axis < axes; ++axis) {
+          const double left = interpolationAnchor[axis];
+          const double right = current.data(0, axis);
+          if (interpolationType == 1) accel(position, axis) = weight * (right - left) + left;
+          else if (interpolationType == 2) accel(position, axis) = std::ceil(weight - 0.5) * (right - left) + left;
+        }
+        temperature[position] = current.temperature;
+        battery[position] = current.battery;
+        light[position] = current.light;
+        ++position;
       }
     }
     previous = current;

@@ -329,9 +329,20 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   startTimestamp = as.numeric(prevRaw$start)
 
   # allocate memory for results
-  timeRes = seq(startTimestamp, endTimestamp, step)
-  nr = length(timeRes) - 1
-  timeRes = as.vector(timeRes[1:nr])
+  # Output samples lie on one time grid for the whole file, anchored at the
+  # start time in the file header: header$start + k * step. The first sample is
+  # the first grid point at or after the first sample of the start block, and
+  # the last one is the last grid point before the start of the end block
+  # (filled in processAxivityBlocks). Calls for consecutive block ranges
+  # therefore join without lost or repeated samples, and give the same result
+  # as reading those blocks in one call.
+  gridStart = as.numeric(header$start)
+  # tolerance (s) for deciding on which side of a block border a grid point is
+  gridTolerance = 0.001 * step
+  k0 = ceiling((startTimestamp - gridTolerance - gridStart) / step)
+  k1 = ceiling((endTimestamp - gridStart) / step) + 1
+  timeRes = gridStart + (k0:k1) * step
+  nr = length(timeRes)
   # Keep the R connection for platform-independent filenames and cleanup. The
   # native loop requests at most 128 packets at a time, independent of file size.
   readBlocks = function() readBin(fid, raw(), n = blockBytes * 128)
@@ -345,7 +356,8 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   }
   result = processAxivityBlocks(readBlocks, calendar, progress, prevRaw, timeRes,
                                 start, end, numDBlocks, frequency_tol,
-                                maxAllowedCorruptBlocks, loadbattery, interpolationType)
+                                maxAllowedCorruptBlocks, loadbattery, interpolationType,
+                                end < numDBlocks, gridTolerance)
   accelRes = result$accel
   temp = result$temp
   battery = result$battery
