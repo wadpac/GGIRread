@@ -1,6 +1,27 @@
 library(GGIRread)
 context("reading Axivity .cwa data")
 
+# Start time of a raw packet, decoded as readAxivity does (UTC clock).
+packetStart = function(packet) {
+  decoded = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
+  coded = decoded$timeStamp
+  start = ISOdatetime(bitwAnd(bitwShiftR(coded, 26), 0x3fL) + 2000,
+                      bitwAnd(bitwShiftR(coded, 22), 0x0fL),
+                      bitwAnd(bitwShiftR(coded, 17), 0x1f),
+                      bitwAnd(bitwShiftR(coded, 12), 0x1fL),
+                      bitwAnd(bitwShiftR(coded, 6), 0x3fL),
+                      bitwAnd(coded, 0x3fL), tz = "UTC")
+  as.numeric(start) + decoded$fractional / 65536 + decoded$shift
+}
+
+# Reference for resample(): linear (1) or nearest neighbour (2) interpolation.
+resampleReference = function(rawTime, raw, time, type) {
+  i = pmax(1, findInterval(time, rawTime, left.open = TRUE))
+  u = (time - rawTime[i]) / (rawTime[i + 1] - rawTime[i])
+  if (type == 2) u = ceiling(u - 0.5)
+  raw[i] + u * (raw[i + 1] - raw[i])
+}
+
 test_that("one-sample recordings retain sensor columns and one output row", {
   filename = tempfile(fileext = ".cwa")
   on.exit(unlink(filename))
@@ -148,32 +169,35 @@ test_that("readAxivity returns the final block when it is the only requested blo
                           package = "GGIRread")
     n = (file.size(cwafile) - 1024) / 512
     header = readAxivity(cwafile, desiredtz = "UTC")$header
+    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
+    packet = bytes[1024 + (n - 1) * 512 + seq_len(512)]
+    decoded = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
+    # A single packet is placed on its nominal frequency.
+    rawTime = packetStart(packet) + (seq_len(decoded$length) - 1) / header$frequency
+    # Output samples are the points of the file's time grid within the packet.
+    step = 1 / header$frequency
+    gridStart = as.numeric(header$start)
+    k = ceiling((rawTime[1] - 0.001 * step - gridStart) / step):
+      floor((max(rawTime) - gridStart) / step)
     for (interpolationType in c(1, 2)) {
       result = readAxivity(cwafile, start = n - 1, end = n,
                            desiredtz = "UTC", header = header,
                            interpolationType = interpolationType,
                            loadbattery = TRUE, frequency_tol = 0)
-      expect_equal(nrow(result$data), header$blockLength)
+      expect_equal(result$data$time, gridStart + k * step, tolerance = 1e-6, scale = 1)
+      expect_gte(nrow(result$data), header$blockLength - 1)
       expect_equal(ncol(result$data), if (device == "ax3") 7L else 10L)
-      expect_equal(diff(result$data$time),
-                   rep(1 / header$frequency, header$blockLength - 1),
-                   tolerance = 1e-6)
       expect_true(all(result$data$battery > 0))
       expect_null(result$QClog)
-      # First and last accelerometer samples from the fixture's final packet.
-      expected = if (device == "ax3") {
-        rbind(c(0.59375, 0.328125, 0.59375), c(-0.0625, -0.84375, 0.265625))
-      } else {
-        rbind(c(104, 2007, 15), c(98, 2010, 23)) / 2048
+      for (axis in c("x", "y", "z")) {
+        expected = resampleReference(rawTime, decoded$data[, axis],
+                                     result$data$time, interpolationType)
+        expect_equal(result$data[[axis]], expected, tolerance = 1e-6, scale = 1)
       }
-      expect_equal(unname(as.matrix(result$data[c(1, header$blockLength),
-                                               c("x", "y", "z")])), expected,
-                   tolerance = 1e-6)
     }
 
     # The same path is reached when a corrupt start packet is skipped,
     # leaving just the final valid packet in the requested chunk.
-    bytes = readBin(cwafile, "raw", n = file.size(cwafile))
     offset = 1024 + (n - 2) * 512 + 1
     bytes[offset] = as.raw(bitwXor(as.integer(bytes[offset]), 1L))
     corruptfile = tempfile(fileext = ".cwa")
@@ -197,12 +221,12 @@ test_that("multi-block reads place the final packet on its own time axis", {
     n = (length(bytes) - 1024) / 512
     packet = bytes[1024 + (n - 1) * 512 + seq_len(512)]
     decoded = GGIRread:::decodeAxivityBlock(packet, TRUE, NULL, FALSE)
-    single = readAxivity(cwafile, start = n - 1, end = n, desiredtz = "UTC")
-    preceding = readAxivity(cwafile, start = n - 2, end = n - 1, desiredtz = "UTC")
-    finalStart = single$data$time[1]
+    finalStart = packetStart(packet)
+    precedingStart = packetStart(bytes[1024 + (n - 2) * 512 + seq_len(512)])
     # Multi-block reads estimate spacing from the preceding packet, whereas
     # the single-block path must use the nominal frequency.
-    spacing = (finalStart - preceding$data$time[1]) / preceding$header$blockLength
+    header = readAxivity(cwafile, desiredtz = "UTC")$header
+    spacing = (finalStart - precedingStart) / header$blockLength
     rawTime = finalStart + (seq_len(decoded$length) - 1) * spacing
     axes = colnames(decoded$data)
     for (start in c(0, n - 2)) {
@@ -224,10 +248,10 @@ test_that("readAxivity reads data from AX3 file correctly", {
   expect_equal(AX3$header$device, "Axivity")
   expect_equal(nrow(AX3$data), 364)
   expect_equal(ncol(AX3$data), 7)
-  expect_equal(AX3$data$time[5], 1551174907.255, tolerance = .001, scale = 1)
+  expect_equal(AX3$data$time[5], 1551174907.2605, tolerance = .001, scale = 1)
   expect_equal(AX3$data$temp[3], 26.46484, tolerance = 0.0001)
-  expect_equal(floor(sum(abs(AX3$data[,2:4]))), 603)
-  expect_equal(AX3$data[1,2], 0.7656, tolerance = .0001, scale = 1)
+  expect_equal(floor(sum(abs(AX3$data[,2:4]))), 604)
+  expect_equal(AX3$data[1,2], 0.7491, tolerance = .0001, scale = 1)
   expect_equal(AX3$data[4,3], -0.3125, tolerance = .0001, scale = 1)
   expect_true(is.null(AX3$QClog))
 
@@ -263,8 +287,11 @@ test_that("readAxivity handles failed checksums correctly", {
   expect_warning(AX3_0_12 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 0, end = 12),
                "Skipping corrupt block #0")
   expect_equal(AX3_0_12$header$device, "Axivity")
-  expect_equal(nrow(AX3_0_12$data), nrow(AX3$data))
-  expect_equal(floor(sum(abs(AX3_0_12$data[,2:4]))), floor(sum(abs(AX3$data[,2:4]))))
+  # The time grid starts at the first valid block: block 0 in the intact file and
+  # block 1 here, so the two grids are offset by a fraction of a sample.
+  expect_lte(abs(nrow(AX3_0_12$data) - nrow(AX3$data)), 1)
+  expect_equal(mean(abs(as.matrix(AX3_0_12$data[,2:4]))),
+               mean(abs(as.matrix(AX3$data[,2:4]))), tolerance = .001)
 
   expect_false(is.null(AX3_0_12$QClog))
   expect_equal(nrow(AX3_0_12$QClog),1)
@@ -279,17 +306,16 @@ test_that("readAxivity handles failed checksums correctly", {
                  "Skipping corrupt block #0") # the warning is there b/c block 0 is always read, and it's corrupt
 
   expect_equal(AX3_1_12$header$device, "Axivity")
-  expect_equal(nrow(AX3_1_12$data), nrow(AX3$data))
-  expect_equal(floor(sum(abs(AX3_1_12$data[,2:4]))), floor(sum(abs(AX3$data[,2:4]))))
+  expect_equal(AX3_1_12$data, AX3_0_12$data)
   expect_true(is.null(AX3_1_12$QClog))
 
   # Now read a bigger chunk of the file, so that the corrupt blocks 13-14 fall in the middle
   expect_warning(AX3_1_20 <- readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 20),
                  "Skipping corrupt block #13")
   expect_equal(AX3_1_20$header$device, "Axivity")
-  expect_equal(nrow(AX3_1_20$data), 2306)
+  expect_equal(nrow(AX3_1_20$data), 2307)
   expect_equal(ncol(AX3_1_20$data), 7)
-  expect_equal(floor(sum(abs(AX3_1_20$data[,2:4]))), 3244)
+  expect_equal(floor(sum(abs(AX3_1_20$data[,2:4]))), 3245)
 
   # there should be 3 entries in QClog: one each for blocks 13 and 14 with failed checksums (these initially get skipped, not imputed),
   # and one for block 12 that preceeds the corrupt blocks, because data needs to be imputed from block 12 (inclusive) to 15 (exclusive)
@@ -313,7 +339,9 @@ test_that("readAxivity handles failed checksums correctly", {
 
   # check that data in blocks 12-14 got imputed with the correct values
 
-  nrow11 = nrow(AX3_1_12$data)
+  # The last row of AX3_1_12 is filled up to the start of block 12, so the last
+  # sample of block 11 is the one before it.
+  nrow11 = nrow(AX3_1_12$data) - 1
   imputedValues = AX3_1_12$data[nrow11,2:4]
   VectorG = sqrt(sum(imputedValues^2))
   imputedValues = imputedValues / VectorG
@@ -484,13 +512,13 @@ test_that("readAxivity reads data from AX6 file correctly", {
   expect_equal(AX6$header$device, "Axivity")
   expect_equal(nrow(AX6$data), 121)
   expect_equal(ncol(AX6$data), 10)
-  expect_equal(AX6$data$time[5], 1577131447.144, tolerance = .001, scale = 1)
+  expect_equal(AX6$data$time[5], 1577131447.150, tolerance = .001, scale = 1)
   expect_equal(AX6$data$temp[3], 27.34375, tolerance = 0.0001)
   expect_equal(floor(sum(abs(AX6$data[,2:4]))), 2007)
   expect_equal(floor(sum(abs(AX6$data[,5:7]))), 10)
-  expect_equal(AX6$data[1,2], 0.2670288, tolerance = 0.0000001, scale = 1)
-  expect_equal(AX6$data[4,3], -0.5026558, tolerance = 0.0000001, scale = 1)
-  expect_equal(AX6$data[30,5], -0.009452909, tolerance = 0.0000001, scale = 1)
+  expect_equal(AX6$data[1,2], 0.2899582, tolerance = 0.0000001, scale = 1)
+  expect_equal(AX6$data[4,3], -0.5122697, tolerance = 0.0000001, scale = 1)
+  expect_equal(AX6$data[30,5], -0.008252002, tolerance = 0.0000001, scale = 1)
   expect_true(is.null(AX6$QClog))
 
 
@@ -515,20 +543,55 @@ test_that("readAxivity reads timezones correctly", {
   tzLon = "Europe/London"
   # desiredtz == configtz
   tzequal = readAxivity(filename = cwafile, desiredtz = tzLon, configtz = tzLon, start = 1, end = 4)
-  expect_equal(tzequal$data$time[1], 1551178507.215, tolerance = .001, scale = 1)
+  expect_equal(tzequal$data$time[1], 1551178507.2205, tolerance = .001, scale = 1)
   expect_equal(format(as.POSIXlt(tzequal$data$time[1], tz = tzLon,
-                                       origin = "1970-01-01")), "2019-02-26 10:55:07.215")
+                                       origin = "1970-01-01")), "2019-02-26 10:55:07.220")
 
   # desiredtz < configtz
   tzwest = readAxivity(filename = cwafile, desiredtz = tzLon, configtz = tzAms, start = 1, end = 4)
-  expect_equal(tzwest$data$time[1], 1551174907.215, tolerance = .001, scale = 1)
+  expect_equal(tzwest$data$time[1], 1551174907.2205, tolerance = .001, scale = 1)
   expect_equal(format(as.POSIXlt(tzwest$data$time[1], tz = tzLon,
-                                       origin = "1970-01-01")), "2019-02-26 09:55:07.215")
+                                       origin = "1970-01-01")), "2019-02-26 09:55:07.220")
 
   # desiredtz > configtz
   tzeast = readAxivity(filename = cwafile, desiredtz = tzAms, configtz = tzLon, start = 1, end = 4)
-  expect_equal(tzeast$data$time[1], 1551178507.215, tolerance = .001, scale = 1)
+  expect_equal(tzeast$data$time[1], 1551178507.2205, tolerance = .001, scale = 1)
   expect_equal(format(as.POSIXlt(tzeast$data$time[1], tz = tzAms,
-                                       origin = "1970-01-01")), "2019-02-26 11:55:07.215")
+                                       origin = "1970-01-01")), "2019-02-26 11:55:07.220")
   options(old)
+})
+
+test_that("chunks of consecutive blocks join like a single read", {
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"), package = "GGIRread")
+    header = readAxivity(cwafile, start = 0, end = 0, desiredtz = "Europe/London")$header
+    for (interpolation in 1:2) {
+      whole = readAxivity(cwafile, start = 0, end = Inf, header = header,
+                          desiredtz = "Europe/London",
+                          interpolationType = interpolation)$data
+      # all output samples on the grid
+      k = (whole$time - as.numeric(header$start)) * header$frequency
+      expect_lt(max(abs(k - round(k))), 1e-4)
+      for (cut in c(10, 50, 100)) {
+        part1 = readAxivity(cwafile, start = 0, end = cut, header = header,
+                          desiredtz = "Europe/London",
+                            interpolationType = interpolation)$data
+        part2 = readAxivity(cwafile, start = cut, end = Inf, header = header,
+                          desiredtz = "Europe/London",
+                            interpolationType = interpolation)$data
+        joined = rbind(part1, part2)
+        rownames(joined) = rownames(whole) = NULL
+        expect_equal(joined, whole, tolerance = 0)
+      }
+      # three chunks
+      parts = lapply(list(c(0, 20), c(20, 40), c(40, Inf)), function(w) {
+        readAxivity(cwafile, start = w[1], end = w[2], header = header,
+                          desiredtz = "Europe/London",
+                    interpolationType = interpolation)$data
+      })
+      joined = do.call(rbind, parts)
+      rownames(joined) = NULL
+      expect_equal(joined, whole, tolerance = 0)
+    }
+  }
 })
