@@ -123,6 +123,16 @@
   when its magnitude lies between 0.8 and 1.2 g, otherwise with \code{c(0, 0, 1)}.
   Gyroscope channels are filled with zero during imputation.
 
+  Output samples lie on one time grid for the whole file, starting at the
+  start time in the file header and spaced 1 / frequency. A call returns the
+  grid points from the first sample of block \code{start} up to, but not
+  including, the start of block \code{end}. Reading consecutive block ranges
+  in separate calls therefore gives the same samples as reading them in one
+  call. Next to corrupt blocks, a chunk that starts or ends next to a corrupt
+  interval, or that contains only the last valid block of the file, can still
+  differ slightly from a single read, because the frequency check and the
+  duration of the last block are estimated from fewer blocks.
+
   For failed-checksum rows in \code{QClog}, the packet's contents cannot be
   trusted: block IDs are inferred from file positions and timing and frequency
   fields are zero. Such rows have \code{imputed = FALSE}; a separate row records
@@ -132,6 +142,10 @@
   \donttest{
     cwafile  = system.file("testfiles/ax3_testfile.cwa", package = "GGIRread")[1]
     AX3 = readAxivity(filename = cwafile, desiredtz = "Europe/Berlin", start = 1, end = 2)
+    # read in two chunks that join seamlessly
+    header = readAxivity(cwafile, start = 0, end = 0)$header
+    part1 = readAxivity(cwafile, start = 0, end = 50, header = header)
+    part2 = readAxivity(cwafile, start = 50, end = 100, header = header)
   }
 }
 \author{
