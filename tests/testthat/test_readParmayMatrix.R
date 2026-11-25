@@ -86,3 +86,28 @@ test_that("Identification of corrupt files and foreseen errors", {
   BIN = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", start = 8, end = NULL)
   expect_true(is.null(BIN$QClog)) # start is beyond total packets, meaning file was already fully read and this should be NULL
 })
+
+test_that("Temperature and heart rate without imputation (impute_temp / impute_heart = FALSE)", {
+  binfile  = system.file("testfiles/mtx_100Hz_acc_HR_temp.BIN", package = "GGIRread")[1]
+  DEF = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", read_heart = TRUE)
+  # default behaviour is unchanged by the new arguments
+  DEF2 = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", read_heart = TRUE,
+                          impute_temp = TRUE, impute_heart = TRUE)
+  expect_equal(DEF2$data, DEF$data)
+  # no imputation for both sensors
+  RAW = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", read_heart = TRUE,
+                         impute_temp = FALSE, impute_heart = FALSE)
+  expect_equal(nrow(RAW$data), nrow(DEF$data))
+  expect_equal(RAW$data[, c("time", "acc_x", "acc_y", "acc_z")], DEF$data[, c("time", "acc_x", "acc_y", "acc_z")])
+  expect_gte(sum(is.na(RAW$data$hr)), sum(is.na(DEF$data$hr)))
+  expect_gte(sum(is.na(RAW$data$bodySurface_temp)), sum(is.na(DEF$data$bodySurface_temp)))
+  # each sensor can be switched off separately
+  HRONLY = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", read_heart = TRUE,
+                            impute_heart = FALSE)
+  expect_equal(HRONLY$data$bodySurface_temp, DEF$data$bodySurface_temp)
+  expect_equal(HRONLY$data$hr, RAW$data$hr)
+  # a zero max_sensor_gap leaves only grid points that coincide with readings
+  RAW0 = readParmayMatrix(filename = binfile, desiredtz = "Europe/Berlin", read_heart = TRUE,
+                          impute_temp = FALSE, max_sensor_gap = 0)
+  expect_gte(sum(is.na(RAW0$data$bodySurface_temp)), sum(is.na(RAW$data$bodySurface_temp)))
+})
