@@ -1,3 +1,8 @@
+# Changes in version 1.2.1 (release date:??-??-2026)
+
+- `readParmayMatrix()`: new arguments `impute_temp` and `impute_heart` (default `TRUE`, unchanged behaviour) and `max_sensor_gap` to allow reading temperature and/or heart rate without imputation (#103).
+- `readParmayMatrix()`: fix the condition used to set heart rate to `NA` in corrupt packets, which checked the temperature count instead of the heart rate count, so heart rate in corrupt packets was not set to `NA` in files without temperature data (#103).
+
 # Changes in version 1.2.0 (release date:28-10-2026)
 
 All changes below concern `readAxivity()`.
@@ -200,5 +205,3 @@ update svn revision r82904 (2022-09-24 19:32:52)
 # Changes in version 0.2.0 (release date:12-08-2022)
 
 - First release with functionality for reading Axivity .cwa, GENEActiv .bin, and Genea, .bin data.
-
-
