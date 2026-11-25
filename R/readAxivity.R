@@ -340,7 +340,14 @@ readAxivity = function(filename, start = 0, end = 0, progressBar = FALSE, desire
   # tolerance (s) for deciding on which side of a block border a grid point is
   gridTolerance = 0.001 * step
   k0 = ceiling((startTimestamp - gridTolerance - gridStart) / step)
-  k1 = ceiling((endTimestamp - gridStart) / step) + 1
+  if (end < numDBlocks) {
+    # Match the boundary-fill cutoff so all allocated rows are used. Padding
+    # even a few rows forces the trimming below to copy every output array.
+    k1 = ceiling((endTimestamp - gridTolerance - gridStart) / step) - 1
+  } else {
+    # The final packet's endpoint is estimated; retain its existing padding.
+    k1 = ceiling((endTimestamp - gridStart) / step) + 1
+  }
   timeRes = gridStart + (k0:k1) * step
   nr = length(timeRes)
   # Keep the R connection for platform-independent filenames and cleanup. The
