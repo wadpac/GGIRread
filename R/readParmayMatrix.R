@@ -3,7 +3,9 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
                             desiredtz = "", configtz = NULL,
                             interpolationType = 1,
                             read_acc = TRUE, read_gyro = FALSE, 
-                            read_temp = TRUE, read_heart = FALSE) {
+                            read_temp = TRUE, read_heart = FALSE,
+                            impute_temp = TRUE, impute_heart = TRUE,
+                            max_sensor_gap = NULL) {
   
   # Matrix devices binary files are organized in packets of data.
   # https://www.parmaytech.com/devices/en-matrix
@@ -137,6 +139,42 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     
     # Preserve column names for clarity in downstream use
     colnames(out) = colnames(data)
+    out
+  }
+  # Helper used when impute_temp = FALSE or impute_heart = FALSE. Resample each  
+  # column of a temp/heart matrix separately (so that a missing value in one
+  # column does not remove the other) and set to NA every grid point that falls
+  # in a gap between consecutive valid readings longer than max_gap seconds
+  # (default: twice the median interval between readings of the sensor), as
+  # well as grid points before the first or after the last valid reading.
+  resample_without_imputation = function(data, timestamps, grid, max_gap = NULL,
+                                         interpolationType = 1) {
+    data = as.matrix(data)
+    timestamps = as.numeric(as.vector(timestamps))
+    common_len = min(NROW(data), length(timestamps))
+    data = data[seq_len(common_len), , drop = FALSE]
+    timestamps = timestamps[seq_len(common_len)]
+    grid_num = as.numeric(grid)
+    if (is.null(max_gap)) {
+      dt = diff(sort(unique(timestamps[is.finite(timestamps)])))
+      max_gap = if (length(dt) > 0) 2 * stats::median(dt) else Inf
+    }
+    out = matrix(NA_real_, nrow = length(grid_num), ncol = ncol(data))
+    colnames(out) = colnames(data)
+    for (j in seq_len(ncol(data))) {
+      res_j = resample_to_grid(data = data[, j, drop = FALSE], timestamps = timestamps,
+                               grid = grid_num, interpolationType = interpolationType)
+      ok = is.finite(timestamps) & is.finite(data[, j])
+      ts_ok = sort(unique(timestamps[ok]))
+      if (length(ts_ok) < 2) next
+      k = findInterval(grid_num, ts_ok)  # index of the last valid reading at or before each grid point
+      prev_t = ifelse(k >= 1, ts_ok[pmax(k, 1)], NA_real_)
+      next_t = ifelse(k < length(ts_ok), ts_ok[pmin(k + 1, length(ts_ok))], NA_real_)
+      on_reading = !is.na(prev_t) & grid_num == prev_t
+      in_gap = is.na(prev_t) | is.na(next_t) | (next_t - prev_t) > max_gap
+      res_j[in_gap & !on_reading, 1] = NA_real_
+      out[, j] = res_j[, 1]
+    }
     out
   }
   # -------------------------------------------------------------------------
@@ -406,8 +444,12 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
         gyro_readings[[i]] = matrix(c(0,0,0), nrow = nrow(gyro_readings[[i]]), 
                                     ncol = 3, byrow = T)
       }
+      # temperature to NA when impute_temp = FALSE
+      if (any(temp_count > 0) & read_temp & !impute_temp) {
+        temp_readings[[i]] = matrix(NA_real_, nrow = nrow(temp_readings[[i]]), ncol = 2)
+      }
       # temperature to mean temp between prev and next packet
-      if (any(temp_count > 0) & read_temp) {
+      if (any(temp_count > 0) & read_temp & impute_temp) {
         x = (1:length(packet_starti))
         x[corrupt_packets] = NA
         prev_index = ifelse(any(!is.na(x[1:(i - 1)])), 
@@ -455,7 +497,7 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
                                     ncol = 2, byrow = T)
       }
       # heart to NA
-      if (any(temp_count > 0) & read_heart) {
+      if (any(heart_count > 0) & read_heart) {
         heart_readings[[i]] = matrix(NA, nrow = nrow(heart_readings[[i]]),
                                      ncol = 2, byrow = T)
       }
@@ -539,20 +581,40 @@ readParmayMatrix = function(filename, output = c("all", "sf", "dynrange")[1],
     )
   }
   if (any(temp_count > 0) & read_temp) {
-    temp_resampled = resample_to_grid(
-      data = temp_data,
-      timestamps = temp_timestamps,
-      grid = required_timepoints,
-      interpolationType = interpolationType
-    )
+    if (impute_temp) {
+      temp_resampled = resample_to_grid(
+        data = temp_data,
+        timestamps = temp_timestamps,
+        grid = required_timepoints,
+        interpolationType = interpolationType
+      )
+    } else {
+      temp_resampled = resample_without_imputation(
+        data = temp_data,
+        timestamps = temp_timestamps,
+        grid = required_timepoints,
+        max_gap = max_sensor_gap,
+        interpolationType = interpolationType
+      )
+    }
   }
   if (any(heart_count > 0) & read_heart) {
-    heart_resampled = resample_to_grid(
-      data = heart_data,
-      timestamps = heart_timestamps,
-      grid = required_timepoints,
-      interpolationType = interpolationType
-    )
+    if (impute_heart) {
+      heart_resampled = resample_to_grid(
+        data = heart_data,
+        timestamps = heart_timestamps,
+        grid = required_timepoints,
+        interpolationType = interpolationType
+      )
+    } else {
+      heart_resampled = resample_without_imputation(
+        data = heart_data,
+        timestamps = heart_timestamps,
+        grid = required_timepoints,
+        max_gap = max_sensor_gap,
+        interpolationType = interpolationType
+      )
+    }
   }
   
   # build output data -----------

@@ -11,7 +11,9 @@
                    start = 1, end = NULL,
                    desiredtz = "", configtz = NULL, interpolationType = 1,
                    read_acc = TRUE, read_gyro = FALSE, 
-                   read_temp = TRUE, read_heart = FALSE)
+                   read_temp = TRUE, read_heart = FALSE,
+                   impute_temp = TRUE, impute_heart = TRUE,
+                   max_sensor_gap = NULL)
 }
 \arguments{
   \item{filename}{Character. Path to the binary file to be read.}
@@ -33,6 +35,21 @@
   \item{read_gyro}{Logical. Indicates whether gyroscope data should be read.}
   \item{read_temp}{Logical. Indicates whether temperature data should be read.}
   \item{read_heart}{Logical. Indicates whether heart rate data should be read.}
+  \item{impute_temp}{Logical. If \code{TRUE} (default), temperature is interpolated 
+    onto the accelerometer time grid across any gap, and temperature in corrupt 
+    packets is imputed with the mean of the neighbouring packets. If \code{FALSE}, 
+    temperature is not imputed. Each column is resampled separately and values in 
+    corrupt packets are set to \code{NA}.}
+  \item{impute_heart}{Logical. If \code{TRUE} (default), heart rate readings of 
+    zero (no detection) are removed and the remaining readings are interpolated 
+    onto the accelerometer time grid across any gap. If \code{FALSE}, heart rate 
+    is not imputed. Each column (\code{hr_raw}, \code{hr}) is resampled separately 
+    and values in corrupt packets and readings of zero are \code{NA}.}
+  \item{max_sensor_gap}{Numeric or \code{NULL}. Only used when
+    \code{impute_temp = FALSE} or \code{impute_heart = FALSE}. Maximum gap (seconds) 
+    between consecutive valid temp or heart readings that is bridged by interpolation
+    onto the accelerometer grid. \code{NULL} (default) uses twice the median
+    interval between readings of each sensor.}
 }
 \details{
   Matrix devices store binary data in packets, with varying lengths depending on 
