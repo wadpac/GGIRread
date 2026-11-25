@@ -1,3 +1,7 @@
+# Changes in version 1.2.1 (release date:??-11-2026)
+
+- `readAxivity()`: output samples now lie on one time grid for the whole file, anchored at the start time in the file header, and each call returns the grid points up to the start of block `end`. Reading a file in consecutive chunks (as GGIR does) now gives the same samples as a single read. Previously each call started its own grid at its first block and stopped at the last raw sample of the chunk, so the grid of the next chunk was shifted by a fraction of a sample and one sample could be lost at each border. This changes the output slightly: timestamps can shift by less than one sample period, values are interpolated at those times, and the number of rows per call can change by one.
+
 # Changes in version 1.2.0 (release date:28-10-2026)
 
 All changes below concern `readAxivity()`.

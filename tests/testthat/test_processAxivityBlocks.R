@@ -81,9 +81,12 @@ test_that("packet boundaries interpolate through raw samples on every axis", {
     }
     bytes[37] = as.raw(10)
     writeBin(c(bytes[1:1024], unlist(packets)), filename)
-    rawTime = origin + rep((0:2) * 0.375, each = count) +
-      rep((0:(count - 1)) * (0.375 / count), 3)
-    rawValues = do.call(rbind, values[1:3])
+    # Blocks 0-2 are read; the output continues up to the start of block 3,
+    # interpolating towards its first sample.
+    rawTime = c(origin + rep((0:2) * 0.375, each = count) +
+                  rep((0:(count - 1)) * (0.375 / count), 3),
+                origin + 3 * 0.375)
+    rawValues = rbind(do.call(rbind, values[1:3]), values[[4]][1, ])
     for (interpolation in 1:2) {
       result = readAxivity(filename, start = 0, end = 3, configtz = "UTC",
                              interpolationType = interpolation, frequency_tol = 0.5)
