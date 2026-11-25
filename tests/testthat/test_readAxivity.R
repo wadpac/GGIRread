@@ -561,6 +561,28 @@ test_that("readAxivity reads timezones correctly", {
   options(old)
 })
 
+test_that("non-final chunks use their full output allocation", {
+  process = GGIRread:::processAxivityBlocks
+  local_mocked_bindings(processAxivityBlocks = function(...) {
+    result = process(...)
+    # Surplus rows trigger copies of all sensor and timestamp buffers in R.
+    expect_equal(result$last, nrow(result$accel))
+    result
+  }, .package = "GGIRread")
+
+  for (device in c("ax3", "ax6")) {
+    cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"),
+                           package = "GGIRread")
+    header = readAxivity(cwafile, configtz = "UTC")$header
+    for (interpolation in 1:2) {
+      for (range in list(c(0, 1), c(0, 10), c(10, 50), c(50, 100))) {
+        readAxivity(cwafile, start = range[1], end = range[2], header = header,
+                      configtz = "UTC", interpolationType = interpolation)
+      }
+    }
+  }
+})
+
 test_that("chunks of consecutive blocks join like a single read", {
   for (device in c("ax3", "ax6")) {
     cwafile = system.file(paste0("testfiles/", device, "_testfile.cwa"), package = "GGIRread")
